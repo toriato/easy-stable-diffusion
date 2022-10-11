@@ -1,0 +1,7 @@
+.ipynb_checkpoints/
+.venv/
+packages/
+outputs/
+models/
+embeddings/
+main.py
