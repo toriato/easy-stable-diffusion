@@ -13,5 +13,5 @@ services:
             - driver: nvidia
               device_ids: [ '0' ]
               capabilities: [ gpu ]
-    volumes: [ '../:/content' ]
+    volumes: [ './entrypoint.sh:/entrypoint.sh', './:/content' ]
     ports: [ '127.0.0.1:8888:8888/tcp' ]
