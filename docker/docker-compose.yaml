@@ -1,0 +1,12 @@
+version: '3.7'
+services:
+  jupyter:
+    image: aeon/jupyter
+    build: '.'
+    user: '${UID}:${GID}'
+    volumes:
+      [
+        './content:/content',
+        '../easy_stable_diffusion.ipynb:/content/easy_stable_diffusion.ipynb'
+      ]
+    ports: [ '127.0.0.1:8888:8888/tcp' ]
