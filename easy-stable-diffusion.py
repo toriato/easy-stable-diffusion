@@ -282,8 +282,8 @@ PATH_TO_GOOGLE_DRIVE = 'SD'  # @param {type:"string"}
 
 # @markdown ### <font color="orange">***xformers 를 사용할지?***</font>
 # @markdown - <font color="green">장점</font>: 켜두면 10-15% 정도의 성능 향상을 *보일 수도 있음*
-# @markdown - <font color="red">단점</font>: 켜두면 준비 시간이 아주 크게 늘어남 (1시간 이상)
-USE_XFORMERS = False  # @param {type:"boolean"}
+# @markdown - <font color="red">단점</font>: 켜두면 코랩을 제외한 환경에서 패키지를 새로 컴파일해야함
+USE_XFORMERS = True  # @param {type:"boolean"}
 
 # @markdown ### <font color="orange">***DeepDanbooru 를 사용할지?***</font>
 # @markdown IMG2IMG 에 올린 이미지의 프롬프트를 단부루 태그 형태로 예측해주는 기능
@@ -351,7 +351,7 @@ def download(url: str, args=[]):
     # Aria2 로 모델 받기
     log(f"파일 다운로드를 시도합니다: {url}")
     execute(['aria2c', *args, url])
-    log('파일을 성공적으로 받았습니다!')
+    log('파일을 성공적으로 받았습니다')
 
 
 def download_checkpoint(checkpoint: str) -> None:
@@ -462,13 +462,14 @@ def patch_webui_repository() -> None:
 
             f.write(json.dumps(configs, indent=4))
 
+
 def setup_webui() -> None:
     need_clone = True
 
     # 이미 디렉터리가 존재한다면 정상적인 레포인지 확인하기
     if os.path.isdir(path_to['repository']):
         try:
-            log('WebUI 레포지토리를 풀(업데이트) 합니다')
+            log('레포지토리를 업데이트 합니다')
 
             # 사용자 파일만 남겨두고 레포지토리 초기화하기
             # https://stackoverflow.com/a/12096327
@@ -481,7 +482,7 @@ def setup_webui() -> None:
             log('레포지토리가 잘못됐습니다, 디렉터리를 제거합니다')
 
     if need_clone:
-        log('WebUI 레포지토리를 클론합니다')
+        log('레포지토리를 가져옵니다')
         rmtree(path_to['repository'], ignore_errors=True)
         execute(['git', 'clone', 'https://github.com/AUTOMATIC1111/stable-diffusion-webui', path_to['repository']])
 
@@ -659,6 +660,11 @@ try:
     cmd_args = [ '--skip-torch-cuda-test' ]
 
     if USE_XFORMERS:
+        if IN_COLAB:
+            log('미리 컴파일된 파일로부터 xformers 설치를 시도합니다')
+            download('https://github.com/toriato/easy-stable-diffusion/releases/download/xformers/xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl')
+            execute(['pip', 'install', 'xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl'])
+
         cmd_args = [*cmd_args, '--xformers']
 
     if USE_DEEPDANBOORU:
