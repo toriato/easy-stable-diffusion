@@ -170,11 +170,13 @@ CHECKPOINTS = {
     'NAI - animefull-final-pruned': {
         'files': [
             {
-                'url': 'https://anonfiles.com/n6h3Q0Bdyf',
+                # 'url': 'https://anonfiles.com/n6h3Q0Bdyf',
+                'url': 'https://cloudflare-ipfs.com/ipfs/bafybeicpamreyp2bsocyk3hpxr7ixb2g2rnrequub3j2ahrkdxbvfbvjc4/model.ckpt',
                 'args': ['-o', 'nai-animefull-final-pruned.ckpt']
             },
             {
-                'url': 'https://anonfiles.com/66c1QcB7y6',
+                # 'url': 'https://anonfiles.com/66c1QcB7y6',
+                'url': 'https://cloudflare-ipfs.com/ipfs/bafybeiccldswdd3wvg57jhclcq53lvsc6gizasiblwayvhlv6eq4wow7wu/animevae.pt',
                 'args': ['-o', 'nai-animefull-final-pruned.vae.pt']
             },
             {
