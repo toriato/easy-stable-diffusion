@@ -12,7 +12,7 @@ from typing import Union, Callable, Tuple, List
 from subprocess import Popen, PIPE, STDOUT
 from importlib.util import find_spec
 from pathlib import Path
-from shutil import rmtree
+from shutil import copy, copytree, rmtree
 from IPython.display import display
 from ipywidgets import widgets
 
@@ -528,6 +528,17 @@ def patch_webui_repository() -> None:
             }
 
             f.write(json.dumps(configs, indent=4))
+
+    # 단부루 태그 자동 완성 스크립트
+    # https://github.com/DominikDoom/a1111-sd-webui-tagcomplete
+    # TODO: 스파게티 코드 수정...
+    log('딥단부루 태그 자동 완성 스크립트를 설치합니다')
+    rmtree('temp', ignore_errors=True)
+    os.makedirs('temp', exist_ok=True)
+    execute('curl -sSL https://github.com/DominikDoom/a1111-sd-webui-tagcomplete/tarball/master | tar xzvf - -C temp --strip-components=1', shell=True)
+    copy('temp/tagAutocomplete.js', 'repo/javascript')
+    rmtree('repo/tags', ignore_errors=True)
+    copytree('temp/tags', 'repo/tags')
 
 
 def setup_webui() -> None:
