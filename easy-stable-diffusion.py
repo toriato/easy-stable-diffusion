@@ -78,7 +78,7 @@ running_subprocess = None
 
 
 def execute(args: Union[str, List[str]], parser: Callable=None,
-                       throw=True, **kwargs) -> Tuple[str, Popen]:
+            logging=True, throw=True, **kwargs) -> Tuple[str, Popen]:
     global running_subprocess
 
     # 이미 서브 프로세스가 존재한다면 예외 처리하기
@@ -114,7 +114,7 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
         running_subprocess.output += out
 
         # 파서가 없거나 또는 파서 실행 후 반환 값이 거짓이라면 로깅하기
-        if not parser or not parser(out):
+        if (not parser or not parser(out)) and logging:
             log(out, newline=False, styles={'color': '#AAA'})
 
     # 변수 정리하기
@@ -544,7 +544,7 @@ def generate_report() -> str:
     ex_type, ex_value, ex_traceback = sys.exc_info()
     traces = map(lambda v: f'{v[0]}#{v[1]}\n\t{v[2]}\n\t{v[3]}', traceback.extract_tb(ex_traceback))
 
-    packages, _ = execute(['pip', 'freeze'], throw=False)
+    packages, _ = execute(['pip', 'freeze'], logging=False, throw=False)
 
     def format_list(value):
         if isinstance(value, dict):
@@ -573,7 +573,7 @@ USE_DEEPDANBOORU: {USE_DEEPDANBOORU}
 # python
 {platform.platform()}
 {sys.executable}
-{format_list(packages)}
+{packages}
 """
 
     res = requests.post('https://hastebin.com/documents',
