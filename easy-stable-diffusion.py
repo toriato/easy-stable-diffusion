@@ -118,6 +118,7 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
             log(out, newline=False, styles={'color': '#AAA'})
 
     # 변수 정리하기
+    output = running_subprocess.output
     returncode = running_subprocess.poll()
     running_subprocess = None
 
@@ -133,7 +134,7 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
     if returncode != 0 and throw:
         raise Exception(f'프로세스가 {returncode} 코드를 반환했습니다')
 
-    return returncode
+    return output, returncode
 
 
 # ==============================
@@ -150,6 +151,7 @@ def update_path_to(path_to_workspace: str) -> None:
     path_to['outputs'] = f"{path_to['workspace']}/outputs"
     path_to['models'] = f"{path_to['workspace']}/models"
     path_to['embeddings'] = f"{path_to['workspace']}/embeddings"
+    path_to['styles_file'] = f"{path_to['workspace']}/styles.csv"
     path_to['ui_config_file'] = f"{path_to['workspace']}/ui-config.json"
     path_to['ui_settings_file'] = f"{path_to['workspace']}/config.json"
 
@@ -649,6 +651,7 @@ try:
         f"--swinir-models-path={path_to['models']}/SwinIR",
         f"--ldsr-models-path={path_to['models']}/LDSR",
 
+        f"--styles-file={path_to['styles_file']}",
         f"--ui-config-file={path_to['ui_config_file']}",
         f"--ui-settings-file={path_to['ui_settings_file']}",
     ]
