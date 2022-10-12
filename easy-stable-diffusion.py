@@ -7,6 +7,7 @@ import re
 import glob
 import json
 import requests
+import torch
 from typing import Union, Callable, Tuple, List
 from subprocess import Popen, PIPE, STDOUT
 from importlib.util import find_spec
@@ -140,9 +141,7 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
 # ==============================
 # 작업 경로
 # ==============================
-path_to = {
-    'repository': '/content/repository'
-}
+path_to = {}
 
 def update_path_to(path_to_workspace: str) -> None:
     log(f'작업 공간 경로를 "{path_to_workspace}" 으로 변경했습니다')
@@ -171,32 +170,64 @@ CHECKPOINTS = {
     'NAI - animefull-final-pruned': {
         'files': [
             {
-                'url': 'https://anonfiles.com/n6h3Q0Bdyf',
-                'args': ['-o', 'nai-animefull-final-pruned.ckpt']
+                'url': 'https://drive.google.com/uc?id=1N6Zg4nJYnz7nN-vF8KExw8UbOwHddh12',
+                'target': 'nai-animefull-final-pruned.ckpt'
             },
             {
-                'url': 'https://anonfiles.com/66c1QcB7y6',
-                'args': ['-o', 'nai-animefull-final-pruned.vae.pt']
+                'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
+                'target': 'nai-animefull-final-pruned.vae.pt'
             },
             {
                 'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-final-pruned.yaml',
-                'args': ['-o', 'nai-animefull-final-pruned.yaml']
+                'target': 'nai-animefull-final-pruned.yaml'
             }
         ]
     },
     'NAI - animefull-latest': {
         'files': [
             {
-                'url': 'https://anonfiles.com/8fm7QdB1y9',
-                'args': ['-o', 'nai-animefull-latest.ckpt']
+                'url': 'https://drive.google.com/uc?id=173P4agYFiaYP1UDvPIocr3GnIzToabjh',
+                'target': 'nai-animefull-latest.ckpt'
             },
             {
-                'url': 'https://anonfiles.com/66c1QcB7y6',
-                'args': ['-o', 'nai-animefull-latest.vae.pt']
+                'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
+                'target': 'nai-animefull-latest.vae.pt'
             },
             {
                 'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-latest.yaml',
-                'args': ['-o', 'nai-animefull-latest.yaml']
+                'target': 'nai-animefull-latest.yaml'
+            }
+        ]
+    },
+    'NAI - animesfw-final-pruned': {
+        'files': [
+            {
+                'url': 'https://drive.google.com/uc?id=1aNaA5utAHuj0vISnxQvC2bHz2AyZbkyv',
+                'target': 'nai-animesfw-final-pruned.ckpt'
+            },
+            {
+                'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
+                'target': 'nai-animesfw-final-pruned.vae.pt'
+            },
+            {
+                'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-final-pruned.yaml',
+                'target': 'nai-animesfw-final-pruned.yaml'
+            }
+        ]
+    },
+    'NAI - animesfw-latest': {
+        'files': [
+            {
+                'url': 'https://drive.google.com/uc?id=1N5Nla5e2SowFHYH3nuogV2IvigET7a4k',
+                'target': 'nai-animesfw-final-pruned.ckpt'
+            },
+            {
+                'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
+                'target': 'nai-animesfw-final-pruned.vae.pt'
+            },
+            {
+                'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-latest.yaml',
+                'target': 'nai-animesfw-final-pruned.yaml'
             }
         ]
     },
@@ -271,7 +302,7 @@ CHECKPOINTS = {
 
 # @markdown ### <font color="orange">***체크포인트 모델 선택***</font>
 # @markdown - [모델 별 설명 및 다운로드 주소](https://rentry.org/sdmodels)
-CHECKPOINT = 'NAI - animefull-final-pruned' # @param ['NAI - animefull-final-pruned', 'NAI - animefull-latest', 'Waifu Diffusion 1.3', 'Trinart Stable Diffusion v2 60,000 Steps', 'Trinart Stable Diffusion v2 95,000 Steps', 'Trinart Stable Diffusion v2 115,000 Steps', 'Furry (epoch 4)', 'Zack3D Kinky v1', 'Pokemon', 'Dreambooth - Hiten'] {allow-input: true}
+CHECKPOINT = 'NAI - animefull-final-pruned' # @param ['NAI - animefull-final-pruned', 'NAI - animefull-latest', 'NAI - animesfw-final-pruned', 'NAI - animesfw-latest', 'Waifu Diffusion 1.3', 'Trinart Stable Diffusion v2 60,000 Steps', 'Trinart Stable Diffusion v2 95,000 Steps', 'Trinart Stable Diffusion v2 115,000 Steps', 'Furry (epoch 4)', 'Zack3D Kinky v1', 'Pokemon', 'Dreambooth - Hiten'] {allow-input: true}
 
 # @markdown ### <font color="orange">***구글 드라이브 동기화를 사용할지?***</font>
 USE_GOOGLE_DRIVE = True  # @param {type:"boolean"}
@@ -299,12 +330,10 @@ IN_COLAB = find_spec('google.colab') is not None
 # 패키지 준비
 # ==============================
 def prepare_aria2() -> None:
-    log('aria2 패키지를 설치합니다')
     execute(
         ['sudo', 'apt', 'install', '-y', 'aria2'])
 
     # 설정 파일 만들기
-    log('aria2 설정 파일을 만듭니다')
     os.makedirs(os.path.join(Path.home(), '.aria2'), exist_ok=True)
     with open(Path.joinpath(Path.home(), '.aria2', 'aria2.conf'), "w") as f:
         f.write("""
@@ -339,7 +368,23 @@ def mount_google_drive() -> None:
 # ==============================
 # 파일 다운로드
 # ==============================
-def download(url: str, args=[]):
+def download(url: str, target='', args=[]):
+    dirname = os.path.dirname(target)
+    basename = os.path.basename(target)
+
+    if dirname:
+        os.makedirs(dirname, exist_ok=True)
+        if '-d' not in args:
+            args = ['-d', dirname, *args]
+
+    if '-o' not in args and basename:
+        args = ['-o', basename, *args]
+
+    if url.startswith('https://drive.google.com'):
+        log(f'구글 드라이브로부터 파일 받기를 시작합니다: {url}')
+        execute(['gdown', '-O', target, url])
+        return
+
     # anonfile CDN 주소 가져오기
     if url.startswith('https://anonfiles.com/'):
         matches = re.search('https://cdn-[^\"]+', requests.get(url).text)
@@ -348,10 +393,8 @@ def download(url: str, args=[]):
 
         url = matches[0]
 
-    # Aria2 로 모델 받기
-    log(f"파일 다운로드를 시도합니다: {url}")
+    log(f"파일 받기를 시도합니다: {url}")
     execute(['aria2c', *args, url])
-    log('파일을 성공적으로 받았습니다')
 
 
 def download_checkpoint(checkpoint: str) -> None:
@@ -365,18 +408,10 @@ def download_checkpoint(checkpoint: str) -> None:
     # TODO: 토렌트 마그넷 주소 지원
     log(f"파일 {len(checkpoint['files'])}개를 받습니다")
 
-    for f in checkpoint['files']:
-        file = json.loads(json.dumps(f))
+    for file in checkpoint['files']:
+        target = os.path.join(f"{path_to['models']}/Stable-diffusion", file.get('target', ''))
+        download(**{**file, 'target': target})
 
-        if 'args' not in file:
-            file['args'] = []
-
-        # 모델 받을 기본 디렉터리 경로 잡아주기
-        if '-d' not in file['args']:
-            file['args'] = [
-                '-d', f"{path_to['models']}/Stable-diffusion", *file['args']]
-
-        download(**file)
 
 
 def has_checkpoint() -> bool:
@@ -402,13 +437,13 @@ def patch_webui_repository() -> None:
         'sed',
         '-i',
         '''s/map_location="cpu"/map_location=torch.device("cuda")/g''',
-        f"{path_to['repository']}/modules/sd_models.py"
+        f"repo/modules/sd_models.py"
     ])
 
     # 기본 UI 설정 값 (ui-config.json)
     # 설정 파일 자체를 덮어씌우면 새로 추가된 키를 인식하지 못해서 코드 자체를 수정함
     # https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/shared.py
-    path_to_shared = f"{path_to['repository']}/modules/shared.py"
+    path_to_shared = f"repo/modules/shared.py"
     if os.path.isfile(path_to_shared):
         log('설정 파일의 기본 값을 추천 값으로 변경합니다')
 
@@ -467,15 +502,15 @@ def setup_webui() -> None:
     need_clone = True
 
     # 이미 디렉터리가 존재한다면 정상적인 레포인지 확인하기
-    if os.path.isdir(path_to['repository']):
+    if os.path.isdir('repo'):
         try:
             log('레포지토리를 업데이트 합니다')
 
             # 사용자 파일만 남겨두고 레포지토리 초기화하기
             # https://stackoverflow.com/a/12096327
-            execute(['git', 'add', '--ignore-errors', '-f', 'repositories'], cwd=path_to['repository'])
-            execute(['git', 'checkout', '.'], cwd=path_to['repository'])
-            execute(['git', 'pull'], cwd=path_to['repository'])
+            execute(['git', 'add', '--ignore-errors', '-f', 'repositories'], cwd='repo')
+            execute(['git', 'checkout', '.'], cwd='repo')
+            execute(['git', 'pull'], cwd='repo')
             need_clone = False
 
         except:
@@ -483,8 +518,8 @@ def setup_webui() -> None:
 
     if need_clone:
         log('레포지토리를 가져옵니다')
-        rmtree(path_to['repository'], ignore_errors=True)
-        execute(['git', 'clone', 'https://github.com/AUTOMATIC1111/stable-diffusion-webui', path_to['repository']])
+        rmtree('repo', ignore_errors=True)
+        execute(['git', 'clone', 'https://github.com/AUTOMATIC1111/stable-diffusion-webui', 'repo'])
 
     patch_webui_repository()
 
@@ -527,7 +562,7 @@ def start_webui(args: List[str]=[], env={}) -> None:
     execute(
         ['python', 'launch.py', *args],
         parser=parse_webui_output,
-        cwd=path_to['repository'],
+        cwd='repo',
         env={
             **os.environ,
             'PYTHONUNBUFFERED': '1',
@@ -564,7 +599,6 @@ def generate_report() -> str:
 CHECKPOINT: {CHECKPOINT}
 USE_GOOGLE_DRIVE: {USE_GOOGLE_DRIVE}
 PATH_TO_GOOGLE_DRIVE: {PATH_TO_GOOGLE_DRIVE}
-USE_XFORMERS: {USE_XFORMERS}
 USE_DEEPDANBOORU: {USE_DEEPDANBOORU}
 
 # paths
@@ -611,14 +645,10 @@ try:
 
     if IN_COLAB:
         log('코랩 환경이 감지됐습니다')
+        os.makedirs('/usr/local/content', exist_ok=True)
+        os.chdir('/usr/local/content')
 
-        import torch
         assert torch.cuda.is_available(), 'GPU 가 없습니다, 런타임 유형이 잘못됐거나 GPU 할당량이 초과된 것 같습니다'
-
-        # 코랩 환경이라면 /content 디렉터리는 스토리지 속도가 느리기 때문에
-        # /usr/local 속에서 구동할 필요가 있음
-        log('레포지토리 디렉터리를 "/usr/local/repository" 로 변경합니다')
-        path_to['repository'] = '/usr/local/repository'
 
         # 구글 드라이브 마운팅 시도
         if USE_GOOGLE_DRIVE:
@@ -626,6 +656,9 @@ try:
 
     # 구동 필수 패키지 준비
     prepare_aria2()
+
+    if find_spec('gdown') is not None:
+        execute(['pip', 'install', 'gdown'])
 
     # 체크포인트가 없을 시 다운로드
     if not has_checkpoint():
@@ -660,7 +693,7 @@ try:
     cmd_args = [ '--skip-torch-cuda-test' ]
 
     if USE_XFORMERS:
-        if IN_COLAB:
+        if IN_COLAB and find_spec('xformers') is None:
             log('미리 컴파일된 파일로부터 xformers 설치를 시도합니다')
             download('https://github.com/toriato/easy-stable-diffusion/releases/download/xformers/xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl')
             execute(['pip', 'install', 'xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl'])
