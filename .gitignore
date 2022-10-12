@@ -6,3 +6,4 @@ models/
 embeddings/
 scripts/
 *.json
+*.ipynb
