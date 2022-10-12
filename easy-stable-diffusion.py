@@ -299,7 +299,7 @@ IN_COLAB = find_spec('google.colab') is not None
 def prepare_aria2() -> None:
     log('aria2 패키지를 설치합니다')
     execute(
-        ['apt', 'install', '-y', 'aria2'])
+        ['sudo', 'apt', 'install', '-y', 'aria2'])
 
     # 설정 파일 만들기
     log('aria2 설정 파일을 만듭니다')
@@ -487,7 +487,7 @@ def setup_webui() -> None:
 
     # 코랩에선 필요 없으나 다른 환경에선 높은 확률로 설치 필요한 패키지들
     if not IN_COLAB:
-        execute(['apt', 'install', '-y', 'build-essential', 'libgl1'])
+        execute(['sudo', 'apt', 'install', '-y', 'build-essential', 'libgl1', 'libglib2.0-0'])
 
 
 def parse_webui_output(out: str) -> bool:
