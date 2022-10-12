@@ -170,67 +170,99 @@ CHECKPOINTS = {
     'NAI - animefull-final-pruned': {
         'files': [
             {
-                'url': 'https://drive.google.com/uc?id=1N6Zg4nJYnz7nN-vF8KExw8UbOwHddh12',
-                'target': 'nai-animefull-final-pruned.ckpt'
+                'url': 'https://anonfiles.com/n6h3Q0Bdyf',
+                'args': ['-o', 'nai-animefull-final-pruned.ckpt']
             },
             {
-                'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
-                'target': 'nai-animefull-final-pruned.vae.pt'
+                'url': 'https://anonfiles.com/66c1QcB7y6',
+                'args': ['-o', 'nai-animefull-final-pruned.vae.pt']
             },
             {
                 'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-final-pruned.yaml',
-                'target': 'nai-animefull-final-pruned.yaml'
+                'args': ['-o', 'nai-animefull-final-pruned.yaml']
             }
         ]
     },
     'NAI - animefull-latest': {
         'files': [
             {
-                'url': 'https://drive.google.com/uc?id=173P4agYFiaYP1UDvPIocr3GnIzToabjh',
-                'target': 'nai-animefull-latest.ckpt'
+                'url': 'https://anonfiles.com/8fm7QdB1y9',
+                'args': ['-o', 'nai-animefull-latest.ckpt']
             },
             {
-                'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
-                'target': 'nai-animefull-latest.vae.pt'
+                'url': 'https://anonfiles.com/66c1QcB7y6',
+                'args': ['-o', 'nai-animefull-latest.vae.pt']
             },
             {
                 'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-latest.yaml',
-                'target': 'nai-animefull-latest.yaml'
+                'args': ['-o', 'nai-animefull-latest.yaml']
             }
         ]
     },
-    'NAI - animesfw-final-pruned': {
-        'files': [
-            {
-                'url': 'https://drive.google.com/uc?id=1aNaA5utAHuj0vISnxQvC2bHz2AyZbkyv',
-                'target': 'nai-animesfw-final-pruned.ckpt'
-            },
-            {
-                'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
-                'target': 'nai-animesfw-final-pruned.vae.pt'
-            },
-            {
-                'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-final-pruned.yaml',
-                'target': 'nai-animesfw-final-pruned.yaml'
-            }
-        ]
-    },
-    'NAI - animesfw-latest': {
-        'files': [
-            {
-                'url': 'https://drive.google.com/uc?id=1N5Nla5e2SowFHYH3nuogV2IvigET7a4k',
-                'target': 'nai-animesfw-final-pruned.ckpt'
-            },
-            {
-                'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
-                'target': 'nai-animesfw-final-pruned.vae.pt'
-            },
-            {
-                'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-latest.yaml',
-                'target': 'nai-animesfw-final-pruned.yaml'
-            }
-        ]
-    },
+    # 'NAI - animefull-final-pruned': {
+    #     'files': [
+    #         {
+    #             'url': 'https://drive.google.com/uc?id=1N6Zg4nJYnz7nN-vF8KExw8UbOwHddh12',
+    #             'target': 'nai-animefull-final-pruned.ckpt'
+    #         },
+    #         {
+    #             'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
+    #             'target': 'nai-animefull-final-pruned.vae.pt'
+    #         },
+    #         {
+    #             'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-final-pruned.yaml',
+    #             'target': 'nai-animefull-final-pruned.yaml'
+    #         }
+    #     ]
+    # },
+    # 'NAI - animefull-latest': {
+    #     'files': [
+    #         {
+    #             'url': 'https://drive.google.com/uc?id=173P4agYFiaYP1UDvPIocr3GnIzToabjh',
+    #             'target': 'nai-animefull-latest.ckpt'
+    #         },
+    #         {
+    #             'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
+    #             'target': 'nai-animefull-latest.vae.pt'
+    #         },
+    #         {
+    #             'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-latest.yaml',
+    #             'target': 'nai-animefull-latest.yaml'
+    #         }
+    #     ]
+    # },
+    # 'NAI - animesfw-final-pruned': {
+    #     'files': [
+    #         {
+    #             'url': 'https://drive.google.com/uc?id=1aNaA5utAHuj0vISnxQvC2bHz2AyZbkyv',
+    #             'target': 'nai-animesfw-final-pruned.ckpt'
+    #         },
+    #         {
+    #             'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
+    #             'target': 'nai-animesfw-final-pruned.vae.pt'
+    #         },
+    #         {
+    #             'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-final-pruned.yaml',
+    #             'target': 'nai-animesfw-final-pruned.yaml'
+    #         }
+    #     ]
+    # },
+    # 'NAI - animesfw-latest': {
+    #     'files': [
+    #         {
+    #             'url': 'https://drive.google.com/uc?id=1N5Nla5e2SowFHYH3nuogV2IvigET7a4k',
+    #             'target': 'nai-animesfw-final-pruned.ckpt'
+    #         },
+    #         {
+    #             'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
+    #             'target': 'nai-animesfw-final-pruned.vae.pt'
+    #         },
+    #         {
+    #             'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-latest.yaml',
+    #             'target': 'nai-animesfw-final-pruned.yaml'
+    #         }
+    #     ]
+    # },
 
     # Waifu stuffs
     # 'Waifu Diffusion 1.2': {
@@ -302,7 +334,7 @@ CHECKPOINTS = {
 
 # @markdown ### <font color="orange">***체크포인트 모델 선택***</font>
 # @markdown - [모델 별 설명 및 다운로드 주소](https://rentry.org/sdmodels)
-CHECKPOINT = 'NAI - animefull-final-pruned' # @param ['NAI - animefull-final-pruned', 'NAI - animefull-latest', 'NAI - animesfw-final-pruned', 'NAI - animesfw-latest', 'Waifu Diffusion 1.3', 'Trinart Stable Diffusion v2 60,000 Steps', 'Trinart Stable Diffusion v2 95,000 Steps', 'Trinart Stable Diffusion v2 115,000 Steps', 'Furry (epoch 4)', 'Zack3D Kinky v1', 'Pokemon', 'Dreambooth - Hiten'] {allow-input: true}
+CHECKPOINT = 'NAI - animefull-final-pruned' # @param ['NAI - animefull-final-pruned', 'NAI - animefull-latest', 'Waifu Diffusion 1.3', 'Trinart Stable Diffusion v2 60,000 Steps', 'Trinart Stable Diffusion v2 95,000 Steps', 'Trinart Stable Diffusion v2 115,000 Steps', 'Furry (epoch 4)', 'Zack3D Kinky v1', 'Pokemon', 'Dreambooth - Hiten'] {allow-input: true}
 
 # @markdown ### <font color="orange">***구글 드라이브 동기화를 사용할지?***</font>
 USE_GOOGLE_DRIVE = True  # @param {type:"boolean"}
@@ -657,7 +689,7 @@ try:
     # 구동 필수 패키지 준비
     prepare_aria2()
 
-    if find_spec('gdown') is not None:
+    if find_spec('gdown') is None:
         execute(['pip', 'install', 'gdown'])
 
     # 체크포인트가 없을 시 다운로드
