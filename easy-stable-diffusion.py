@@ -10,6 +10,7 @@ import requests
 import torch
 from typing import Union, Callable, Tuple, List
 from subprocess import Popen, PIPE, STDOUT
+from distutils.spawn import find_executable
 from importlib.util import find_spec
 from pathlib import Path
 from shutil import copy, copytree, rmtree
@@ -19,57 +20,80 @@ from ipywidgets import widgets
 def format_styles(styles: dict) -> str:
     return ';'.join(map(lambda kv: ':'.join(kv), styles.items()))
 
-html_dialog = widgets.HTML()
-html_dialog_presets = {
-    'default': {
-        'display': 'inline-block',
-        'padding': '.5em',
+html_logger = widgets.HTML()
+html_logger.blocks = []
+
+def append_logger_block(summary: str='', lines: List[str]=None,
+                        summary_styles: dict=None, line_styles: dict=None,
+                        fold=False, max_render_lines=5) -> int:
+    block = {**locals()}
+
+    if block['lines'] is None: block['lines'] = []
+    if block['summary_styles'] is None: block['summary_styles'] = {}
+    if block['line_styles'] is None: block['line_styles'] = {}
+
+    html_logger.blocks.append(block)
+    return len(html_logger.blocks) - 1
+
+def render_log_as_plain() -> str:
+    msg = ''
+
+    for block in html_logger.blocks:
+        msg += block['summary']
+        msg += ''.join(map(lambda v: f'\t{v}', block['lines']))
+
+    return msg
+
+def render_log() -> None:
+    styles = {
+        'overflow-x': 'auto',
+        'max-width': '700px',
+        'padding': '1em',
         'background-color': 'black',
-        'font-size': '1.25em',
-        'line-height': '1em',
-        'color': 'white',
-    },
-    'error': {
-        'border-left': '6px solid red'
+        'white-space': 'pre',
+        'font-family': 'monospace',
+        'font-size': '1em',
+        'line-height': '1.1em',
+        'color': 'white'
     }
-}
 
-html_logger_styles = {
-    'overflow-x': 'auto',
-    'max-width': '700px',
-    'padding': '1em',
-    'background-color': 'black',
-    'white-space': 'pre-wrap',
-    'font-family': 'monospace',
-    'font-size': '1em',
-    'line-height': '1em',
-    'color': 'white'
-}
-html_logger = widgets.HTML(
-    value=f'<div id="logger" style="{format_styles(html_logger_styles)}">')
-html_logger.raw = ''
+    html = f'<div style="{format_styles(styles)}">'
 
-
-def dialog(msg, preset:str=None, styles=html_dialog_presets['default']) -> None:
-    if preset and preset in html_dialog_presets:
-        styles = {
-            **html_dialog_presets['default'],
-            **html_dialog_presets[preset],
-            **styles
+    for block in html_logger.blocks:
+        summary_styles = {
+            'display': 'inline-block',
+            'cursor': 'pointer' if len(block['lines']) > 0 else 'inherit',
+            **block['summary_styles']
+        }
+        line_styles = {
+            'display': 'inline-block',
+            **block['line_styles']
         }
 
-    html_dialog.value = f'<div style="{format_styles(styles)}">{msg}</div>'
+        html += '<details " ' + ('' if block['fold'] else 'open=""') + '>'
+        html += f'<summary style="{format_styles(summary_styles)}">{block["summary"]}</summary>'
 
+        if len(block['lines']) > 0:
+            html += f'<div style="{line_styles}">'
+            html += ''.join(block['lines'][-block['max_render_lines']:])
+            html += '</div>'
 
-def log(msg, newline=True, styles={}, bold=False) -> None:
-    if bold:
-        styles['font-weight'] = 'bold'
+        html += '</details>'
 
+    html += '</div>'
+
+    html_logger.value = html
+
+def log(msg, styles={}, newline=True, block_index: int=None) -> None:
     if newline:
         msg += '\n'
 
-    html_logger.raw += msg
-    html_logger.value += f'<span style="{format_styles(styles)}">{msg}</span>'
+    if block_index is None:
+        block_index = append_logger_block(summary=msg, summary_styles=styles)
+    else:
+        html_logger.blocks[block_index]['lines'].append(msg)
+
+    render_log()
 
 
 # ==============================
@@ -77,21 +101,24 @@ def log(msg, newline=True, styles={}, bold=False) -> None:
 # ==============================
 running_subprocess = None
 
-
 def execute(args: Union[str, List[str]], parser: Callable=None,
             logging=True, throw=True, **kwargs) -> Tuple[str, Popen]:
     global running_subprocess
 
     # 이미 서브 프로세스가 존재한다면 예외 처리하기
     if running_subprocess:
-        raise Exception('하위 프로세스가 실행되고 있습니다')
+        raise Exception('이미 다른 하위 프로세스가 실행되고 있습니다')
 
-    if isinstance(args, str):
-        log(f'=> {args}', styles={'color':'yellow'})
-    else:
-        log(f"=> {' '.join(args)}", styles={'color':'yellow'})
-
-    html_logger.value += '<div style="padding-left:1em">'
+    block_index = append_logger_block(
+        summary=f"=> {args if isinstance(args, str) else ' '.join(args)}\n",
+        summary_styles={
+            'color': 'yellow',
+        },
+        line_styles={
+            'padding-left': '1.5em',
+            'color': 'gray',
+        }
+    )
 
     # 서브 프로세스 만들기
     running_subprocess = Popen(
@@ -101,8 +128,8 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
         encoding='utf-8',
         **kwargs,
     )
-
     running_subprocess.output = ''
+    running_subprocess.block_index = block_index
 
     # 프로세스 출력 위젯에 리다이렉션하기
     while running_subprocess.poll() is None:
@@ -116,24 +143,26 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
 
         # 파서가 없거나 또는 파서 실행 후 반환 값이 거짓이라면 로깅하기
         if (not parser or not parser(out)) and logging:
-            log(out, newline=False, styles={'color': '#AAA'})
+            log(out, block_index=block_index, newline=False)
 
     # 변수 정리하기
     output = running_subprocess.output
     returncode = running_subprocess.poll()
     running_subprocess = None
 
-    # 명령어 실행에 실패했다면 빨간 글씨로 표시하기
-    styles = {'color': 'green'}
-    if returncode != 0:
-        styles['color'] = 'red'
+    # html_logger.blocks[block_index]['summary'] += f' -> {returncode}'
 
-    html_logger.value += '</div>'
-    log(f"=> {returncode}", styles=styles)
+    # 반환 코드가 정상이 아니라면
+    if returncode == 0:
+        html_logger.blocks[block_index]['summary_styles']['color'] = 'green'
+        html_logger.blocks[block_index]['fold'] = True
 
-    # 반환 코드가 정상이 아니라면 예외 발생하기
-    if returncode != 0 and throw:
-        raise Exception(f'프로세스가 {returncode} 코드를 반환했습니다')
+    else:
+        html_logger.blocks[block_index]['summary_style']['color'] = 'red'
+        html_logger.blocks[block_index]['max_render_lines'] = 0
+
+        if throw:
+            raise Exception(f'프로세스가 {returncode} 코드를 반환했습니다')
 
     return output, returncode
 
@@ -364,8 +393,8 @@ IN_COLAB = find_spec('google.colab') is not None
 # 패키지 준비
 # ==============================
 def prepare_aria2() -> None:
-    execute(
-        ['sudo', 'apt', 'install', '-y', 'aria2'])
+    if find_executable('aria2') is None:
+        execute(['sudo', 'apt', 'install', '-y', 'aria2'])
 
     # 설정 파일 만들기
     os.makedirs(os.path.join(Path.home(), '.aria2'), exist_ok=True)
@@ -430,7 +459,6 @@ def download(url: str, target='', args=[]):
     log(f"파일 받기를 시도합니다: {url}")
     execute(['aria2c', *args, url])
 
-
 def download_checkpoint(checkpoint: str) -> None:
     if checkpoint in CHECKPOINTS:
         checkpoint = CHECKPOINTS[checkpoint]
@@ -445,8 +473,6 @@ def download_checkpoint(checkpoint: str) -> None:
     for file in checkpoint['files']:
         target = os.path.join(f"{path_to['models']}/Stable-diffusion", file.get('target', ''))
         download(**{**file, 'target': target})
-
-
 
 def has_checkpoint() -> bool:
     for p in Path(f"{path_to['models']}/Stable-diffusion").glob('**/*.ckpt'):
@@ -542,7 +568,6 @@ def patch_webui_repository() -> None:
     rmtree('repo/tags', ignore_errors=True)
     copytree('temp/tags', 'repo/tags')
 
-
 def setup_webui() -> None:
     need_clone = True
 
@@ -572,11 +597,15 @@ def setup_webui() -> None:
     if not IN_COLAB:
         execute(['sudo', 'apt', 'install', '-y', 'build-essential', 'libgl1', 'libglib2.0-0'])
 
-
 def parse_webui_output(out: str) -> bool:
+    # 하위 스크립트 실행 중 오류가 발생하면 전체 기록 표시하기
+    # TODO: 더 나은 오류 핸들링
+    if 'Traceback (most recent call last):' in out:
+        html_logger.blocks[running_subprocess.block_index]['max_render_lines'] = 0
+
+    # 외부 주소 출력되면 성공적으로 실행한 것으로 판단
     matches = re.search('https://\d+\.gradio\.app', out)
     if matches:
-        log('******************************************', styles={'color':'green'})
         log(f'성공적으로 웹UI를 실행했습니다, 아래 주소에 접속해주세요!\n{matches[0]}',
             styles={
                 'background-color': 'green',
@@ -585,13 +614,6 @@ def parse_webui_output(out: str) -> bool:
                 'line-height': '1.5em',
                 'color': 'black'
             })
-        log('******************************************', styles={'color':'green'})
-
-        dialog(f'''
-        <p>성공적으로 웹UI를 실행했습니다!</p>
-        <p><a target="_blank" href="{matches[0]}">{matches[0]}</a></p>
-        ''')
-
 
 def start_webui(args: List[str]=[], env={}) -> None:
     global running_subprocess
@@ -622,12 +644,9 @@ def start_webui(args: List[str]=[], env={}) -> None:
 # ==============================
 def generate_report() -> str:
     import traceback
-    from distutils.spawn import find_executable
 
     ex_type, ex_value, ex_traceback = sys.exc_info()
     traces = map(lambda v: f'{v[0]}#{v[1]}\n\t{v[2]}\n\t{v[3]}', traceback.extract_tb(ex_traceback))
-
-    packages, _ = execute(['pip', 'freeze'], logging=False, throw=False)
 
     def format_list(value):
         if isinstance(value, dict):
@@ -636,7 +655,7 @@ def generate_report() -> str:
             return '\n'.join(value)
 
     payload = f"""
-{html_logger.raw}
+{render_log_as_plain()}
 # {ex_type.__name__}: {ex_value}
 {format_list(traces)}
 
@@ -651,11 +670,6 @@ USE_DEEPDANBOORU: {USE_DEEPDANBOORU}
 
 # models
 {format_list(glob.glob(f"{path_to['models']}/**/*"))}
-
-# python
-{platform.platform()}
-{sys.executable}
-{packages}
 """
 
     res = requests.post('https://hastebin.com/documents',
@@ -680,16 +694,19 @@ try:
     display(
         widgets.VBox([
             btn_download_checkpoint,
-            html_dialog,
             html_logger
         ])
     )
+
+    log(platform.platform())
+    log(f'Python {platform.python_version()}')
+    log('')
 
     # 기본 작업 경로 설정
     update_path_to(os.path.abspath(os.curdir))
 
     if IN_COLAB:
-        log('코랩 환경이 감지됐습니다')
+        log('현재 코랩을 사용하고 있습니다')
         os.makedirs('/usr/local/content', exist_ok=True)
         os.chdir('/usr/local/content')
 
@@ -759,8 +776,7 @@ except:
     _, ex_value, _ = sys.exc_info()
     report_url = generate_report()
 
-    log('******************************************', styles={'color':'red'})
-    log(f'오류가 발생했습니다, 아래 주소를 복사해 보고해주세요!\n{report_url}',
+    log(f'{ex_value}\n오류가 발생했습니다, 아래 주소를 복사해 보고해주세요!\n{report_url}',
         styles={
             'background-color': 'red',
             'font-weight': 'bold',
@@ -768,13 +784,3 @@ except:
             'line-height': '1.5em',
             'color': 'black'
         })
-    log('******************************************', styles={'color':'red'})
-    log(f'{ex_value}', styles={'color':'red'})
-
-    dialog(
-        f'''
-        <p>오류가 발생했습니다, 아래 주소를 복사해 보고해주세요!</p>
-        <p><strong>{generate_report()}</strong></p>
-        ''',
-        preset='error'
-    )
