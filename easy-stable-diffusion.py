@@ -532,7 +532,7 @@ def patch_webui_repository() -> None:
     # 단부루 태그 자동 완성 스크립트
     # https://github.com/DominikDoom/a1111-sd-webui-tagcomplete
     # TODO: 스파게티 코드 수정...
-    log('딥단부루 태그 자동 완성 스크립트를 설치합니다')
+    log('단부루 태그 자동 완성 스크립트를 설치합니다')
     rmtree('temp', ignore_errors=True)
     os.makedirs('temp', exist_ok=True)
     execute('curl -sSL https://github.com/DominikDoom/a1111-sd-webui-tagcomplete/tarball/master | tar xzvf - -C temp --strip-components=1', shell=True)
