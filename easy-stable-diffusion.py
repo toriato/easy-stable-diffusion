@@ -1,5 +1,6 @@
 # @title
 # fmt: off
+from genericpath import isdir
 import os
 import sys
 import platform
@@ -9,10 +10,11 @@ import json
 import requests
 import torch
 from typing import Union, Callable, Tuple, List
-from subprocess import Popen, PIPE, STDOUT
+from subprocess import Popen, PIPE, STDOUT, call
 from distutils.spawn import find_executable
 from importlib.util import find_spec
 from pathlib import Path
+from os import makedirs
 from shutil import copy, copytree, rmtree
 from IPython.display import display
 from ipywidgets import widgets
@@ -184,12 +186,14 @@ def update_path_to(path_to_workspace: str) -> None:
     path_to['outputs'] = f"{path_to['workspace']}/outputs"
     path_to['models'] = f"{path_to['workspace']}/models"
     path_to['embeddings'] = f"{path_to['workspace']}/embeddings"
+    path_to['scripts'] = f"{path_to['workspace']}/scripts"
     path_to['styles_file'] = f"{path_to['workspace']}/styles.csv"
     path_to['ui_config_file'] = f"{path_to['workspace']}/ui-config.json"
     path_to['ui_settings_file'] = f"{path_to['workspace']}/config.json"
 
-    os.makedirs(path_to['workspace'], exist_ok=True)
-    os.makedirs(path_to['embeddings'], exist_ok=True)
+    makedirs(path_to['workspace'], exist_ok=True)
+    makedirs(path_to['embeddings'], exist_ok=True)
+    makedirs(path_to['scripts'], exist_ok=True)
 
 
 # ==============================
@@ -206,16 +210,16 @@ CHECKPOINTS = {
             {
                 # 'url': 'https://anonfiles.com/n6h3Q0Bdyf',
                 'url': 'https://cloudflare-ipfs.com/ipfs/bafybeicpamreyp2bsocyk3hpxr7ixb2g2rnrequub3j2ahrkdxbvfbvjc4/model.ckpt',
-                'args': ['-o', 'nai-animefull-final-pruned.ckpt']
+                'target': 'nai-animefull-final-pruned.ckpt',
             },
             {
                 # 'url': 'https://anonfiles.com/66c1QcB7y6',
                 'url': 'https://cloudflare-ipfs.com/ipfs/bafybeiccldswdd3wvg57jhclcq53lvsc6gizasiblwayvhlv6eq4wow7wu/animevae.pt',
-                'args': ['-o', 'nai-animefull-final-pruned.vae.pt']
+                'target': 'nai-animefull-final-pruned.vae.pt'
             },
             {
                 'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-final-pruned.yaml',
-                'args': ['-o', 'nai-animefull-final-pruned.yaml']
+                'target': 'nai-animefull-final-pruned.yaml'
             }
         ]
     },
@@ -223,15 +227,15 @@ CHECKPOINTS = {
         'files': [
             {
                 'url': 'https://anonfiles.com/8fm7QdB1y9',
-                'args': ['-o', 'nai-animefull-latest.ckpt']
+                'target': 'nai-animefull-latest.ckpt'
             },
             {
                 'url': 'https://anonfiles.com/66c1QcB7y6',
-                'args': ['-o', 'nai-animefull-latest.vae.pt']
+                'target': 'nai-animefull-latest.vae.pt'
             },
             {
                 'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-latest.yaml',
-                'args': ['-o', 'nai-animefull-latest.yaml']
+                'target': 'nai-animefull-latest.yaml'
             }
         ]
     },
@@ -409,6 +413,144 @@ REPO_COMMIT = '' # @param {type:"string"}
 # 레포지토리에 적용할 풀 리퀘스트
 REPO_PULL_REQUESTS = []
 
+# 추가로 받을 스크립트
+ADDITIONAL_SCRIPTS = [
+    # 태그 자동 완성 유저스크립트
+    # https://arca.live/b/aiart/60536925/272094058
+    lambda: download(
+        'https://greasyfork.org/scripts/452929-webui-%ED%83%9C%EA%B7%B8-%EC%9E%90%EB%8F%99%EC%99%84%EC%84%B1/code/WebUI%20%ED%83%9C%EA%B7%B8%20%EC%9E%90%EB%8F%99%EC%99%84%EC%84%B1.user.js',
+        'repo/javascript'
+    ),
+
+    # Advanced prompt matrix
+    # https://github.com/GRMrGecko/stable-diffusion-webui-automatic/blob/advanced_matrix/scripts/advanced_prompt_matrix.py
+    lambda: download(
+        'https://raw.githubusercontent.com/GRMrGecko/stable-diffusion-webui-automatic/advanced_matrix/scripts/advanced_prompt_matrix.py',
+        'repo/scripts'
+    ),
+
+    # Dynamic Prompt Templates
+    # https://github.com/adieyal/sd-dynamic-prompting
+    lambda: download(
+        'https://github.com/adieyal/sd-dynamic-prompting/raw/main/dynamic_prompting.py',
+        'repo/scripts'
+    ),
+
+    # Wildcards
+    # https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts#wildcards
+    lambda: download(
+        'https://raw.githubusercontent.com/jtkelm2/stable-diffusion-webui-1/master/scripts/wildcards.py',
+        'repo/scripts'
+    ),
+
+    # txt2mask
+    # https://github.com/ThereforeGames/txt2mask
+    [
+        lambda: rmtree('.tmp', ignore_errors=True),
+        lambda: makedirs('.tmp', exist_ok=True),
+        lambda: execute('curl -sSL https://github.com/ThereforeGames/txt2mask/tarball/master | tar xzvf - --strip-components=1 -C .tmp', shell=True),
+        lambda: rmtree('repo/repositories/clipseg', ignore_errors=True),
+        lambda: copytree('.tmp/repositories/clipseg', 'repo/repositories/clipseg'),
+        lambda: copy('.tmp/scripts/txt2mask.py', 'repo/scripts'),
+        lambda: rmtree('.tmp', ignore_errors=True),
+    ],
+
+    # Img2img Video
+    # https://github.com/memes-forever/Stable-diffusion-webui-video
+    [
+        lambda: download(
+            'https://raw.githubusercontent.com/memes-forever/Stable-diffusion-webui-video/main/videos.py',
+            'repo/scripts'
+        )
+    ],
+
+    # Seed Travel
+    # https://github.com/yownas/seed_travel
+    [
+        lambda: execute('pip', 'install', 'moviepy') if find_spec('moviepy') is None else None,
+        lambda: download(
+            'https://raw.githubusercontent.com/yownas/seed_travel/main/scripts/seed_travel.py',
+            'repo/scripts',
+        )
+    ],
+
+    # Animator
+    # https://github.com/Animator-Anon/Animator
+    lambda: download(
+        'https://raw.githubusercontent.com/Animator-Anon/Animator/main/animation.py',
+        'repo/scripts'
+    ),
+
+    # Alternate Noise Schedules
+    # https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts#alternate-noise-schedules
+    lambda: download(
+        'https://gist.githubusercontent.com/dfaker/f88aa62e3a14b559fe4e5f6b345db664/raw/791dabfa0ab26399aa2635bcbc1cf6267aa4ffc2/alternate_sampler_noise_schedules.py',
+        'repo/scripts'
+    ),
+
+    # Vid2Vid
+    # https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts#vid2vid
+    lambda: download(
+        'https://raw.githubusercontent.com/Filarius/stable-diffusion-webui/master/scripts/vid2vid.py',
+        'repo/scripts'
+    ),
+
+    # Shift Attention
+    # https://github.com/yownas/shift-attention
+    [
+        lambda: execute('pip', 'install', 'moviepy') if find_spec('moviepy') is None else None,
+        lambda: download(
+            'https://raw.githubusercontent.com/yownas/shift-attention/main/scripts/shift_attention.py',
+            'repo/scripts'
+        )
+    ],
+
+    # Loopback and Superimpose
+    # https://github.com/DiceOwl/StableDiffusionStuff
+    lambda: download(
+        'https://raw.githubusercontent.com/DiceOwl/StableDiffusionStuff/main/loopback_superimpose.py',
+        'repo/scripts'
+    ),
+
+    # Run n times
+    # https://gist.github.com/camenduru/9ec5f8141db9902e375967e93250860f
+    lambda: download(
+        'https://gist.githubusercontent.com/camenduru/9ec5f8141db9902e375967e93250860f/raw/b5c741676c5514105b9a1ea7dd438ca83802f16f/run_n_times.py',
+        'repo/scripts'
+    ),
+
+    # Advanced Loopback
+    # https://github.com/Extraltodeus/advanced-loopback-for-sd-webui
+    lambda: download(
+        'https://raw.githubusercontent.com/Extraltodeus/advanced-loopback-for-sd-webui/main/advanced_loopback.py',
+        'repo/scripts'
+    ),
+
+    # prompt-morph
+    # https://github.com/feffy380/prompt-morph
+    [
+        lambda: execute('pip', 'install', 'moviepy') if find_spec('moviepy') is None else None,
+        lambda: download(
+            'https://raw.githubusercontent.com/feffy380/prompt-morph/master/prompt_morph.py',
+            'repo/scripts'
+        ),
+    ],
+
+    # prompt interpolation
+    # https://github.com/EugeoSynthesisThirtyTwo/prompt-interpolation-script-for-sd-webui
+    lambda: download(
+        'https://raw.githubusercontent.com/EugeoSynthesisThirtyTwo/prompt-interpolation-script-for-sd-webui/main/prompt_interpolation.py',
+        'repo/scripts'
+    ),
+
+    # Asymmetric Tiling
+    # https://github.com/tjm35/asymmetric-tiling-sd-webui/
+    lambda: download(
+        'https://raw.githubusercontent.com/tjm35/asymmetric-tiling-sd-webui/main/asymmetric_tiling.py',
+        'repo/scritps'
+    )
+]
+
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 추가 인자***</font>
 ADDITIONAL_ARGS = '' # @param {type:"string"}
 
@@ -430,7 +572,7 @@ def prepare_aria2() -> None:
         return
 
     log('aria2 설정 파일이 존재하지 않습니다, 추천 값으로 설정합니다')
-    os.makedirs(os.path.dirname(path_to_config), exist_ok=True)
+    makedirs(os.path.dirname(path_to_config), exist_ok=True)
     with open(path_to_config, 'w') as f:
         f.write("""
 summary-interval=10
@@ -465,19 +607,24 @@ def mount_google_drive() -> None:
 # 파일 다운로드
 # ==============================
 def download(url: str, target='', args=[]):
-    dirname = os.path.dirname(target)
-    basename = os.path.basename(target)
+    if os.path.isdir(target) or target.endswith('/'):
+        dirname = target
+    else:
+        dirname = os.path.dirname(target)
+        basename = os.path.basename(target)
+
+        if '-o' not in args and not os.path.isdir(target):
+            args = ['-o', basename, *args]
 
     if dirname:
-        os.makedirs(dirname, exist_ok=True)
+        makedirs(dirname, exist_ok=True)
         if '-d' not in args:
             args = ['-d', dirname, *args]
 
-    if '-o' not in args and basename:
-        args = ['-o', basename, *args]
-
     if url.startswith('https://drive.google.com'):
-        log(f'구글 드라이브로부터 파일 받기를 시작합니다: {url}')
+        if find_spec('gdown') is None:
+            execute(['pip', 'install', 'gdown'])
+
         execute(['gdown', '-O', target, url])
         return
 
@@ -489,7 +636,7 @@ def download(url: str, target='', args=[]):
 
         url = matches[0]
 
-    log(f"파일 다운로드를 시작합니다: {url}")
+    prepare_aria2()
     execute(['aria2c', *args, url])
 
 def download_checkpoint(checkpoint: str) -> None:
@@ -604,21 +751,33 @@ def patch_webui_repository() -> None:
 
             f.write(json.dumps(configs, indent=4))
 
-    # 단부루 태그 자동 완성 스크립트
-    # https://github.com/DominikDoom/a1111-sd-webui-tagcomplete
-    # TODO: 스파게티 코드 수정...
-    log('단부루 태그 자동 완성 스크립트를 설치합니다')
-    rmtree('temp', ignore_errors=True)
-    os.makedirs('temp', exist_ok=True)
-    execute('curl -sSL https://github.com/DominikDoom/a1111-sd-webui-tagcomplete/tarball/master | tar xzvf - -C temp --strip-components=1', shell=True)
-    copy('temp/tagAutocomplete.js', 'repo/javascript')
-    rmtree('repo/tags', ignore_errors=True)
-    copytree('temp/tags', 'repo/tags')
-
-    # 풀 리퀘스트
+    # 풀 리퀘스트 적용
     if REPO_URL.startswith('https://github.com/AUTOMATIC1111/stable-diffusion-webui'):
         for number in REPO_PULL_REQUESTS:
             patch_webui_pull_request(number)
+
+    # 스크립트 다운로드
+    log('사용자 스크립트를 받습니다')
+    for job in ADDITIONAL_SCRIPTS:
+        if callable(job):
+            job()
+        elif isinstance(job, list):
+            for child_job in job:
+                child_job()
+
+    # 사용자 스크립트 심볼릭 생성
+    log('사용자 스크립트의 심볼릭 링크를 만듭니다')
+    for path in os.listdir(path_to['scripts']):
+        src = os.path.join(path_to['scripts'], path)
+        dst = os.path.join('repo/scripts', os.path.basename(path))
+
+        # 이미 파일이 존재한다면 기존 파일 삭제하기
+        if os.path.lexists(dst):
+            rmtree(dst) if os.path.isdir(dst) else os.remove(dst)
+
+        # 심볼릭 링크 생성
+        os.symlink(src, dst, target_is_directory=os.path.isdir(path))
+
 
 def setup_webui() -> None:
     need_clone = True
@@ -632,6 +791,7 @@ def setup_webui() -> None:
             # https://stackoverflow.com/a/12096327
             execute(['git', 'add', '--ignore-errors', '-f', 'repositories'], cwd='repo')
             execute(['git', 'checkout', '.'], cwd='repo')
+            execute(['git', 'reset', '--hard'], cwd='repo')
             execute(['git', 'pull'], cwd='repo')
 
             need_clone = False
@@ -770,7 +930,7 @@ try:
 
     if IN_COLAB:
         log('현재 코랩을 사용하고 있습니다')
-        os.makedirs('/usr/local/content', exist_ok=True)
+        makedirs('/usr/local/content', exist_ok=True)
         os.chdir('/usr/local/content')
 
         assert torch.cuda.is_available(), 'GPU 가 없습니다, 런타임 유형이 잘못됐거나 GPU 할당량이 초과된 것 같습니다'
@@ -778,12 +938,6 @@ try:
         # 구글 드라이브 마운팅 시도
         if USE_GOOGLE_DRIVE:
             mount_google_drive()
-
-    # 구동 필수 패키지 준비
-    prepare_aria2()
-
-    if find_spec('gdown') is None:
-        execute(['pip', 'install', 'gdown'])
 
     # 체크포인트가 없을 시 다운로드
     if not has_checkpoint():
@@ -840,8 +994,11 @@ try:
             log('ngrok 사용에 필요한 패키지가 존재하지 않습니다, 설치를 시작합니다')
             execute(['pip', 'install', 'pyngrok'])
 
+    if ADDITIONAL_ARGS != '':
+        args.append(ADDITIONAL_ARGS)
+
     start_webui(
-        [ *args, *ADDITIONAL_ARGS ], 
+        args, 
         env={
             'COMMANDLINE_ARGS': ' '.join(cmd_args)
         }
