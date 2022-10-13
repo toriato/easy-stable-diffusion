@@ -1,9 +1,2 @@
 .ipynb_checkpoints/
 .venv/
-packages/
-outputs/
-models/
-embeddings/
-scripts/
-*.json
-*.ipynb
