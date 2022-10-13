@@ -85,6 +85,11 @@ def render_log() -> None:
     html_logger.value = html
 
 def log(msg, styles={}, newline=True, block_index: int=None) -> None:
+    # 기록할 내용이 ngrok API 키와 일치한다면 숨기기
+    # TODO: 더 나은 문자열 검사, 원치 않은 내용이 가려질 수도 있음
+    if NGROK_API_KEY != '' and msg == NGROK_API_KEY:
+        msg = '**REDACTED**'
+
     if newline:
         msg += '\n'
 
@@ -372,7 +377,7 @@ USE_GOOGLE_DRIVE = True  # @param {type:"boolean"}
 
 # @markdown ### <font color="orange">***구글 드라이브 작업 디렉터리 경로***</font>
 # @markdown 임베딩, 모델, 결과, 설정 등 영구적으로 보관될 파일이 저장될 디렉터리의 경로
-PATH_TO_GOOGLE_DRIVE = 'SD'  # @param {type:"string"}
+PATH_TO_GOOGLE_DRIVE = 'SD' # @param {type:"string"}
 
 # @markdown ### <font color="orange">***xformers 를 사용할지?***</font>
 # @markdown - <font color="green">장점</font>: 켜두면 10-15% 정도의 성능 향상을 *보일 수도 있음*
@@ -385,6 +390,22 @@ USE_XFORMERS = True  # @param {type:"boolean"}
 # @markdown - <font color="red">단점</font>: 켜두면 준비 시간이 조금 느려질 수 있음
 USE_DEEPDANBOORU = True  # @param {type:"boolean"}
 
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Graido 인증 정보***</font>
+# @markdown Gradio 접속 시 사용할 사용자, 비밀번호 정보
+# @markdown <br>`GRADIO_USERNAME`에 `user1:pass1,user2,pass2` 형태를 입력하면 여러 사용자 등록 가능
+GRADIO_USERNAME = '' # @param {type:"string"}
+GRADIO_PASSWORD = '' # @param {type:"string"}
+
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***ngrok API 키***</font>
+# @markdown [API 키 만들기](https://dashboard.ngrok.com/get-started/your-authtoken)
+NGROK_API_KEY = '' # @param {type:"string"}
+
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 주소***</font>
+REPO_URL = 'https://github.com/AUTOMATIC1111/stable-diffusion-webui.git' # @param {type:"string"}
+
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 추가 인자***</font>
+ADDITIONAL_ARGS = '' # @param {type:"string"}
+
 # 현재 코랩 환경에서 구동 중인지?
 IN_COLAB = find_spec('google.colab') is not None
 
@@ -393,12 +414,18 @@ IN_COLAB = find_spec('google.colab') is not None
 # 패키지 준비
 # ==============================
 def prepare_aria2() -> None:
-    if find_executable('aria2') is None:
+    if find_executable('aria2c') is None:
+        log('aria2c 명령어가 존재하지 않습니다, 설치를 시작합니다')
         execute(['sudo', 'apt', 'install', '-y', 'aria2'])
 
     # 설정 파일 만들기
-    os.makedirs(os.path.join(Path.home(), '.aria2'), exist_ok=True)
-    with open(Path.joinpath(Path.home(), '.aria2', 'aria2.conf'), "w") as f:
+    path_to_config = os.path.join(Path.home(), '.aria2', 'aria2.conf')
+    if os.path.isfile(path_to_config):
+        return
+
+    log('aria2 설정 파일이 존재하지 않습니다, 추천 값으로 설정합니다')
+    os.makedirs(os.path.dirname(path_to_config), exist_ok=True)
+    with open(path_to_config, 'w') as f:
         f.write("""
 summary-interval=10
 allow-overwrite=true
@@ -419,7 +446,7 @@ seed-time=0
 # 구글 드라이브 동기화
 # ==============================
 def mount_google_drive() -> None:
-    log('구글 드라이브 마운트를 시도합니다')
+    log('구글 드라이브 마운트를 시작합니다')
 
     from google.colab import drive
     drive.mount('/content/drive', force_remount=True)
@@ -456,7 +483,7 @@ def download(url: str, target='', args=[]):
 
         url = matches[0]
 
-    log(f"파일 받기를 시도합니다: {url}")
+    log(f"파일 다운로드를 시작합니다: {url}")
     execute(['aria2c', *args, url])
 
 def download_checkpoint(checkpoint: str) -> None:
@@ -487,6 +514,17 @@ def has_checkpoint() -> bool:
 # ==============================
 # WebUI 레포지토리 및 종속 패키지 설치
 # ==============================
+def patch_webui_pull_request(number) -> None:
+    res = requests.get(f'https://api.github.com/repos/AUTOMATIC1111/stable-diffusion-webui/pulls/{number}')
+    payload = res.json()
+
+    if payload['state'] == 'open':
+        log(f"풀 리퀘스트 적용을 시도합니다: #{number} {payload['title']}")
+        execute(f"curl -sSL {payload['patch_url']} | git apply", 
+            throw=False,
+            cwd='repo'
+        )
+
 def patch_webui_repository() -> None:
     # 모델 용량이 너무 커서 코랩 메모리 할당량을 초과하면 프로세스를 강제로 초기화됨
     # 이를 해결하기 위해선 모델 맵핑 위치를 VRAM으로 변경해줘야함
@@ -541,7 +579,6 @@ def patch_webui_repository() -> None:
             f.write(replaced_code)
 
     # 기본 설정 파일 (config.json)
-    # TODO: 이후 새 설정 값이 정상적으로 추가되는지 확인 필요함
     if not os.path.isfile(path_to['ui_config_file']):
         log('UI 설정 파일이 존재하지 않습니다, 추천 값으로 새로 생성합니다')
 
@@ -568,6 +605,13 @@ def patch_webui_repository() -> None:
     rmtree('repo/tags', ignore_errors=True)
     copytree('temp/tags', 'repo/tags')
 
+    # 풀 리퀘스트
+    if REPO_URL.startswith('https://github.com/AUTOMATIC1111/stable-diffusion-webui'):
+        map(patch_webui_pull_request, [
+            2002
+        ])
+
+
 def setup_webui() -> None:
     need_clone = True
 
@@ -589,7 +633,7 @@ def setup_webui() -> None:
     if need_clone:
         log('레포지토리를 가져옵니다')
         rmtree('repo', ignore_errors=True)
-        execute(['git', 'clone', 'https://github.com/AUTOMATIC1111/stable-diffusion-webui', 'repo'])
+        execute(['git', 'clone', REPO_URL, 'repo'])
 
     patch_webui_repository()
 
@@ -599,12 +643,12 @@ def setup_webui() -> None:
 
 def parse_webui_output(out: str) -> bool:
     # 하위 스크립트 실행 중 오류가 발생하면 전체 기록 표시하기
-    # TODO: 더 나은 오류 핸들링
+    # TODO: 더 나은 오류 핸들링, 잘못된 내용으로 트리거 될 수 있음
     if 'Traceback (most recent call last):' in out:
         html_logger.blocks[running_subprocess.block_index]['max_render_lines'] = 0
 
     # 외부 주소 출력되면 성공적으로 실행한 것으로 판단
-    matches = re.search('https://\d+\.gradio\.app', out)
+    matches = re.search('https?://(\d+\.gradio\.app|[0-9a-f-]+\.ngrok\.io)', out)
     if matches:
         log(f'성공적으로 웹UI를 실행했습니다, 아래 주소에 접속해주세요!\n{matches[0]}',
             styles={
@@ -664,6 +708,11 @@ CHECKPOINT: {CHECKPOINT}
 USE_GOOGLE_DRIVE: {USE_GOOGLE_DRIVE}
 PATH_TO_GOOGLE_DRIVE: {PATH_TO_GOOGLE_DRIVE}
 USE_DEEPDANBOORU: {USE_DEEPDANBOORU}
+GRADIO_USERNAME: {GRADIO_USERNAME != ''}
+GRADIO_PASSWORD: {GRADIO_PASSWORD != ''}
+NGROK_API_KEY: {NGROK_API_KEY != ''}
+REPO_URL: {REPO_URL}
+ADDITIONAL_ARGS: {ADDITIONAL_ARGS}
 
 # paths
 {format_list(path_to)}
@@ -731,9 +780,6 @@ try:
 
     # WebUI 실행
     args = [
-        '--share',
-        '--gradio-debug',
-
         # 동적 경로들
         f"--ckpt-dir={path_to['models']}/Stable-diffusion",
         f"--embeddings-dir={path_to['embeddings']}",
@@ -756,16 +802,36 @@ try:
 
     if USE_XFORMERS:
         if IN_COLAB and find_spec('xformers') is None:
-            log('미리 컴파일된 파일로부터 xformers 설치를 시도합니다')
+            log('xformers 패키지가 존재하지 않습니다, 미리 컴파일된 파일로부터 설치를 시작합니다')
             download('https://github.com/toriato/easy-stable-diffusion/releases/download/xformers/xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl')
             execute(['pip', 'install', 'xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl'])
 
-        cmd_args = [*cmd_args, '--xformers']
+        cmd_args.append('--xformers')
 
     if USE_DEEPDANBOORU:
-        cmd_args = [*cmd_args, '--deepdanbooru']
+        cmd_args.append('--deepdanbooru')
 
-    start_webui(args, env={'COMMANDLINE_ARGS': ' '.join(cmd_args)})
+    if NGROK_API_KEY == '':
+        log('Gradio 터널을 사용합니다')
+        args += ['--share', '--gradio-debug']
+
+        # Gradio 인증 정보
+        if GRADIO_USERNAME != '':
+            args.append('--gradio-auth=' + GRADIO_USERNAME + ('' if GRADIO_PASSWORD == '' else ':' + GRADIO_PASSWORD))
+    else:
+        log('ngrok 터널을 사용합니다')
+        args.append(f'--ngrok={NGROK_API_KEY}')
+
+        if find_spec('pyngrok') is None:
+            log('ngrok 사용에 필요한 패키지가 존재하지 않습니다, 설치를 시작합니다')
+            execute(['pip', 'install', 'pyngrok'])
+
+    start_webui(
+        [ *args, *ADDITIONAL_ARGS ], 
+        env={
+            'COMMANDLINE_ARGS': ' '.join(cmd_args)
+        }
+    )
 
 # ^c 종료 무시하기
 except KeyboardInterrupt:
