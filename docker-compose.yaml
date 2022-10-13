@@ -3,7 +3,8 @@ services:
   jupyter:
     image: aeon/jupyter
     build: '.'
-    working_dir: /content
+    working_dir: /workspace
+    entrypoint: [ 'python', '/easy-stable-diffusion.py' ]
     environment:
       - NVIDIA_DISABLE_REQUIRE=1 # https://github.com/NVIDIA/nvidia-docker/issues/1409#issuecomment-778089784
     deploy:
@@ -11,7 +12,13 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: [ '0' ]
               capabilities: [ gpu ]
-    volumes: [ './entrypoint.sh:/entrypoint.sh', './:/content' ]
-    ports: [ '127.0.0.1:8888:8888/tcp' ]
+    ports: [ '127.0.0.1:8888:8888/tcp', '127.0.0.1:7860:7860/tcp' ]
+    volumes:
+      [
+        './easy-stable-diffusion.py:/easy-stable-diffusion.py',
+        './cache:/home/jupyter/.cache',
+        './workspace:/workspace',
+        './workspace/models/Stable-diffusion/vae.pt:/workspace/models/Stable-diffusion/animefull-final-pruned/model.vae.pt:ro',
+        './workspace/models/Stable-diffusion/vae.pt:/workspace/models/Stable-diffusion/animefull-latest/model.vae.pt:ro'
+      ]
