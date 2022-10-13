@@ -1,2 +1,8 @@
-.ipynb_checkpoints/
-.venv/
+.venv
+embeddings
+logs
+models
+outputs
+repo
+scripts
+*.json

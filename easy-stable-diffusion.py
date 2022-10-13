@@ -6,9 +6,7 @@ import platform
 import re
 import glob
 import json
-from tkinter import E
 import requests
-import torch
 from typing import Union, Callable, Tuple, List
 from subprocess import Popen, PIPE, STDOUT
 from distutils.spawn import find_executable
@@ -965,6 +963,7 @@ try:
         makedirs('/usr/local/content', exist_ok=True)
         os.chdir('/usr/local/content')
 
+        import torch
         assert torch.cuda.is_available(), 'GPU 가 없습니다, 런타임 유형이 잘못됐거나 GPU 할당량이 초과된 것 같습니다'
 
         # 구글 드라이브 마운팅 시도
@@ -1001,12 +1000,15 @@ try:
     cmd_args = [ '--skip-torch-cuda-test' ]
 
     if USE_XFORMERS:
-        if has_python_package('xformers') is not None:
+        if has_python_package('xformers'):
             cmd_args.append('--xformers')
+
         elif IN_COLAB:
             log('xformers 패키지가 존재하지 않습니다, xformers 를 미리 컴파일된 파일로부터 설치를 시작합니다')
             download('https://github.com/toriato/easy-stable-diffusion/releases/download/xformers/xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl')
             execute(['pip', 'install', 'xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl'])
+            cmd_args.append('--xformers')
+
         else:
             log('xformers 패키지가 존재하지 않습니다, --xformers 인자를 사용하지 않습니다')
 
