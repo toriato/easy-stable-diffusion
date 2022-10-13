@@ -163,7 +163,7 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
         html_logger.blocks[block_index]['fold'] = True
 
     else:
-        html_logger.blocks[block_index]['summary_style']['color'] = 'red'
+        html_logger.blocks[block_index]['summary_styles']['color'] = 'red'
         html_logger.blocks[block_index]['max_render_lines'] = 0
 
         if throw:
@@ -403,6 +403,12 @@ NGROK_API_KEY = '' # @param {type:"string"}
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 주소***</font>
 REPO_URL = 'https://github.com/AUTOMATIC1111/stable-diffusion-webui.git' # @param {type:"string"}
 
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 커밋 해시***</font>
+REPO_COMMIT = '' # @param {type:"string"}
+
+# 레포지토리에 적용할 풀 리퀘스트
+REPO_PULL_REQUESTS = []
+
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 추가 인자***</font>
 ADDITIONAL_ARGS = '' # @param {type:"string"}
 
@@ -514,16 +520,20 @@ def has_checkpoint() -> bool:
 # ==============================
 # WebUI 레포지토리 및 종속 패키지 설치
 # ==============================
-def patch_webui_pull_request(number) -> None:
+def patch_webui_pull_request(number: int) -> None:
     res = requests.get(f'https://api.github.com/repos/AUTOMATIC1111/stable-diffusion-webui/pulls/{number}')
     payload = res.json()
 
-    if payload['state'] == 'open':
-        log(f"풀 리퀘스트 적용을 시도합니다: #{number} {payload['title']}")
-        execute(f"curl -sSL {payload['patch_url']} | git apply", 
-            throw=False,
-            cwd='repo'
-        )
+    log(f"풀 리퀘스트 적용을 시도합니다: #{number} {payload['title']}")
+    if payload['state'] != 'open':
+        log(f'닫힌 풀 리퀘스트이므로 넘깁니다')
+        return
+
+    execute(f"curl -sSL {payload['patch_url']} | git apply", 
+        throw=False,
+        shell=True,
+        cwd='repo'
+    )
 
 def patch_webui_repository() -> None:
     # 모델 용량이 너무 커서 코랩 메모리 할당량을 초과하면 프로세스를 강제로 초기화됨
@@ -607,10 +617,8 @@ def patch_webui_repository() -> None:
 
     # 풀 리퀘스트
     if REPO_URL.startswith('https://github.com/AUTOMATIC1111/stable-diffusion-webui'):
-        map(patch_webui_pull_request, [
-            2002
-        ])
-
+        for number in REPO_PULL_REQUESTS:
+            patch_webui_pull_request(number)
 
 def setup_webui() -> None:
     need_clone = True
@@ -625,6 +633,7 @@ def setup_webui() -> None:
             execute(['git', 'add', '--ignore-errors', '-f', 'repositories'], cwd='repo')
             execute(['git', 'checkout', '.'], cwd='repo')
             execute(['git', 'pull'], cwd='repo')
+
             need_clone = False
 
         except:
@@ -634,6 +643,11 @@ def setup_webui() -> None:
         log('레포지토리를 가져옵니다')
         rmtree('repo', ignore_errors=True)
         execute(['git', 'clone', REPO_URL, 'repo'])
+
+    # 특정 커밋이 지정됐다면 체크아웃하기
+    if REPO_COMMIT != '':
+        log(f'레포지토리를 {REPO_COMMIT} 커밋으로 되돌립니다')
+        execute(['git', 'checkout', REPO_COMMIT])
 
     patch_webui_repository()
 
