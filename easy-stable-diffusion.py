@@ -773,7 +773,7 @@ def patch_webui_repository() -> None:
 
         # 이미 파일이 존재한다면 기존 파일 삭제하기
         if os.path.lexists(dst):
-            rmtree(dst) if os.path.isdir(dst) else os.remove(dst)
+            rmtree(dst) if os.path.isdir(dst) and not os.path.islink(dst) else os.remove(dst)
 
         # 심볼릭 링크 생성
         os.symlink(src, dst, target_is_directory=os.path.isdir(path))
