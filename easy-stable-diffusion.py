@@ -476,7 +476,7 @@ ADDITIONAL_SCRIPTS = [
     # Seed Travel
     # https://github.com/yownas/seed_travel
     [
-        lambda: execute('pip', 'install', 'moviepy') if find_spec('moviepy') is None else None,
+        lambda: execute(['pip', 'install', 'moviepy']) if find_spec('moviepy') is None else None,
         lambda: download(
             'https://raw.githubusercontent.com/yownas/seed_travel/main/scripts/seed_travel.py',
             'repo/scripts',
@@ -507,7 +507,7 @@ ADDITIONAL_SCRIPTS = [
     # Shift Attention
     # https://github.com/yownas/shift-attention
     [
-        lambda: execute('pip', 'install', 'moviepy') if find_spec('moviepy') is None else None,
+        lambda: execute(['pip', 'install', 'moviepy']) if find_spec('moviepy') is None else None,
         lambda: download(
             'https://raw.githubusercontent.com/yownas/shift-attention/main/scripts/shift_attention.py',
             'repo/scripts'
@@ -538,7 +538,7 @@ ADDITIONAL_SCRIPTS = [
     # prompt-morph
     # https://github.com/feffy380/prompt-morph
     [
-        lambda: execute('pip', 'install', 'moviepy') if find_spec('moviepy') is None else None,
+        lambda: execute(['pip', 'install', 'moviepy']) if find_spec('moviepy') is None else None,
         lambda: download(
             'https://raw.githubusercontent.com/feffy380/prompt-morph/master/prompt_morph.py',
             'repo/scripts'
@@ -788,7 +788,6 @@ def patch_webui_repository() -> None:
 
         # 심볼릭 링크 생성
         os.symlink(src, dst, target_is_directory=os.path.isdir(path))
-
 
 def setup_webui() -> None:
     need_clone = True
