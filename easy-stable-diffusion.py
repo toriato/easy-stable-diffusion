@@ -94,7 +94,7 @@ def log(msg: str, styles={}, newline=True, block_index: int=None) -> None:
             block_index = append_log_block(summary=msg, summary_styles=styles)
         else:
             LOG_WIDGET.blocks[block_index]['lines'].append(msg)
-        
+
         render_log()
 
     else:
@@ -208,9 +208,9 @@ def update_path_to(path_to_workspace: str) -> None:
 
     LOG_FILE = open(log_path, 'a')
 
-def has_python_package(pkg: str, need_origin=True) -> bool:
+def has_python_package(pkg: str, check_loader=True) -> bool:
     spec = find_spec(pkg)
-    return spec and (need_origin and spec.origin is not None)
+    return spec and (check_loader and spec.loader is not None)
 
 # ==============================
 # 사용자 설정
