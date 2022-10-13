@@ -6,6 +6,7 @@ import platform
 import re
 import glob
 import json
+from tkinter import E
 import requests
 import torch
 from typing import Union, Callable, Tuple, List
@@ -16,14 +17,9 @@ from pathlib import Path
 from os import makedirs
 from shutil import copy, copytree, move, rmtree
 from datetime import datetime
-from IPython.display import display
-from ipywidgets import widgets
 
 def format_styles(styles: dict) -> str:
     return ';'.join(map(lambda kv: ':'.join(kv), styles.items()))
-
-html_logger = widgets.HTML()
-html_logger.blocks = []
 
 def append_log_block(summary: str='', lines: List[str]=None,
                         summary_styles: dict=None, line_styles: dict=None,
@@ -34,8 +30,8 @@ def append_log_block(summary: str='', lines: List[str]=None,
     if block['summary_styles'] is None: block['summary_styles'] = {}
     if block['line_styles'] is None: block['line_styles'] = {}
 
-    html_logger.blocks.append(block)
-    return len(html_logger.blocks) - 1
+    LOG_WIDGET.blocks.append(block)
+    return len(LOG_WIDGET.blocks) - 1
 
 def render_log() -> None:
     styles = {
@@ -52,7 +48,7 @@ def render_log() -> None:
 
     html = f'<div style="{format_styles(styles)}">'
 
-    for block in html_logger.blocks:
+    for block in LOG_WIDGET.blocks:
         summary_styles = {
             'display': 'inline-block',
             'cursor': 'pointer' if len(block['lines']) > 0 else 'inherit',
@@ -75,7 +71,7 @@ def render_log() -> None:
 
     html += '</div>'
 
-    html_logger.value = html
+    LOG_WIDGET.value = html
 
 def log(msg: str, styles={}, newline=True, block_index: int=None) -> None:
     # 기록할 내용이 ngrok API 키와 일치한다면 숨기기
@@ -93,12 +89,16 @@ def log(msg: str, styles={}, newline=True, block_index: int=None) -> None:
         LOG_FILE.write(msg)
         LOG_FILE.flush()
 
-    if block_index is None:
-        block_index = append_log_block(summary=msg, summary_styles=styles)
-    else:
-        html_logger.blocks[block_index]['lines'].append(msg)
+    if LOG_WIDGET:
+        if block_index is None:
+            block_index = append_log_block(summary=msg, summary_styles=styles)
+        else:
+            LOG_WIDGET.blocks[block_index]['lines'].append(msg)
+        
+        render_log()
 
-    render_log()
+    else:
+        print(msg, end='')
 
 
 # ==============================
@@ -111,19 +111,8 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
     global running_subprocess
 
     # 이미 서브 프로세스가 존재한다면 예외 처리하기
-    if running_subprocess:
+    if running_subprocess and running_subprocess.poll() is None:
         raise Exception('이미 다른 하위 프로세스가 실행되고 있습니다')
-
-    block_index = append_log_block(
-        summary=f"=> {args if isinstance(args, str) else ' '.join(args)}\n",
-        summary_styles={
-            'color': 'yellow',
-        },
-        line_styles={
-            'padding-left': '1.5em',
-            'color': 'gray',
-        }
-    )
 
     # 서브 프로세스 만들기
     running_subprocess = Popen(
@@ -134,7 +123,19 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
         **kwargs,
     )
     running_subprocess.output = ''
-    running_subprocess.block_index = block_index
+    running_subprocess.block_index = None
+
+    if LOG_WIDGET:
+        running_subprocess.block_index = append_log_block(
+            summary=f"=> {args if isinstance(args, str) else ' '.join(args)}\n",
+            summary_styles={
+                'color': 'yellow',
+            },
+            line_styles={
+                'padding-left': '1.5em',
+                'color': 'gray',
+            }
+        )
 
     # 프로세스 출력 위젯에 리다이렉션하기
     while running_subprocess.poll() is None:
@@ -148,26 +149,29 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
 
         # 파서가 없거나 또는 파서 실행 후 반환 값이 거짓이라면 로깅하기
         if (not parser or not parser(out)) and logging:
-            log(out, block_index=block_index, newline=False)
+            log(
+                out,
+                block_index=running_subprocess.block_index,
+                newline=False
+            )
 
     # 변수 정리하기
     output = running_subprocess.output
     returncode = running_subprocess.poll()
-    running_subprocess = None
 
-    # html_logger.blocks[block_index]['summary'] += f' -> {returncode}'
+    # 로그 블록 업데이트
+    if LOG_WIDGET:
+        if returncode == 0:
+            LOG_WIDGET.blocks[running_subprocess.block_index]['summary_styles']['color'] = 'green'
+            LOG_WIDGET.blocks[running_subprocess.block_index]['fold'] = True
 
-    # 반환 코드가 정상이 아니라면
-    if returncode == 0:
-        html_logger.blocks[block_index]['summary_styles']['color'] = 'green'
-        html_logger.blocks[block_index]['fold'] = True
+        else:
+            LOG_WIDGET.blocks[running_subprocess.block_index]['summary_styles']['color'] = 'red'
+            LOG_WIDGET.blocks[running_subprocess.block_index]['max_render_lines'] = 0
 
-    else:
-        html_logger.blocks[block_index]['summary_styles']['color'] = 'red'
-        html_logger.blocks[block_index]['max_render_lines'] = 0
-
-        if throw:
-            raise Exception(f'프로세스가 {returncode} 코드를 반환했습니다')
+    # 오류 코드를 반환했다면
+    if returncode != 0 and throw:
+        raise Exception(f'프로세스가 {returncode} 코드를 반환했습니다')
 
     return output, returncode
 
@@ -204,6 +208,9 @@ def update_path_to(path_to_workspace: str) -> None:
 
     LOG_FILE = open(log_path, 'a')
 
+def has_python_package(pkg: str, need_origin=True) -> bool:
+    spec = find_spec(pkg)
+    return spec and (need_origin and spec.origin is not None)
 
 # ==============================
 # 사용자 설정
@@ -382,7 +389,6 @@ CHECKPOINTS = {
 }
 
 # @markdown ### <font color="orange">***체크포인트 모델 선택***</font>
-# @markdown - [모델 별 설명 및 다운로드 주소](https://rentry.org/sdmodels)
 CHECKPOINT = 'NAI - animefull-final-pruned' # @param ['NAI - animefull-final-pruned', 'NAI - animefull-latest', 'Waifu Diffusion 1.3', 'Trinart Stable Diffusion v2 60,000 Steps', 'Trinart Stable Diffusion v2 95,000 Steps', 'Trinart Stable Diffusion v2 115,000 Steps', 'Furry (epoch 4)', 'Zack3D Kinky v1', 'Pokemon', 'Dreambooth - Hiten'] {allow-input: true}
 
 # @markdown ### <font color="orange">***구글 드라이브 동기화를 사용할지?***</font>
@@ -476,7 +482,7 @@ ADDITIONAL_SCRIPTS = [
     # Seed Travel
     # https://github.com/yownas/seed_travel
     [
-        lambda: execute(['pip', 'install', 'moviepy']) if find_spec('moviepy') is None else None,
+        lambda: execute(['pip', 'install', 'moviepy']) if has_python_package('moviepy') is None else None,
         lambda: download(
             'https://raw.githubusercontent.com/yownas/seed_travel/main/scripts/seed_travel.py',
             'repo/scripts',
@@ -507,7 +513,7 @@ ADDITIONAL_SCRIPTS = [
     # Shift Attention
     # https://github.com/yownas/shift-attention
     [
-        lambda: execute(['pip', 'install', 'moviepy']) if find_spec('moviepy') is None else None,
+        lambda: execute(['pip', 'install', 'moviepy']) if has_python_package('moviepy') is None else None,
         lambda: download(
             'https://raw.githubusercontent.com/yownas/shift-attention/main/scripts/shift_attention.py',
             'repo/scripts'
@@ -538,7 +544,7 @@ ADDITIONAL_SCRIPTS = [
     # prompt-morph
     # https://github.com/feffy380/prompt-morph
     [
-        lambda: execute(['pip', 'install', 'moviepy']) if find_spec('moviepy') is None else None,
+        lambda: execute(['pip', 'install', 'moviepy']) if has_python_package('moviepy') is None else None,
         lambda: download(
             'https://raw.githubusercontent.com/feffy380/prompt-morph/master/prompt_morph.py',
             'repo/scripts'
@@ -566,8 +572,11 @@ ADDITIONAL_ARGS = '' # @param {type:"string"}
 # 로그 파일
 LOG_FILE = None
 
+# 로그 HTML 위젯
+LOG_WIDGET = None
+
 # 현재 코랩 환경에서 구동 중인지?
-IN_COLAB = find_spec('google') and find_spec('google.colab')
+IN_COLAB = has_python_package('google') and has_python_package('google.colab')
 
 # ==============================
 # 패키지 준비
@@ -633,7 +642,7 @@ def download(url: str, target='', args=[]):
             args = ['-d', dirname, *args]
 
     if url.startswith('https://drive.google.com'):
-        if find_spec('gdown') is None:
+        if has_python_package('gdown') is None:
             execute(['pip', 'install', 'gdown'])
 
         execute(['gdown', '-O', target, url])
@@ -828,8 +837,8 @@ def setup_webui() -> None:
 def parse_webui_output(out: str) -> bool:
     # 하위 스크립트 실행 중 오류가 발생하면 전체 기록 표시하기
     # TODO: 더 나은 오류 핸들링, 잘못된 내용으로 트리거 될 수 있음
-    if 'Traceback (most recent call last):' in out:
-        html_logger.blocks[running_subprocess.block_index]['max_render_lines'] = 0
+    if LOG_WIDGET and 'Traceback (most recent call last):' in out:
+        LOG_WIDGET.blocks[running_subprocess.block_index]['max_render_lines'] = 0
 
     # 외부 주소 출력되면 성공적으로 실행한 것으로 판단
     matches = re.search('https?://(\d+\.gradio\.app|[0-9a-f-]+\.ngrok\.io)', out)
@@ -846,13 +855,12 @@ def parse_webui_output(out: str) -> bool:
 def start_webui(args: List[str]=[], env={}) -> None:
     global running_subprocess
 
-    if running_subprocess is not None:
+    # 이미 WebUI 가 실행 중인지 확인하기
+    # TODO: 비동기 없이 순차적으로 실행되는데 이 코드가 꼭 필요한지?
+    if running_subprocess and running_subprocess.poll() is None:
         if 'launch.py' in running_subprocess.args:
             log('이미 실행 중인 웹UI를 종료하고 다시 시작합니다')
             running_subprocess.kill()
-            running_subprocess = None
-
-        raise ('이미 다른 프로세스가 실행 중입니다, 잠시 후에 실행해주세요')
 
     execute(
         ['python', 'launch.py', *args],
@@ -926,17 +934,24 @@ try:
     # log(', '.join(map(lambda s:f"'{s}'", CHECKPOINTS.keys())))
 
     # 인터페이스 출력
-    btn_download_checkpoint = widgets.Button(description='체크포인트 받기')
-    btn_download_checkpoint.on_click(
-        lambda _: download_checkpoint(CHECKPOINT)
-    )
+    if 'ipykernel' in sys.modules:
+        from IPython.display import display
+        from ipywidgets import widgets
 
-    display(
-        widgets.VBox([
-            btn_download_checkpoint,
-            html_logger
-        ])
-    )
+        LOG_WIDGET = widgets.HTML()
+        LOG_WIDGET.blocks = []
+
+        btn_download_checkpoint = widgets.Button(description='체크포인트 받기')
+        btn_download_checkpoint.on_click(
+            lambda _: download_checkpoint(CHECKPOINT)
+        )
+
+        display(
+            widgets.VBox([
+                btn_download_checkpoint,
+                LOG_WIDGET
+            ])
+        )
 
     # 기본 작업 경로 설정
     update_path_to(os.path.abspath(os.curdir))
@@ -986,12 +1001,14 @@ try:
     cmd_args = [ '--skip-torch-cuda-test' ]
 
     if USE_XFORMERS:
-        if IN_COLAB and find_spec('xformers') is None:
-            log('xformers 패키지가 존재하지 않습니다, 미리 컴파일된 파일로부터 설치를 시작합니다')
+        if has_python_package('xformers') is not None:
+            cmd_args.append('--xformers')
+        elif IN_COLAB:
+            log('xformers 패키지가 존재하지 않습니다, xformers 를 미리 컴파일된 파일로부터 설치를 시작합니다')
             download('https://github.com/toriato/easy-stable-diffusion/releases/download/xformers/xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl')
             execute(['pip', 'install', 'xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl'])
-
-        cmd_args.append('--xformers')
+        else:
+            log('xformers 패키지가 존재하지 않습니다, --xformers 인자를 사용하지 않습니다')
 
     if USE_DEEPDANBOORU:
         cmd_args.append('--deepdanbooru')
@@ -1007,7 +1024,7 @@ try:
         log('ngrok 터널을 사용합니다')
         args.append(f'--ngrok={NGROK_API_KEY}')
 
-        if find_spec('pyngrok') is None:
+        if has_python_package('pyngrok') is None:
             log('ngrok 사용에 필요한 패키지가 존재하지 않습니다, 설치를 시작합니다')
             execute(['pip', 'install', 'pyngrok'])
 
@@ -1027,6 +1044,11 @@ except KeyboardInterrupt:
 
 # 오류 발생하면 보고서 생성하고 표시하기
 except:
+    # 일반 터미널이라면 파이썬 기본 핸들링 사용
+    if not LOG_WIDGET:
+        raise
+
+    # 오류 보고서 생성 후 로그에 추가하기
     _, ex_value, _ = sys.exc_info()
     report_url = generate_report()
 
