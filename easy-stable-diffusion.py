@@ -1,6 +1,5 @@
 # @title
 # fmt: off
-from genericpath import isdir
 import os
 import sys
 import platform
@@ -10,12 +9,13 @@ import json
 import requests
 import torch
 from typing import Union, Callable, Tuple, List
-from subprocess import Popen, PIPE, STDOUT, call
+from subprocess import Popen, PIPE, STDOUT
 from distutils.spawn import find_executable
 from importlib.util import find_spec
 from pathlib import Path
 from os import makedirs
-from shutil import copy, copytree, rmtree
+from shutil import copy, copytree, move, rmtree
+from datetime import datetime
 from IPython.display import display
 from ipywidgets import widgets
 
@@ -25,7 +25,7 @@ def format_styles(styles: dict) -> str:
 html_logger = widgets.HTML()
 html_logger.blocks = []
 
-def append_logger_block(summary: str='', lines: List[str]=None,
+def append_log_block(summary: str='', lines: List[str]=None,
                         summary_styles: dict=None, line_styles: dict=None,
                         fold=False, max_render_lines=5) -> int:
     block = {**locals()}
@@ -36,15 +36,6 @@ def append_logger_block(summary: str='', lines: List[str]=None,
 
     html_logger.blocks.append(block)
     return len(html_logger.blocks) - 1
-
-def render_log_as_plain() -> str:
-    msg = ''
-
-    for block in html_logger.blocks:
-        msg += block['summary']
-        msg += ''.join(map(lambda v: f'\t{v}', block['lines']))
-
-    return msg
 
 def render_log() -> None:
     styles = {
@@ -86,17 +77,24 @@ def render_log() -> None:
 
     html_logger.value = html
 
-def log(msg, styles={}, newline=True, block_index: int=None) -> None:
+def log(msg: str, styles={}, newline=True, block_index: int=None) -> None:
     # 기록할 내용이 ngrok API 키와 일치한다면 숨기기
     # TODO: 더 나은 문자열 검사, 원치 않은 내용이 가려질 수도 있음
-    if NGROK_API_KEY != '' and msg == NGROK_API_KEY:
-        msg = '**REDACTED**'
+    if NGROK_API_KEY != '':
+        msg = msg.replace(NGROK_API_KEY, '**REDACTED**')
 
     if newline:
         msg += '\n'
 
+    # 파일 기록 추가
+    if LOG_FILE:
+        if block_index and msg.endswith('\n'):
+            LOG_FILE.write('\t')
+        LOG_FILE.write(msg)
+        LOG_FILE.flush()
+
     if block_index is None:
-        block_index = append_logger_block(summary=msg, summary_styles=styles)
+        block_index = append_log_block(summary=msg, summary_styles=styles)
     else:
         html_logger.blocks[block_index]['lines'].append(msg)
 
@@ -116,7 +114,7 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
     if running_subprocess:
         raise Exception('이미 다른 하위 프로세스가 실행되고 있습니다')
 
-    block_index = append_logger_block(
+    block_index = append_log_block(
         summary=f"=> {args if isinstance(args, str) else ' '.join(args)}\n",
         summary_styles={
             'color': 'yellow',
@@ -180,13 +178,14 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
 path_to = {}
 
 def update_path_to(path_to_workspace: str) -> None:
-    log(f'작업 공간 경로를 "{path_to_workspace}" 으로 변경했습니다')
+    global LOG_FILE
 
     path_to['workspace'] = path_to_workspace
     path_to['outputs'] = f"{path_to['workspace']}/outputs"
     path_to['models'] = f"{path_to['workspace']}/models"
     path_to['embeddings'] = f"{path_to['workspace']}/embeddings"
     path_to['scripts'] = f"{path_to['workspace']}/scripts"
+    path_to['logs'] = f"{path_to['workspace']}/logs"
     path_to['styles_file'] = f"{path_to['workspace']}/styles.csv"
     path_to['ui_config_file'] = f"{path_to['workspace']}/ui-config.json"
     path_to['ui_settings_file'] = f"{path_to['workspace']}/config.json"
@@ -194,6 +193,16 @@ def update_path_to(path_to_workspace: str) -> None:
     makedirs(path_to['workspace'], exist_ok=True)
     makedirs(path_to['embeddings'], exist_ok=True)
     makedirs(path_to['scripts'], exist_ok=True)
+    makedirs(path_to['logs'], exist_ok=True)
+
+    log_path = os.path.join(path_to['logs'], datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S.log'))
+
+    # 기존 로그 파일이 존재한다면 옮기기
+    if LOG_FILE:
+        LOG_FILE.close()
+        move(LOG_FILE.name, log_path)
+
+    LOG_FILE = open(log_path, 'a')
 
 
 # ==============================
@@ -554,9 +563,11 @@ ADDITIONAL_SCRIPTS = [
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 추가 인자***</font>
 ADDITIONAL_ARGS = '' # @param {type:"string"}
 
-# 현재 코랩 환경에서 구동 중인지?
-IN_COLAB = find_spec('google.colab') is not None
+# 로그 파일
+LOG_FILE = None
 
+# 현재 코랩 환경에서 구동 중인지?
+IN_COLAB = find_spec('google') and find_spec('google.colab')
 
 # ==============================
 # 패키지 준비
@@ -829,7 +840,7 @@ def parse_webui_output(out: str) -> bool:
                 'background-color': 'green',
                 'font-weight': 'bold',
                 'font-size': '1.5em',
-                'line-height': '1.5em',
+                'line-height': '1em',
                 'color': 'black'
             })
 
@@ -863,17 +874,24 @@ def start_webui(args: List[str]=[], env={}) -> None:
 def generate_report() -> str:
     import traceback
 
-    ex_type, ex_value, ex_traceback = sys.exc_info()
-    traces = map(lambda v: f'{v[0]}#{v[1]}\n\t{v[2]}\n\t{v[3]}', traceback.extract_tb(ex_traceback))
-
     def format_list(value):
         if isinstance(value, dict):
             return '\n'.join(map(lambda kv: f'{kv[0]}: {kv[1]}', value.items()))
         else:
             return '\n'.join(value)
 
+    # 스택 가져오기
+    ex_type, ex_value, ex_traceback = sys.exc_info()
+    traces = map(lambda v: f'{v[0]}#{v[1]}\n\t{v[2]}\n\t{v[3]}', traceback.extract_tb(ex_traceback))
+
+    # 로그 가져오기
+    logs = ''
+    if LOG_FILE:
+        with open(LOG_FILE.name) as file:
+            logs = file.read()
+
     payload = f"""
-{render_log_as_plain()}
+{logs}
 # {ex_type.__name__}: {ex_value}
 {format_list(traces)}
 
@@ -921,12 +939,12 @@ try:
         ])
     )
 
+    # 기본 작업 경로 설정
+    update_path_to(os.path.abspath(os.curdir))
+
     log(platform.platform())
     log(f'Python {platform.python_version()}')
     log('')
-
-    # 기본 작업 경로 설정
-    update_path_to(os.path.abspath(os.curdir))
 
     if IN_COLAB:
         log('현재 코랩을 사용하고 있습니다')
@@ -1018,6 +1036,6 @@ except:
             'background-color': 'red',
             'font-weight': 'bold',
             'font-size': '1.5em',
-            'line-height': '1.5em',
+            'line-height': '1em',
             'color': 'black'
         })
