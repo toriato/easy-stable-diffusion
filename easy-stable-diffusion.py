@@ -487,7 +487,7 @@ USE_XFORMERS = True  # @param {type:"boolean"}
 # @markdown - <font color="red">단점</font>: 켜두면 준비 시간이 조금 느려질 수 있음
 USE_DEEPDANBOORU = True  # @param {type:"boolean"}
 
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Graido 인증 정보***</font>
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 인증 정보***</font>
 # @markdown Gradio 접속 시 사용할 사용자 아이디와 비밀번호
 # @markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
 # @markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> Gradio 터널을 비활성화함
