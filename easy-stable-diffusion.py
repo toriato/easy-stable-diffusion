@@ -172,7 +172,6 @@ def log_trace() -> None:
 
         # 기존 오류 메세지 업데이트
         LOG_WIDGET.blocks[block_index]['summary'] = '\n'.join([
-            ex_value,
             '오류가 발생했습니다, 아래 주소를 복사해 보고해주세요',
             f'<a target="_blank" href="{url}">{url}</a>',
         ])
@@ -477,14 +476,13 @@ USE_GOOGLE_DRIVE = True  # @param {type:"boolean"}
 PATH_TO_GOOGLE_DRIVE = 'SD' # @param {type:"string"}
 
 # @markdown ### <font color="orange">***xformers 를 사용할지?***</font>
-# @markdown - <font color="green">장점</font>: 켜두면 10-15% 정도의 성능 향상을 *보일 수도 있음*
-# @markdown - <font color="red">단점</font>: 켜두면 코랩을 제외한 환경에서 패키지를 새로 컴파일해야함
+# @markdown - <font color="green">장점</font>: 성능 향상
+# @markdown - <font color="red">단점</font>: 미리 빌드된 패키지가 지원하지 않는 환경에선 빌드할 필요가 있음
 USE_XFORMERS = True  # @param {type:"boolean"}
 
 # @markdown ### <font color="orange">***DeepDanbooru 를 사용할지?***</font>
-# @markdown IMG2IMG 에 올린 이미지의 프롬프트를 단부루 태그 형태로 예측해주는 기능
-# @markdown - <font color="green">장점</font>: 켜두면 10-15% 정도의 성능 향상을 *보일 수도 있음*
-# @markdown - <font color="red">단점</font>: 켜두면 준비 시간이 조금 느려질 수 있음
+# @markdown IMG2IMG 에 올린 이미지를 단부루 태그로 변환(예측)해 프롬프트로 추출해내는 기능
+# @markdown - <font color="red">단점</font>: 처음 실행할 때 추가 패키지를 받기 때문에 시간이 조금 더 걸림
 USE_DEEPDANBOORU = True  # @param {type:"boolean"}
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 인증 정보***</font>
