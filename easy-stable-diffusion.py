@@ -123,10 +123,8 @@ def log_trace() -> None:
     if ex_type is not None and 'color' not in summary_styles:
         summary_styles = {
             'display': 'inline-block',
-            'margin': '.5em',
             'padding': '.5em',
             'border': '3px dashed darkred',
-            'border-radius': '10px',
             'background-color': 'red',
             'font-weight': 'bold',
             'font-size': '1.5em',
