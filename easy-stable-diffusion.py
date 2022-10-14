@@ -16,17 +16,30 @@ from os import makedirs
 from shutil import copy, copytree, move, rmtree
 from datetime import datetime
 
+# ==============================
+# 로그
+# ==============================
 def format_styles(styles: dict) -> str:
     return ';'.join(map(lambda kv: ':'.join(kv), styles.items()))
 
+def format_list(value):
+    if isinstance(value, dict):
+        return '\n'.join(map(lambda kv: f'{kv[0]}: {kv[1]}', value.items()))
+    else:
+        return '\n'.join(value)
+
 def append_log_block(summary: str='', lines: List[str]=None,
-                        summary_styles: dict=None, line_styles: dict=None,
-                        fold=False, max_render_lines=5) -> int:
+                     summary_styles: dict=None, line_styles: dict=None,
+                     max_lines=0) -> int:
     block = {**locals()}
 
+    # 인자에 직접 기본 값을 넣으면 값을 돌려쓰기 때문에 직접 생성해줘야됨
     if block['lines'] is None: block['lines'] = []
     if block['summary_styles'] is None: block['summary_styles'] = {}
-    if block['line_styles'] is None: block['line_styles'] = {}
+    if block['line_styles'] is None: block['line_styles'] = {
+        'padding-left': '1.5em',
+        'color': 'gray'
+    }
 
     LOG_WIDGET.blocks.append(block)
     return len(LOG_WIDGET.blocks) - 1
@@ -49,7 +62,6 @@ def render_log() -> None:
     for block in LOG_WIDGET.blocks:
         summary_styles = {
             'display': 'inline-block',
-            'cursor': 'pointer' if len(block['lines']) > 0 else 'inherit',
             **block['summary_styles']
         }
         line_styles = {
@@ -57,21 +69,19 @@ def render_log() -> None:
             **block['line_styles']
         }
 
-        html += '<details " ' + ('' if block['fold'] else 'open=""') + '>'
-        html += f'<summary style="{format_styles(summary_styles)}">{block["summary"]}</summary>'
+        html += f'<span style="{format_styles(summary_styles)}">{block["summary"]}</span>\n'
 
-        if len(block['lines']) > 0:
+        if block['max_lines'] is not None and len(block['lines']) > 0:
             html += f'<div style="{line_styles}">'
-            html += ''.join(block['lines'][-block['max_render_lines']:])
+            html += ''.join(block['lines'][-block['max_lines']:])
             html += '</div>'
-
-        html += '</details>'
 
     html += '</div>'
 
     LOG_WIDGET.value = html
 
-def log(msg: str, styles={}, newline=True, block_index: int=None) -> None:
+def log(msg: str, styles={}, newline=True, block_index: int=None,
+        print_to_file=True, print_to_widget=True) -> None:
     # 기록할 내용이 ngrok API 키와 일치한다면 숨기기
     # TODO: 더 나은 문자열 검사, 원치 않은 내용이 가려질 수도 있음
     if NGROK_API_KEY != '':
@@ -80,23 +90,94 @@ def log(msg: str, styles={}, newline=True, block_index: int=None) -> None:
     if newline:
         msg += '\n'
 
-    # 파일 기록 추가
-    if LOG_FILE:
-        if block_index and msg.endswith('\n'):
-            LOG_FILE.write('\t')
-        LOG_FILE.write(msg)
-        LOG_FILE.flush()
+    # 파일에 기록하기
+    if print_to_file:
+        if LOG_FILE:
+            if block_index and msg.endswith('\n'):
+                LOG_FILE.write('\t')
+            LOG_FILE.write(msg)
+            LOG_FILE.flush()
 
-    if LOG_WIDGET:
+    # 로그 위젯이 존재한다면 위젯에 표시하기
+    if print_to_widget and LOG_WIDGET:
         if block_index is None:
             block_index = append_log_block(summary=msg, summary_styles=styles)
         else:
             LOG_WIDGET.blocks[block_index]['lines'].append(msg)
+        render_log()
+        return
+
+    print(msg, end='')
+
+def log_trace() -> None:
+    import traceback
+
+    # 스택 가져오기
+    ex_type, ex_value, ex_traceback = sys.exc_info()
+
+    summary_styles = {}
+
+    # 오류가 존재한다면 메세지 빨간색으로 출력하기
+    # https://docs.python.org/3/library/sys.html#sys.exc_info
+    # TODO: 오류 유무 이렇게 확인하면 안될거 같은데 일단 귀찮아서 대충 써둠
+    if ex_type is not None and 'color' not in summary_styles:
+        summary_styles = {
+            'display': 'inline-block',
+            'margin': '.5em',
+            'padding': '.5em',
+            'border': '3px dashed darkred',
+            'border-radius': '10px',
+            'background-color': 'red',
+            'font-weight': 'bold',
+            'font-size': '1.5em',
+            'line-height': '1em',
+            'color': 'black'
+        }
+
+    block_index = None if LOG_WIDGET is None else append_log_block(
+        summary='보고서를 만들고 있습니다...', 
+        summary_styles=summary_styles
+    )
+
+    # 오류가 존재한다면 오류 정보와 스택 트레이스 출력하기
+    if ex_type is not None:
+        log(block_index=block_index, msg=f'{ex_type.__name__}: {ex_value}')
+        log(
+            block_index=block_index, 
+            msg=format_list(
+                map(
+                    lambda v: f'{v[0]}#{v[1]}\n\t{v[2]}\n\t{v[3]}',
+                    traceback.extract_tb(ex_traceback)
+                )
+            )
+        )
+
+    # 로그 파일이 없으면 보고하지 않기
+    # TODO: 로그 파일이 존재하지 않을 수가 있나...?
+    if not LOG_FILE:
+        log('로그 파일이 존재하지 않습니다, 보고서를 만들지 않습니다')
+        return
+
+    # 로그 위젯이 존재한다면 보고서 올리고 내용 업데이트하기
+    if LOG_WIDGET:
+        # 이전 로그 싹 긁어오기
+        logs = ''   
+        with open(LOG_FILE.name) as file:
+            logs = file.read()
+
+        # 로그 업로드
+        # TODO: 업로드 실패 시 오류 처리
+        res = requests.post('https://hastebin.com/documents', data=logs.encode('utf-8'))
+        url = f"https://hastebin.com/{json.loads(res.text)['key']}"
+
+        # 기존 오류 메세지 업데이트
+        LOG_WIDGET.blocks[block_index]['summary'] = '\n'.join([
+            ex_value,
+            '오류가 발생했습니다, 아래 주소를 복사해 보고해주세요',
+            f'<a target="_blank" href="{url}">{url}</a>',
+        ])
 
         render_log()
-
-    else:
-        print(msg, end='')
 
 
 # ==============================
@@ -105,7 +186,8 @@ def log(msg: str, styles={}, newline=True, block_index: int=None) -> None:
 running_subprocess = None
 
 def execute(args: Union[str, List[str]], parser: Callable=None,
-            logging=True, throw=True, **kwargs) -> Tuple[str, Popen]:
+            print_to_file=True, print_to_widget=True, throw=True,
+            **kwargs) -> Tuple[str, Popen]:
     global running_subprocess
 
     # 이미 서브 프로세스가 존재한다면 예외 처리하기
@@ -121,37 +203,35 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
         **kwargs,
     )
     running_subprocess.output = ''
-    running_subprocess.block_index = None
-
-    if LOG_WIDGET:
-        running_subprocess.block_index = append_log_block(
-            summary=f"=> {args if isinstance(args, str) else ' '.join(args)}\n",
-            summary_styles={
-                'color': 'yellow',
-            },
-            line_styles={
-                'padding-left': '1.5em',
-                'color': 'gray',
-            }
-        )
+    running_subprocess.block_index = None if LOG_WIDGET is None else append_log_block(
+        f"=> {args if isinstance(args, str) else ' '.join(args)}\n",
+        summary_styles={ 'color': 'yellow' },
+        max_lines = 5,
+    )
 
     # 프로세스 출력 위젯에 리다이렉션하기
     while running_subprocess.poll() is None:
         # 출력이 비어있다면 넘어가기
-        out = running_subprocess.stdout.readline()
-        if not out:
-            continue
+        line = running_subprocess.stdout.readline()
+        if not line: continue
 
         # 프로세스 출력 버퍼에 추가하기
-        running_subprocess.output += out
+        running_subprocess.output += line
 
-        # 파서가 없거나 또는 파서 실행 후 반환 값이 거짓이라면 로깅하기
-        if (not parser or not parser(out)) and logging:
-            log(
-                out,
-                block_index=running_subprocess.block_index,
-                newline=False
-            )
+        # 파서 처리
+        if callable(parser):
+            try:
+                if parser(line): continue
+            except:
+                log_trace()
+
+        log(
+            line, 
+            newline=False, 
+            block_index=running_subprocess.block_index, 
+            print_to_file=print_to_file, 
+            print_to_widget=print_to_widget
+        )
 
     # 변수 정리하기
     output = running_subprocess.output
@@ -161,11 +241,11 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
     if LOG_WIDGET:
         if returncode == 0:
             LOG_WIDGET.blocks[running_subprocess.block_index]['summary_styles']['color'] = 'green'
-            LOG_WIDGET.blocks[running_subprocess.block_index]['fold'] = True
+            LOG_WIDGET.blocks[running_subprocess.block_index]['max_lines'] = None
 
         else:
             LOG_WIDGET.blocks[running_subprocess.block_index]['summary_styles']['color'] = 'red'
-            LOG_WIDGET.blocks[running_subprocess.block_index]['max_render_lines'] = 0
+            LOG_WIDGET.blocks[running_subprocess.block_index]['max_lines'] = 0
 
     # 오류 코드를 반환했다면
     if returncode != 0 and throw:
@@ -408,19 +488,26 @@ USE_XFORMERS = True  # @param {type:"boolean"}
 USE_DEEPDANBOORU = True  # @param {type:"boolean"}
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Graido 인증 정보***</font>
-# @markdown Gradio 접속 시 사용할 사용자, 비밀번호 정보
-# @markdown <br>`GRADIO_USERNAME`에 `user1:pass1,user2,pass2` 형태를 입력하면 여러 사용자 등록 가능
-GRADIO_USERNAME = '' # @param {type:"string"}
+# @markdown Gradio 접속 시 사용할 사용자 아이디와 비밀번호
+# @markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
+# @markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> Gradio 터널을 비활성화함
+# @markdown <br>`GRADIO_PASSWORD` 입력 란이 비어있으면 비밀번호를 자동으로 생성함
+GRADIO_USERNAME = 'gradio' # @param {type:"string"}
 GRADIO_PASSWORD = '' # @param {type:"string"}
+GRADIO_PASSWORD_GENERATED = False
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***ngrok API 키***</font>
-# @markdown [API 키 만들기](https://dashboard.ngrok.com/get-started/your-authtoken)
+# @markdown ngrok 터널에 사용할 API 키
+# @markdown <br>[API 키는 여기를 눌러 계정을 만든 뒤 얻을 수 있음](https://dashboard.ngrok.com/get-started/your-authtoken)
+# @markdown <br>입력 란을 <font color="red">비워두면</font> ngrok 터널을 비활성화함
 NGROK_API_KEY = '' # @param {type:"string"}
+NGROK_URL = None
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 주소***</font>
 REPO_URL = 'https://github.com/AUTOMATIC1111/stable-diffusion-webui.git' # @param {type:"string"}
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 커밋 해시***</font>
+# @markdown 입력 란을 <font color="red">비워두면</font> 가장 최신 커밋을 가져옴
 REPO_COMMIT = '' # @param {type:"string"}
 
 # 레포지토리에 적용할 풀 리퀘스트
@@ -818,23 +905,64 @@ def setup_webui() -> None:
     if not IN_COLAB:
         execute(['sudo', 'apt', 'install', '-y', 'build-essential', 'libgl1', 'libglib2.0-0'])
 
-def parse_webui_output(out: str) -> bool:
-    # 하위 스크립트 실행 중 오류가 발생하면 전체 기록 표시하기
+def parse_webui_output(line: str) -> bool:
+    global NGROK_URL
+
+    styles = {
+        'display': 'inline-block',
+        'padding': '.5em',
+        'border': '3px dashed darkgreen',
+        'background-color': 'green',
+        'font-weight': 'bold',
+        'font-size': '1.5em',
+        'line-height': '1em',
+        'color': 'black'
+    }
+
+    # 하위 파이썬 실행 중 오류가 발생하면 전체 기록 표시하기
     # TODO: 더 나은 오류 핸들링, 잘못된 내용으로 트리거 될 수 있음
-    if LOG_WIDGET and 'Traceback (most recent call last):' in out:
-        LOG_WIDGET.blocks[running_subprocess.block_index]['max_render_lines'] = 0
+    if LOG_WIDGET and 'Traceback (most recent call last):' in line:
+        LOG_WIDGET.blocks[running_subprocess.block_index]['max_lines'] = 0
+        return
+
+    if line == 'Invalid ngrok authtoken, ngrok connection aborted.\n':
+        raise Exception('ngrok 인증 토큰이 잘못됐습니다, 올바른 토큰을 입력하거나 토큰 값을 빼고 실행해주세요')
+
+    # 웹 서버가 열렸을 때
+    if line.startswith('Running on local URL:'):
+        # ngork
+        if NGROK_API_KEY != '':
+            # 이전 로그에서 ngrok 주소가 표시되지 않았다면 ngrok 관련 오류 발생한 것으로 판단
+            if NGROK_URL == None:
+                raise Exception('ngrok 터널을 여는 중 알 수 없는 오류가 발생했습니다')
+
+            log(styles=styles, msg='\n'.join([
+                '성공적으로 ngrok 터널이 열렸습니다',
+                NGROK_URL if LOG_WIDGET is None else f'<a target="_blank" href="{NGROK_URL}">{NGROK_URL}</a>',
+            ]))
+
+        return
 
     # 외부 주소 출력되면 성공적으로 실행한 것으로 판단
-    matches = re.search('https?://(\d+\.gradio\.app|[0-9a-f-]+\.ngrok\.io)', out)
+    matches = re.search('https?://(\d+\.gradio\.app|[0-9a-f-]+\.ngrok\.io)', line)
     if matches:
-        log(f'성공적으로 웹UI를 실행했습니다, 아래 주소에 접속해주세요!\n{matches[0]}',
-            styles={
-                'background-color': 'green',
-                'font-weight': 'bold',
-                'font-size': '1.5em',
-                'line-height': '1em',
-                'color': 'black'
-            })
+        url = matches[0]
+
+        # gradio 는 웹 서버가 켜진 이후 바로 나오기 때문에 사용자에게 바로 보여줘도 상관 없음
+        if 'gradio.app' in url:
+            log('\n'.join([
+                '성공적으로 Gradio 터널이 열렸습니다',
+                f'- 아이디: {GRADIO_USERNAME}',
+                f'- 비밀번호: {GRADIO_PASSWORD}',
+                url if LOG_WIDGET is None else f'<a target="_blank" href="{url}">{url}</a>',
+            ]), styles=styles, print_to_file=False)
+
+        # ngork 는 우선 터널이 시작되고 이후에 웹 서버가 켜지기 때문에
+        # 미리 주소를 저장해두고 이후에 로컬호스트 주소가 나온 뒤에 사용자에게 알려야함
+        if 'ngrok.io' in matches[0]:
+            NGROK_URL = url
+
+        return
 
 def start_webui(args: List[str]=[], env={}) -> None:
     global running_subprocess
@@ -857,57 +985,6 @@ def start_webui(args: List[str]=[], env={}) -> None:
             **env
         }
     )
-
-
-# ==============================
-# 보고서
-# ==============================
-def generate_report() -> str:
-    import traceback
-
-    def format_list(value):
-        if isinstance(value, dict):
-            return '\n'.join(map(lambda kv: f'{kv[0]}: {kv[1]}', value.items()))
-        else:
-            return '\n'.join(value)
-
-    # 스택 가져오기
-    ex_type, ex_value, ex_traceback = sys.exc_info()
-    traces = map(lambda v: f'{v[0]}#{v[1]}\n\t{v[2]}\n\t{v[3]}', traceback.extract_tb(ex_traceback))
-
-    # 로그 가져오기
-    logs = ''
-    if LOG_FILE:
-        with open(LOG_FILE.name) as file:
-            logs = file.read()
-
-    payload = f"""
-{logs}
-# {ex_type.__name__}: {ex_value}
-{format_list(traces)}
-
-# options
-CHECKPOINT: {CHECKPOINT}
-USE_GOOGLE_DRIVE: {USE_GOOGLE_DRIVE}
-PATH_TO_GOOGLE_DRIVE: {PATH_TO_GOOGLE_DRIVE}
-USE_DEEPDANBOORU: {USE_DEEPDANBOORU}
-GRADIO_USERNAME: {GRADIO_USERNAME != ''}
-GRADIO_PASSWORD: {GRADIO_PASSWORD != ''}
-NGROK_API_KEY: {NGROK_API_KEY != ''}
-REPO_URL: {REPO_URL}
-ADDITIONAL_ARGS: {ADDITIONAL_ARGS}
-
-# paths
-{format_list(path_to)}
-
-# models
-{format_list(glob.glob(f"{path_to['models']}/**/*"))}
-"""
-
-    res = requests.post('https://hastebin.com/documents',
-                        data=payload.encode('utf-8'))
-
-    return f"https://hastebin.com/{json.loads(res.text)['key']}"
 
 
 # ==============================
@@ -945,7 +1022,7 @@ try:
     log('')
 
     if IN_COLAB:
-        log('현재 코랩을 사용하고 있습니다')
+        log('코랩을 사용하고 있습니다')
         makedirs('/usr/local/content', exist_ok=True)
         os.chdir('/usr/local/content')
 
@@ -988,6 +1065,7 @@ try:
     if IN_COLAB:
         args.append('--lowram')
 
+    # xformers
     if USE_XFORMERS:
         if has_python_package('xformers'):
             cmd_args.append('--xformers')
@@ -999,19 +1077,31 @@ try:
             cmd_args.append('--xformers')
 
         else:
+            # TODO: 패키지 빌드
             log('xformers 패키지가 존재하지 않습니다, --xformers 인자를 사용하지 않습니다')
 
+    # deepdanbooru
     if USE_DEEPDANBOORU:
         cmd_args.append('--deepdanbooru')
 
-    if NGROK_API_KEY == '':
+    # gradio
+    if GRADIO_USERNAME != '':
         log('Gradio 터널을 사용합니다')
-        args += ['--share', '--gradio-debug']
 
-        # Gradio 인증 정보
-        if GRADIO_USERNAME != '':
-            args.append('--gradio-auth=' + GRADIO_USERNAME + ('' if GRADIO_PASSWORD == '' else ':' + GRADIO_PASSWORD))
-    else:
+        # 비밀번호가 없다면 무작위로 만들기
+        if GRADIO_PASSWORD == '' and ';' not in GRADIO_USERNAME:
+            from secrets import token_urlsafe
+            GRADIO_PASSWORD = token_urlsafe(8)
+            GRADIO_PASSWORD_GENERATED = True
+
+        args += [
+            '--share', 
+            '--gradio-debug',
+            '--gradio-auth=' + GRADIO_USERNAME + ('' if GRADIO_PASSWORD == '' else ':' + GRADIO_PASSWORD)
+        ]
+
+    # ngrok
+    if NGROK_API_KEY != '':
         log('ngrok 터널을 사용합니다')
         args.append(f'--ngrok={NGROK_API_KEY}')
 
@@ -1033,21 +1123,9 @@ try:
 except KeyboardInterrupt:
     pass
 
-# 오류 발생하면 보고서 생성하고 표시하기
 except:
-    # 일반 터미널이라면 파이썬 기본 핸들링 사용
+    # 로그 위젯이 없다면 평범하게 오류 처리하기
     if not LOG_WIDGET:
         raise
 
-    # 오류 보고서 생성 후 로그에 추가하기
-    _, ex_value, _ = sys.exc_info()
-    report_url = generate_report()
-
-    log(f'{ex_value}\n오류가 발생했습니다, 아래 주소를 복사해 보고해주세요!\n{report_url}',
-        styles={
-            'background-color': 'red',
-            'font-weight': 'bold',
-            'font-size': '1.5em',
-            'line-height': '1em',
-            'color': 'black'
-        })
+    log_trace()
