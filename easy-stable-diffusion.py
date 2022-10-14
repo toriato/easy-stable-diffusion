@@ -701,18 +701,6 @@ def patch_webui_pull_request(number: int) -> None:
     )
 
 def patch_webui_repository() -> None:
-    # 모델 용량이 너무 커서 코랩 메모리 할당량을 초과하면 프로세스를 강제로 초기화됨
-    # 이를 해결하기 위해선 모델 맵핑 위치를 VRAM으로 변경해줘야함
-    # Thanks to https://gist.github.com/td2sk/e32a39344537fb3cd756ef4abdd3d371
-    if IN_COLAB:
-        log('모델 맵핑 위치를 변경합니다')
-        execute([
-            'sed',
-            '-i',
-            '''s/map_location="cpu"/map_location=torch.device("cuda")/g''',
-            f"repo/modules/sd_models.py"
-        ])
-
     # 기본 UI 설정 값 (ui-config.json)
     # 설정 파일 자체를 덮어씌우면 새로 추가된 키를 인식하지 못해서 코드 자체를 수정함
     # https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/shared.py
@@ -996,6 +984,9 @@ try:
     ]
 
     cmd_args = [ '--skip-torch-cuda-test' ]
+
+    if IN_COLAB:
+        args.append('--lowram')
 
     if USE_XFORMERS:
         if has_python_package('xformers'):
