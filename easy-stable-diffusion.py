@@ -291,20 +291,14 @@ def has_python_package(pkg: str, check_loader=True) -> bool:
 # 사용자 설정
 # ==============================
 CHECKPOINTS = {
-    # 'Standard Model 1.4': {
-    #   'files': [{'url': 'https://public.vmm.pw/aeon/models/sd-v1-4.ckpt'}]
-    # },
-
     # NAI leaks
     'NAI - animefull-final-pruned': {
         'files': [
             {
-                # 'url': 'https://anonfiles.com/n6h3Q0Bdyf',
                 'url': 'https://cloudflare-ipfs.com/ipfs/bafybeicpamreyp2bsocyk3hpxr7ixb2g2rnrequub3j2ahrkdxbvfbvjc4/model.ckpt',
                 'target': 'nai-animefull-final-pruned.ckpt',
             },
             {
-                # 'url': 'https://anonfiles.com/66c1QcB7y6',
                 'url': 'https://cloudflare-ipfs.com/ipfs/bafybeiccldswdd3wvg57jhclcq53lvsc6gizasiblwayvhlv6eq4wow7wu/animevae.pt',
                 'target': 'nai-animefull-final-pruned.vae.pt'
             },
@@ -330,75 +324,8 @@ CHECKPOINTS = {
             }
         ]
     },
-    # 'NAI - animefull-final-pruned': {
-    #     'files': [
-    #         {
-    #             'url': 'https://drive.google.com/uc?id=1N6Zg4nJYnz7nN-vF8KExw8UbOwHddh12',
-    #             'target': 'nai-animefull-final-pruned.ckpt'
-    #         },
-    #         {
-    #             'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
-    #             'target': 'nai-animefull-final-pruned.vae.pt'
-    #         },
-    #         {
-    #             'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-final-pruned.yaml',
-    #             'target': 'nai-animefull-final-pruned.yaml'
-    #         }
-    #     ]
-    # },
-    # 'NAI - animefull-latest': {
-    #     'files': [
-    #         {
-    #             'url': 'https://drive.google.com/uc?id=173P4agYFiaYP1UDvPIocr3GnIzToabjh',
-    #             'target': 'nai-animefull-latest.ckpt'
-    #         },
-    #         {
-    #             'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
-    #             'target': 'nai-animefull-latest.vae.pt'
-    #         },
-    #         {
-    #             'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-latest.yaml',
-    #             'target': 'nai-animefull-latest.yaml'
-    #         }
-    #     ]
-    # },
-    # 'NAI - animesfw-final-pruned': {
-    #     'files': [
-    #         {
-    #             'url': 'https://drive.google.com/uc?id=1aNaA5utAHuj0vISnxQvC2bHz2AyZbkyv',
-    #             'target': 'nai-animesfw-final-pruned.ckpt'
-    #         },
-    #         {
-    #             'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
-    #             'target': 'nai-animesfw-final-pruned.vae.pt'
-    #         },
-    #         {
-    #             'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-final-pruned.yaml',
-    #             'target': 'nai-animesfw-final-pruned.yaml'
-    #         }
-    #     ]
-    # },
-    # 'NAI - animesfw-latest': {
-    #     'files': [
-    #         {
-    #             'url': 'https://drive.google.com/uc?id=1N5Nla5e2SowFHYH3nuogV2IvigET7a4k',
-    #             'target': 'nai-animesfw-final-pruned.ckpt'
-    #         },
-    #         {
-    #             'url': 'https://drive.google.com/uc?id=1MnVdsJAFeIbhKn_-wvahuOUCOAhLjptb',
-    #             'target': 'nai-animesfw-final-pruned.vae.pt'
-    #         },
-    #         {
-    #             'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-latest.yaml',
-    #             'target': 'nai-animesfw-final-pruned.yaml'
-    #         }
-    #     ]
-    # },
 
-    # Waifu stuffs
-    # 'Waifu Diffusion 1.2': {
-    #   'files': [{'url': 'https://public.vmm.pw/aeon/models/wd-v1-2-full-ema-pruned.ckpt'}]
-    # },
+    # Waifu Diffusion
     'Waifu Diffusion 1.3': {
         'files': [{
             'url': 'https://huggingface.co/hakurei/waifu-diffusion-v1-3/resolve/main/wd-v1-3-float16.ckpt',
@@ -417,47 +344,18 @@ CHECKPOINTS = {
         'files': [{'url': 'https://huggingface.co/naclbit/trinart_stable_diffusion_v2/resolve/main/trinart2_step115000.ckpt'}]
     },
 
-    # Kinky c:
-    # 'gg1342_testrun1': {
-    #   'files': [{'url': 'https://public.vmm.pw/aeon/models/gg1342_testrun1_pruned.ckpt'}]
-    # },
-    # 'Hentai Diffusion RD1412': {
-    #   'files': [{
-    #     'url': 'https://public.vmm.pw/aeon/models/RD1412-pruned-fp16.ckpt',
-    #     'args': ['-o', 'hentai_diffusion-rd1412-pruned-fp32.ckpt']
-    #   }]
-    # },
-    # 'Bare Feet / Full Body b4_t16_noadd': {
-    #   'files': [{'url': 'https://public.vmm.pw/aeon/models/bf_fb_v3_t4_b16_noadd-ema-pruned-fp16.ckpt'}]
-    # },
-    # 'Lewd Diffusion 70k (epoch 2)': {
-    #   'files': [{'url': 'https://public.vmm.pw/aeon/models/LD-70k-2e-pruned.ckpt'}]
-    # },
-
-    # More kinky c:<
-    # 'Yiffy (epoch 18)': {
-    #   'files': [{'url': 'https://public.vmm.pw/aeon/models/yiffy-e18.ckpt'}]
-    # },
     'Furry (epoch 4)': {
         'files': [{'url': 'https://iwiftp.yerf.org/Furry/Software/Stable%20Diffusion%20Furry%20Finetune%20Models/Finetune%20models/furry_epoch4.ckpt'}]
     },
     'Zack3D Kinky v1': {
         'files': [{'url': 'https://iwiftp.yerf.org/Furry/Software/Stable%20Diffusion%20Furry%20Finetune%20Models/Finetune%20models/Zack3D_Kinky-v1.ckpt'}]
     },
-    # 'R34 (epoch 1)': {
-    #   'files': [{'url': 'https://public.vmm.pw/aeon/models/r34_e1.ckpt'}]
-    # },
-    # 'Pony Diffusion': {
-    #  'files': [{ 'url': 'https://public.vmm.pw/aeon/models/pony_sfw_80k_safe_and_suggestive_500rating_plus-pruned.ckpt'}]
-    # },
     'Pokemon': {
         'files': [{
             'url': 'https://huggingface.co/justinpinkney/pokemon-stable-diffusion/resolve/main/ema-only-epoch%3D000142.ckpt',
             'args': ['-o', 'pokemon-ema-pruned.ckpt']
         }]
     },
-
-    # Others...
     'Dreambooth - Hiten': {
         'files': [{'url': 'https://huggingface.co/BumblingOrange/Hiten/resolve/main/Hiten%20girl_anime_8k_wallpaper_4k.ckpt'}]
     },
