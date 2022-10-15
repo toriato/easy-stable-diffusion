@@ -1,2 +1,2 @@
 # prebuilt-xformers
-Prebuilt xformers package for various python version
+Prebuilt [xformers](https://github.com/facebookresearch/xformers) package for various Python and PyTorch version
