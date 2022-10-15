@@ -1068,11 +1068,8 @@ try:
 
         elif IN_COLAB:
             log('xformers 패키지가 존재하지 않습니다, xformers 를 미리 컴파일된 파일로부터 설치를 시작합니다')
-            download(
-                'https://github.com/toriato/easy-stable-diffusion/releases/download/xformers/xformers-0.0.14.dev0-cp38-cp38-linux_x86_64.whl',
-                'xformers-0.0.14.dev0-cp37-none-linux_x86_64.whl'
-            )
-            execute(['pip', 'install', 'xformers-0.0.14.dev0-cp37-none-linux_x86_64.whl'])
+            download('https://github.com/toriato/easy-stable-diffusion/raw/prebuilt-xformers/cu113/xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl')
+            execute(['pip', 'install', 'xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl'])
             cmd_args.append('--xformers')
 
         else:
