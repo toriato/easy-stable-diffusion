@@ -4,7 +4,6 @@ import os
 import sys
 import platform
 import re
-import glob
 import json
 import requests
 from typing import Union, Callable, Tuple, List
