@@ -637,11 +637,11 @@ def download(url: str, target=''):
         ]
 
         if dirname != '':
-            args.append(f'--dir="{dirname}"')
+            args.append(f'--dir={dirname}')
 
         if basename != '':
             # 목표 경로가 파일이거나 아예 존재하지 않다면
-            args.append(f'--out="{basename}"')
+            args.append(f'--out={basename}')
 
         execute(['aria2c', *args, url])
 
@@ -1048,7 +1048,7 @@ try:
 
         auth = GRADIO_USERNAME + ('' if GRADIO_PASSWORD == '' else ':' + GRADIO_PASSWORD)
 
-        args.append(f'--gradio-auth="{auth}"')
+        args.append(f'--gradio-auth={auth}')
 
     # ngrok
     if NGROK_API_KEY != '':
