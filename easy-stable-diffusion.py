@@ -976,7 +976,7 @@ try:
         if not os.path.islink(dst):
             log('트랜스포머 모델 캐시 디렉터리의 심볼릭 링크를 만듭니다')
             shutil.rmtree(dst, ignore_errors=True)
-            os.os.makedirs(src, exist_ok=True)
+            os.makedirs(src, exist_ok=True)
             os.symlink(src, dst, target_is_directory=True)
 
     # 체크포인트가 없을 시 다운로드
