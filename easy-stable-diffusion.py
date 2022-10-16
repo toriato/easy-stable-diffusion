@@ -1,6 +1,7 @@
 # @title
 # fmt: off
 import os
+import shutil
 import sys
 import platform
 import re
@@ -11,8 +12,6 @@ from subprocess import Popen, PIPE, STDOUT
 from distutils.spawn import find_executable
 from importlib.util import find_spec
 from pathlib import Path
-from os import makedirs
-from shutil import copy, copytree, move, rmtree
 from datetime import datetime
 
 # ==============================
@@ -71,7 +70,7 @@ def render_log() -> None:
         html += f'<span style="{format_styles(summary_styles)}">{block["summary"]}</span>\n'
 
         if block['max_lines'] is not None and len(block['lines']) > 0:
-            html += f'<div style="{line_styles}">'
+            html += f'<div style="{format_styles(line_styles)}">'
             html += ''.join(block['lines'][-block['max_lines']:])
             html += '</div>'
 
@@ -121,7 +120,8 @@ def log_trace() -> None:
     # TODO: 오류 유무 이렇게 확인하면 안될거 같은데 일단 귀찮아서 대충 써둠
     if ex_type is not None and 'color' not in summary_styles:
         summary_styles = {
-            'display': 'inline-block',
+            'display': 'block',
+            'margin-top': '.5em',
             'padding': '.5em',
             'border': '3px dashed darkred',
             'background-color': 'red',
@@ -182,7 +182,7 @@ def log_trace() -> None:
 running_subprocess = None
 
 def execute(args: Union[str, List[str]], parser: Callable=None,
-            print_to_file=True, print_to_widget=True, throw=True,
+            summary: str=None, print_to_file=True, print_to_widget=True, throw=True,
             **kwargs) -> Tuple[str, Popen]:
     global running_subprocess
 
@@ -199,11 +199,20 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
         **kwargs,
     )
     running_subprocess.output = ''
-    running_subprocess.block_index = None if LOG_WIDGET is None else append_log_block(
-        f"=> {args if isinstance(args, str) else ' '.join(args)}\n",
-        summary_styles={ 'color': 'yellow' },
-        max_lines = 5,
-    )
+
+    # 로그에 시작한 프로세스 정보 출력하기
+    formatted_args = args if isinstance(args, str) else ' '.join(args)
+    summary = formatted_args if summary is None else f'{summary}\n   {formatted_args}'
+
+    if LOG_WIDGET:
+        running_subprocess.block_index = append_log_block(
+            f'=> {summary}\n',
+            summary_styles={ 'color': 'yellow' },
+            max_lines = 5,
+        )
+    else:
+        running_subprocess.block_index = None
+        log(f'=> {summary}')
 
     # 프로세스 출력 위젯에 리다이렉션하기
     while running_subprocess.poll() is None:
@@ -268,17 +277,17 @@ def update_path_to(path_to_workspace: str) -> None:
     path_to['ui_config_file'] = f"{path_to['workspace']}/ui-config.json"
     path_to['ui_settings_file'] = f"{path_to['workspace']}/config.json"
 
-    makedirs(path_to['workspace'], exist_ok=True)
-    makedirs(path_to['embeddings'], exist_ok=True)
-    makedirs(path_to['scripts'], exist_ok=True)
-    makedirs(path_to['logs'], exist_ok=True)
+    os.makedirs(path_to['workspace'], exist_ok=True)
+    os.makedirs(path_to['embeddings'], exist_ok=True)
+    os.makedirs(path_to['scripts'], exist_ok=True)
+    os.makedirs(path_to['logs'], exist_ok=True)
 
     log_path = os.path.join(path_to['logs'], datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S.log'))
 
     # 기존 로그 파일이 존재한다면 옮기기
     if LOG_FILE:
         LOG_FILE.close()
-        move(LOG_FILE.name, log_path)
+        shutil.move(LOG_FILE.name, log_path)
 
     LOG_FILE = open(log_path, 'a')
 
@@ -375,7 +384,7 @@ PATH_TO_GOOGLE_DRIVE = 'SD' # @param {type:"string"}
 # @markdown - <font color="red">단점</font>: 미리 빌드된 패키지가 지원하지 않는 환경에선 빌드할 필요가 있음
 USE_XFORMERS = True  # @param {type:"boolean"}
 
-# @markdown ### <font color="orange">***DeepDanbooru 를 사용할지?***</font>
+# @markdown ### <font color="orange">***DeepBooru 를 사용할지?***</font>
 # @markdown IMG2IMG 에 올린 이미지를 단부루 태그로 변환(예측)해 프롬프트로 추출해내는 기능
 # @markdown - <font color="red">단점</font>: 처음 실행할 때 추가 패키지를 받기 때문에 시간이 조금 더 걸림
 USE_DEEPDANBOORU = True  # @param {type:"boolean"}
@@ -385,8 +394,8 @@ USE_GRADIO_TUNNEL = True # @param {type:"boolean"}
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 인증 정보***</font>
 # @markdown Gradio 접속 시 사용할 사용자 아이디와 비밀번호
+# @markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> 인증을 사용하지 않음
 # @markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
-# @markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> Gradio 터널을 비활성화함
 # @markdown <br>`GRADIO_PASSWORD` 입력 란이 비어있으면 비밀번호를 자동으로 생성함
 GRADIO_USERNAME = 'gradio' # @param {type:"string"}
 GRADIO_PASSWORD = '' # @param {type:"string"}
@@ -442,13 +451,13 @@ ADDITIONAL_SCRIPTS = [
     # txt2mask
     # https://github.com/ThereforeGames/txt2mask
     [
-        lambda: rmtree('.tmp', ignore_errors=True),
-        lambda: makedirs('.tmp', exist_ok=True),
+        lambda: shutil.rmtree('.tmp', ignore_errors=True),
+        lambda: os.makedirs('.tmp', exist_ok=True),
         lambda: execute('curl -sSL https://github.com/ThereforeGames/txt2mask/tarball/master | tar xzvf - --strip-components=1 -C .tmp', shell=True),
-        lambda: rmtree('repo/repositories/clipseg', ignore_errors=True),
-        lambda: copytree('.tmp/repositories/clipseg', 'repo/repositories/clipseg'),
-        lambda: copy('.tmp/scripts/txt2mask.py', 'repo/scripts'),
-        lambda: rmtree('.tmp', ignore_errors=True),
+        lambda: shutil.rmtree('repo/repositories/clipseg', ignore_errors=True),
+        lambda: shutil.copytree('.tmp/repositories/clipseg', 'repo/repositories/clipseg'),
+        lambda: shutil.copy('.tmp/scripts/txt2mask.py', 'repo/scripts'),
+        lambda: shutil.rmtree('.tmp', ignore_errors=True),
     ],
 
     # Img2img Video
@@ -560,38 +569,6 @@ LOG_WIDGET = None
 IN_COLAB = has_python_package('google') and has_python_package('google.colab')
 
 # ==============================
-# 패키지 준비
-# ==============================
-def prepare_aria2() -> None:
-    if find_executable('aria2c') is None:
-        log('aria2c 명령어가 존재하지 않습니다, 설치를 시작합니다')
-        execute(['sudo', 'apt', 'install', '-y', 'aria2'])
-
-    # 설정 파일 만들기
-    path_to_config = os.path.join(Path.home(), '.aria2', 'aria2.conf')
-    if os.path.isfile(path_to_config):
-        return
-
-    log('aria2 설정 파일이 존재하지 않습니다, 추천 값으로 설정합니다')
-    makedirs(os.path.dirname(path_to_config), exist_ok=True)
-    with open(path_to_config, 'w') as f:
-        f.write("""
-summary-interval=10
-allow-overwrite=true
-always-resume=true
-disk-cache=64M
-continue=true
-min-split-size=8M
-max-concurrent-downloads=8
-max-connection-per-server=8
-max-overall-download-limit=0
-max-download-limit=0
-split=8
-seed-time=0
-""")
-
-
-# ==============================
 # 구글 드라이브 동기화
 # ==============================
 def mount_google_drive() -> None:
@@ -607,24 +584,15 @@ def mount_google_drive() -> None:
 # ==============================
 # 파일 다운로드
 # ==============================
-def download(url: str, target='', args=[]):
-    if os.path.isdir(target) or target.endswith('/'):
-        dirname = target
-    else:
-        dirname = os.path.dirname(target)
-        basename = os.path.basename(target)
-
-        if '-o' not in args and not os.path.isdir(target):
-            args = ['-o', basename, *args]
-
-    if dirname:
-        makedirs(dirname, exist_ok=True)
-        if '-d' not in args:
-            args = ['-d', dirname, *args]
-
+def download(url: str, target=''):
+    # 구글 드라이브 주소라면 gdown 패키지를 통해 가져오기
     if url.startswith('https://drive.google.com'):
-        if has_python_package('gdown') is None:
-            execute(['pip', 'install', 'gdown'])
+        # 코랩 속에서만 패키지 받아오기
+        if find_executable('gdown') is None:
+            if IN_COLAB:
+                execute(['pip', 'install', 'gdown'])
+            else:
+                raise('gdown 이 존재하지 않아 구글 드라이브로부터 파일을 받아올 수 없습니다')
 
         execute(['gdown', '-O', target, url])
         return
@@ -637,8 +605,73 @@ def download(url: str, target='', args=[]):
 
         url = matches[0]
 
-    prepare_aria2()
-    execute(['aria2c', *args, url])
+    if os.path.isdir(target) or target.endswith('/'):
+        # 목표 경로가 디렉터리라면
+        dirname = target
+        basename = ''
+    else:
+        # 목표 경로가 파일이거나 아예 존재하지 않다면
+        dirname = os.path.dirname(target)
+        basename = os.path.basename(target)
+
+    # 목표 디렉터리 만들기
+    if dirname != '':
+        os.makedirs(dirname, exist_ok=True)
+
+    if IN_COLAB and not find_executable('aria2c'):
+        execute(['apt', 'install', 'aria2'], summary='빠른 다운로드를 위해 aria2 패키지를 설치합니다')
+
+    if find_executable('aria2c'):
+        args = [
+            '--continue',
+            '--allow-overwrite',
+            '--always-resume',
+            '--summary-interval=10',
+            '--disk-cache=64M',
+            '--min-split-size=8M',
+            '--max-concurrent-downloads=8',
+            '--max-connection-per-server=8',
+            '--max-overall-download-limit=0',
+            '--max-download-limit=0',
+            '--split=8',
+        ]
+
+        if dirname != '':
+            args.append(f'--dir="{dirname}"')
+
+        if basename != '':
+            # 목표 경로가 파일이거나 아예 존재하지 않다면
+            args.append(f'--out="{basename}"')
+
+        execute(['aria2c', *args, url])
+
+    elif find_executable('curl'):
+        args = ['--location']
+
+        if basename == '':
+            args += ['--remote-header-name', '--remote-name']
+        else:
+            args += ['--output', basename]
+
+        execute(['curl', *args, url], cwd=dirname if dirname != '' else None)
+
+    else:
+        # 다른 패키지에선 파일 경로를 자동으로 잡아주는데 여기선 그럴 수 없으니 직접 해줘야됨
+        # TODO: content-disposition 헤더로부터 파일 이름 가져오기
+        if basename == '':
+            basename = url.split('/')[-1]
+
+        with requests.get(url, stream=True) as res:
+            res.raise_for_status()
+            with open(os.path.join(dirname, basename), 'wb') as file:
+                # 받아온 파일 디코딩하기
+                # https://github.com/psf/requests/issues/2155#issuecomment-50771010
+                import functools
+                res.raw.read = functools.partial(res.raw.read, decode_content=True)
+
+                # TODO: 파일 길이가 적합한지?
+                shutil.copyfileobj(res.raw, file, length=16*1024*1024)
+
 
 def download_checkpoint(checkpoint: str) -> None:
     if checkpoint in CHECKPOINTS:
@@ -762,7 +795,7 @@ def patch_webui_repository() -> None:
 
         # 이미 파일이 존재한다면 기존 파일 삭제하기
         if os.path.lexists(dst):
-            rmtree(dst) if os.path.isdir(dst) and not os.path.islink(dst) else os.remove(dst)
+            shutil.rmtree(dst) if os.path.isdir(dst) and not os.path.islink(dst) else os.reshutil.move(dst)
 
         # 심볼릭 링크 생성
         os.symlink(src, dst, target_is_directory=os.path.isdir(path))
@@ -773,12 +806,14 @@ def setup_webui() -> None:
     # 이미 디렉터리가 존재한다면 정상적인 레포인지 확인하기
     if os.path.isdir('repo'):
         try:
-            log('레포지토리를 업데이트 합니다')
-
             # 사용자 파일만 남겨두고 레포지토리 초기화하기
             # https://stackoverflow.com/a/12096327
-            execute(['git', 'reset', '--hard'], cwd='repo')
-            execute(['git', 'pull'], cwd='repo')
+            execute(
+                'git checkout -- . && git pull',
+                summary='레포지토리를 업데이트 합니다',
+                shell=True,
+                cwd='repo'
+            )
 
             need_clone = False
 
@@ -786,26 +821,27 @@ def setup_webui() -> None:
             log('레포지토리가 잘못됐습니다, 디렉터리를 제거합니다')
 
     if need_clone:
-        log('레포지토리를 가져옵니다')
-        rmtree('repo', ignore_errors=True)
-        execute(['git', 'clone', REPO_URL, 'repo'])
+        shutil.rmtree('repo', ignore_errors=True)
+        execute(
+            ['git', 'clone', REPO_URL, 'repo'],
+            summary='레포지토리를 가져옵니다'
+        )
 
     # 특정 커밋이 지정됐다면 체크아웃하기
     if REPO_COMMIT != '':
-        log(f'레포지토리를 {REPO_COMMIT} 커밋으로 되돌립니다')
-        execute(['git', 'checkout', REPO_COMMIT])
+        execute(
+            ['git', 'checkout', REPO_COMMIT],
+            summary=f'레포지토리를 {REPO_COMMIT} 커밋으로 되돌립니다'
+        )
 
     patch_webui_repository()
-
-    # 코랩에선 필요 없으나 다른 환경에선 높은 확률로 설치 필요한 패키지들
-    if not IN_COLAB:
-        execute(['sudo', 'apt', 'install', '-y', 'build-essential', 'libgl1', 'libglib2.0-0'])
 
 def parse_webui_output(line: str) -> bool:
     global NGROK_URL
 
     styles = {
-        'display': 'inline-block',
+        'display': 'block',
+        'margin-top': '.5em',
         'padding': '.5em',
         'border': '3px dashed darkgreen',
         'background-color': 'green',
@@ -919,8 +955,8 @@ try:
 
     if IN_COLAB:
         log('코랩을 사용하고 있습니다')
-        makedirs('/usr/local/content', exist_ok=True)
-        os.chdir('/usr/local/content')
+
+        assert USE_GRADIO_TUNNEL or NGROK_API_KEY != '', '터널링 서비스를 하나 이상 선택해주세요' 
 
         import torch
         assert torch.cuda.is_available(), 'GPU 가 없습니다, 런타임 유형이 잘못됐거나 GPU 할당량이 초과된 것 같습니다'
@@ -928,6 +964,20 @@ try:
         # 구글 드라이브 마운팅 시도
         if USE_GOOGLE_DRIVE:
             mount_google_drive()
+
+        # 코랩 환경에서 이유는 알 수 없지만 /usr 디렉터리 내에서 읽기/쓰기 속도가 다른 곳보다 월등히 빠름
+        # 아마 /content 에 큰 용량을 박아두는 사용하는 사람들이 많아서 그런듯...?
+        os.makedirs('/usr/local/content', exist_ok=True)
+        os.chdir('/usr/local/content')
+
+        # huggingface 모델 캐시 심볼릭 만들기
+        src = os.path.join(path_to['workspace'], 'cache', 'huggingface')
+        dst = '/root/.cache/huggingface'
+        if not os.path.islink(dst):
+            log('트랜스포머 모델 캐시 디렉터리의 심볼릭 링크를 만듭니다')
+            shutil.rmtree(dst, ignore_errors=True)
+            os.os.makedirs(src, exist_ok=True)
+            os.symlink(src, dst, target_is_directory=True)
 
     # 체크포인트가 없을 시 다운로드
     if not has_checkpoint():
@@ -963,6 +1013,8 @@ try:
 
     # xformers
     if USE_XFORMERS:
+        log('xformers 를 사용합니다')
+
         if has_python_package('xformers'):
             cmd_args.append('--xformers')
 
@@ -978,24 +1030,25 @@ try:
 
     # deepdanbooru
     if USE_DEEPDANBOORU:
+        log('deepbooru 를 사용합니다')
         cmd_args.append('--deepdanbooru')
 
     # gradio
     if USE_GRADIO_TUNNEL:
         log('Gradio 터널을 사용합니다')
+        args.append('--share')
 
-        args += ['--share', '--gradio-debug']
+    # gradio 인증
+    if GRADIO_USERNAME:
+        # 다계정이 아니고 비밀번호가 없다면 무작위로 만들기
+        if GRADIO_PASSWORD == '' and ';' not in GRADIO_USERNAME:
+            from secrets import token_urlsafe
+            GRADIO_PASSWORD = token_urlsafe(8)
+            GRADIO_PASSWORD_GENERATED = True
 
-        if GRADIO_USERNAME:
-            # 다계정이 아니고 비밀번호가 없다면 무작위로 만들기
-            if GRADIO_PASSWORD == '' and ';' not in GRADIO_USERNAME:
-                from secrets import token_urlsafe
-                GRADIO_PASSWORD = token_urlsafe(8)
-                GRADIO_PASSWORD_GENERATED = True
+        auth = GRADIO_USERNAME + ('' if GRADIO_PASSWORD == '' else ':' + GRADIO_PASSWORD)
 
-            auth = GRADIO_USERNAME + ('' if GRADIO_PASSWORD == '' else ':' + GRADIO_PASSWORD)
-
-            args += f'--gradio-auth="{auth}"'
+        args.append(f'--gradio-auth="{auth}"')
 
     # ngrok
     if NGROK_API_KEY != '':
