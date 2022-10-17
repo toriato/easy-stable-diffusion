@@ -1197,7 +1197,12 @@ try:
         # ngrok
         if NGROK_API_TOKEN != '':
             log('ngrok 터널을 사용합니다')
-            args += ['--ngrok', NGROK_API_TOKEN]
+            args += [
+                '--ngrok', NGROK_API_TOKEN,
+                # https://ngrok.com/docs/ngrok-agent/config#config-region
+                # TODO: 효과가 있는지?
+                '--ngork-region', 'jp'
+            ]
 
             if has_python_package('pyngrok') is None:
                 log('ngrok 사용에 필요한 패키지가 존재하지 않습니다, 설치를 시작합니다')
