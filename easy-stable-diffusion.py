@@ -442,7 +442,7 @@ USE_GRADIO_TUNNEL = True # @param {type:"boolean"}
 # @markdown Gradio 접속 시 사용할 사용자 아이디와 비밀번호
 # @markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> 인증을 사용하지 않음
 # @markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
-# @markdown <br>`GRADIO_PASSWORD` 입력 란이 <font color="red">비워두면</font> 자동으로 비밀번호를 생성함
+# @markdown <br>`GRADIO_PASSWORD` 입력 란을 <font color="red">비워두면</font> 자동으로 비밀번호를 생성함
 GRADIO_USERNAME = 'gradio' # @param {type:"string"}
 GRADIO_PASSWORD = '' # @param {type:"string"}
 GRADIO_PASSWORD_GENERATED = False
