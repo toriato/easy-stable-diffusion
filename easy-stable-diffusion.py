@@ -421,7 +421,7 @@ CHECKPOINTS = {
 
 # @markdown ### <font color="orange">***다운로드 받을 모델(체크포인트) 선택***</font>
 # @markdown 입력 란을 <font color="red">비워두면</font> 모델을 받지 않고 바로 실행함
-# @markdown 우측 <font color="red">화살표(🔽)</font> 클릭하면 모델 선택할 수 있음!!!
+# @markdown <br>우측 <font color="red">화살표(🔽)</font> 클릭하면 모델 선택 가능
 CHECKPOINT = '' #@param ["", "NAI - animefull-final-pruned", "NAI - animefull-latest", "NAI - animesfw-final-pruned", "NAI - animesfw-latest", "Waifu Diffusion 1.3", "Trinart Stable Diffusion v2 60,000 Steps", "Trinart Stable Diffusion v2 95,000 Steps", "Trinart Stable Diffusion v2 115,000 Steps", "Furry (epoch 4)", "Zack3D Kinky v1", "Pokemon", "Dreambooth - Hiten"] {allow-input: true}
 
 # @markdown ### <font color="orange">***구글 드라이브 동기화를 사용할지?***</font>
