@@ -182,8 +182,8 @@ def log_trace() -> None:
 running_subprocess = None
 
 def execute(args: Union[str, List[str]], parser: Callable=None,
-            summary: str=None, print_to_file=True, print_to_widget=True, throw=True,
-            **kwargs) -> Tuple[str, Popen]:
+            summary: str=None, hide_summary=False, print_to_file=True, print_to_widget=True,
+            throw=True, **kwargs) -> Tuple[str, Popen]:
     global running_subprocess
 
     # 이미 서브 프로세스가 존재한다면 예외 처리하기
@@ -245,8 +245,11 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
     # 로그 블록 업데이트
     if LOG_WIDGET:
         if returncode == 0:
-            LOG_WIDGET.blocks[running_subprocess.block_index]['summary_styles']['color'] = 'green'
-            LOG_WIDGET.blocks[running_subprocess.block_index]['max_lines'] = None
+            if hide_summary:
+                del LOG_WIDGET.blocks[running_subprocess.block_index]
+            else:
+                LOG_WIDGET.blocks[running_subprocess.block_index]['summary_styles']['color'] = 'green'
+                LOG_WIDGET.blocks[running_subprocess.block_index]['max_lines'] = None
 
         else:
             LOG_WIDGET.blocks[running_subprocess.block_index]['summary_styles']['color'] = 'red'
@@ -258,6 +261,16 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
 
     return output, returncode
 
+def runs(item: Union[Callable, List[Callable]]) -> bool:
+    # 함수가 True 를 반환한다면 현재 단의 작업 중단하기
+    if callable(item):
+        return item()
+    elif isinstance(item, list):
+        for child in item:
+            if runs(child) == True:
+                break
+    else:
+        raise('?')
 
 # ==============================
 # 작업 경로
@@ -396,7 +409,7 @@ USE_GRADIO_TUNNEL = True # @param {type:"boolean"}
 # @markdown Gradio 접속 시 사용할 사용자 아이디와 비밀번호
 # @markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> 인증을 사용하지 않음
 # @markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
-# @markdown <br>`GRADIO_PASSWORD` 입력 란이 비어있으면 비밀번호를 자동으로 생성함
+# @markdown <br>`GRADIO_PASSWORD` 입력 란이 <font color="red">비워두면</font> 자동으로 비밀번호를 생성함
 GRADIO_USERNAME = 'gradio' # @param {type:"string"}
 GRADIO_PASSWORD = '' # @param {type:"string"}
 GRADIO_PASSWORD_GENERATED = False
@@ -424,7 +437,7 @@ ADDITIONAL_SCRIPTS = [
     # https://arca.live/b/aiart/60536925/272094058
     lambda: download(
         'https://greasyfork.org/scripts/452929-webui-%ED%83%9C%EA%B7%B8-%EC%9E%90%EB%8F%99%EC%99%84%EC%84%B1/code/WebUI%20%ED%83%9C%EA%B7%B8%20%EC%9E%90%EB%8F%99%EC%99%84%EC%84%B1.user.js',
-        'repo/javascript'
+        'repo/javascript',
     ),
 
     # Advanced prompt matrix
@@ -443,10 +456,28 @@ ADDITIONAL_SCRIPTS = [
 
     # Wildcards
     # https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts#wildcards
-    lambda: download(
-        'https://raw.githubusercontent.com/jtkelm2/stable-diffusion-webui-1/master/scripts/wildcards.py',
-        'repo/scripts'
-    ),
+    [
+        lambda: download(
+            'https://raw.githubusercontent.com/jtkelm2/stable-diffusion-webui-1/master/scripts/wildcards.py',
+            'repo/scripts'
+        ),
+        # 스크립트 디렉터리는 patch_webui_repository 메소드에서
+        # 코랩 환경일 때 심볼릭 링크를 만들기 때문에 따로 처리할 필요가 없음
+        [
+            # 사용자 디렉터리가 존재하지 않는다면 기본 데이터셋 가져오기
+            # https://github.com/Lopyter/stable-soup-prompts
+            lambda: os.path.exists('repo/scripts/wildcards'),
+            lambda: shutil.rmtree('.tmp', ignore_errors=True),
+            lambda: execute(
+                ['git', 'clone', 'https://github.com/Lopyter/stable-soup-prompts.git', '.tmp'],
+                hide_summary=True    
+            ),
+            lambda: os.remove('repo/scripts/wildcards'), # 심볼릭 링크는  파일로 삭제해야함
+            lambda: shutil.rmtree('repo/scripts/wildcards', ignore_errors=True),
+            lambda: shutil.copytree('.tmp/wildcards', 'repo/scripts/wildcards'),
+            lambda: shutil.rmtree('.tmp', ignore_errors=True)
+        ]
+    ],
 
     # txt2mask
     # https://github.com/ThereforeGames/txt2mask
@@ -556,8 +587,23 @@ ADDITIONAL_SCRIPTS = [
     # https://github.com/DominikDoom/a1111-sd-webui-tagcomplete
     [
         lambda: shutil.rmtree('.tmp', ignore_errors=True),
-        lambda: execute(['git', 'clone', 'git@github.com:DominikDoom/a1111-sd-webui-tagcomplete.git', '.tmp']),
-        lambda: None if os.path.islink('repo/tags') else shutil.copytree('.tmp/tags', 'repo/tags'),
+        lambda: execute(
+            ['git', 'clone', 'https://github.com/DominikDoom/a1111-sd-webui-tagcomplete.git', '.tmp'],
+            hide_summary=True
+        ),
+        [
+            # 코랩 + 사용자 디렉터리가 존재한다면 심볼릭 링크 만들기
+            lambda: not (IN_COLAB and os.path.isdir(os.path.join(path_to['workspace'], 'tags'))),
+            lambda: shutil.rmtree('repo/tags', ignore_errors=True),
+            lambda: os.symlink('repo/tags', os.path.join(path_to['workspace'], 'tags'))
+        ],
+        [
+            # 사용자 디렉터리가 존재하지 않는다면 기본 데이터셋 가져오기
+            lambda: IN_COLAB and os.path.islink('repo/tags'),
+            lambda: not IN_COLAB and os.path.isdir('repo/tags'),
+            lambda: shutil.rmtree('repo/tags', ignore_errors=True),
+            lambda: shutil.copytree('.tmp/tags', 'repo/tags'),
+        ],
         lambda: shutil.copy('.tmp/javascript/tagAutocomplete.js', 'repo/javascript'),
         lambda: shutil.copy('.tmp/scripts/tag_autocomplete_helper.py', 'repo/scripts'),
         lambda: shutil.rmtree('.tmp', ignore_errors=True),
@@ -651,7 +697,7 @@ def download(url: str, target=''):
             # 목표 경로가 파일이거나 아예 존재하지 않다면
             args.append(f'--out={basename}')
 
-        execute(['aria2c', *args, url])
+        execute(['aria2c', *args, url], hide_summary=True)
 
     elif find_executable('curl'):
         args = ['--location']
@@ -661,7 +707,11 @@ def download(url: str, target=''):
         else:
             args += ['--output', basename]
 
-        execute(['curl', *args, url], cwd=dirname if dirname != '' else None)
+        execute(
+            ['curl', *args, url], 
+            hide_summary=True,
+            cwd=dirname if dirname != '' else None
+        )
 
     else:
         # 다른 패키지에선 파일 경로를 자동으로 잡아주는데 여기선 그럴 수 없으니 직접 해줘야됨
@@ -787,22 +837,17 @@ def patch_webui_repository() -> None:
 
     # 스크립트 다운로드
     log('사용자 스크립트를 받습니다')
-    for job in ADDITIONAL_SCRIPTS:
-        if callable(job):
-            job()
-        elif isinstance(job, list):
-            for child_job in job:
-                child_job()
+    runs(ADDITIONAL_SCRIPTS)
 
-    # 사용자 스크립트 심볼릭 생성
+    # 사용자 스크립트 심볼릭 링크 생성
     log('사용자 스크립트의 심볼릭 링크를 만듭니다')
     for path in os.listdir(path_to['scripts']):
         src = os.path.join(path_to['scripts'], path)
         dst = os.path.join('repo/scripts', os.path.basename(path))
 
         # 이미 파일이 존재한다면 기존 파일 삭제하기
-        if os.path.lexists(dst):
-            shutil.rmtree(dst) if os.path.isdir(dst) and not os.path.islink(dst) else os.reshutil.move(dst)
+        if os.path.exists(dst):
+            os.remove(dst) if os.path.islink(dst) else shutil.rmtree(dst, ignore_errors=True)
 
         # 심볼릭 링크 생성
         os.symlink(src, dst, target_is_directory=os.path.isdir(path))
@@ -867,8 +912,16 @@ def parse_webui_output(line: str) -> bool:
     if line == 'Invalid ngrok authtoken, ngrok connection aborted.\n':
         raise Exception('ngrok 인증 토큰이 잘못됐습니다, 올바른 토큰을 입력하거나 토큰 값을 빼고 실행해주세요')
 
-    # 웹 서버가 열렸을 때
+    # 로컬 웹 서버가 열렸을 때
     if line.startswith('Running on local URL:'):
+        if GRADIO_PASSWORD_GENERATED:
+            # gradio 인증
+            log('\n'.join([
+                'Gradio 비밀번호가 자동으로 생성됐습니다',
+                f'아이디: {GRADIO_USERNAME}',
+                f'비밀번호: {GRADIO_PASSWORD}'
+            ]), styles=styles, print_to_file=False)
+
         # ngork
         if NGROK_API_KEY != '':
             # 이전 로그에서 ngrok 주소가 표시되지 않았다면 ngrok 관련 오류 발생한 것으로 판단
@@ -883,7 +936,7 @@ def parse_webui_output(line: str) -> bool:
         return
 
     # 외부 주소 출력되면 성공적으로 실행한 것으로 판단
-    matches = re.search('https?://(\d+\.gradio\.app|[0-9a-f-]+\.ngrok\.io)', line)
+    matches = re.search('https?://([0-9a-f-]+\.gradio\.app|ngrok\.io)', line)
     if matches:
         url = matches[0]
 
@@ -891,10 +944,8 @@ def parse_webui_output(line: str) -> bool:
         if 'gradio.app' in url:
             log('\n'.join([
                 '성공적으로 Gradio 터널이 열렸습니다',
-                f'- 아이디: {GRADIO_USERNAME}',
-                f'- 비밀번호: {GRADIO_PASSWORD}',
                 url if LOG_WIDGET is None else f'<a target="_blank" href="{url}">{url}</a>',
-            ]), styles=styles, print_to_file=False)
+            ]), styles=styles)
 
         # ngork 는 우선 터널이 시작되고 이후에 웹 서버가 켜지기 때문에
         # 미리 주소를 저장해두고 이후에 로컬호스트 주소가 나온 뒤에 사용자에게 알려야함
@@ -1046,16 +1097,17 @@ try:
         args.append('--share')
 
     # gradio 인증
-    if GRADIO_USERNAME:
+    if GRADIO_USERNAME != '':
         # 다계정이 아니고 비밀번호가 없다면 무작위로 만들기
         if GRADIO_PASSWORD == '' and ';' not in GRADIO_USERNAME:
             from secrets import token_urlsafe
             GRADIO_PASSWORD = token_urlsafe(8)
             GRADIO_PASSWORD_GENERATED = True
 
-        auth = GRADIO_USERNAME + ('' if GRADIO_PASSWORD == '' else ':' + GRADIO_PASSWORD)
-
-        args.append(f'--gradio-auth={auth}')
+        args += [
+            f'--gradio-auth',
+            GRADIO_USERNAME + ('' if GRADIO_PASSWORD == '' else ':' + GRADIO_PASSWORD)
+        ]
 
     # ngrok
     if NGROK_API_KEY != '':
