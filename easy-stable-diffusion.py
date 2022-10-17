@@ -119,7 +119,17 @@ def log_trace() -> None:
     # https://docs.python.org/3/library/sys.html#sys.exc_info
     # TODO: 오류 유무 이렇게 확인하면 안될거 같은데 일단 귀찮아서 대충 써둠
     if ex_type is not None and 'color' not in summary_styles:
-        summary_styles = LOG_WIDGET_STYLES['dialog_error']
+        summary_styles = {
+            'display': 'block',
+            'margin-top': '.5em',
+            'padding': '.5em',
+            'border': '3px dashed darkred',
+            'background-color': 'red',
+            'font-weight': 'bold',
+            'font-size': '1.5em',
+            'line-height': '1em',
+            'color': 'black'
+        }
 
     block_index = None if LOG_WIDGET is None else append_log_block(
         summary='보고서를 만들고 있습니다...', 
@@ -270,29 +280,29 @@ def runs(item: Union[Callable, List[Callable]]) -> bool:
 # ==============================
 # 작업 경로
 # ==============================
-PATHS = {}
+path_to = {}
 
 def update_path_to(path_to_workspace: str) -> None:
     global LOG_FILE
 
-    PATHS['workspace'] = path_to_workspace
-    PATHS['outputs'] = f"{PATHS['workspace']}/outputs"
-    PATHS['models'] = f"{PATHS['workspace']}/models"
-    PATHS['embeddings'] = f"{PATHS['workspace']}/embeddings"
-    PATHS['localizations'] = f"{PATHS['workspace']}/localizations"
-    PATHS['scripts'] = f"{PATHS['workspace']}/scripts"
-    PATHS['logs'] = f"{PATHS['workspace']}/logs"
-    PATHS['styles_file'] = f"{PATHS['workspace']}/styles.csv"
-    PATHS['ui_config_file'] = f"{PATHS['workspace']}/ui-config.json"
-    PATHS['ui_settings_file'] = f"{PATHS['workspace']}/config.json"
+    path_to['workspace'] = path_to_workspace
+    path_to['outputs'] = f"{path_to['workspace']}/outputs"
+    path_to['models'] = f"{path_to['workspace']}/models"
+    path_to['embeddings'] = f"{path_to['workspace']}/embeddings"
+    path_to['localizations'] = f"{path_to['workspace']}/localizations"
+    path_to['scripts'] = f"{path_to['workspace']}/scripts"
+    path_to['logs'] = f"{path_to['workspace']}/logs"
+    path_to['styles_file'] = f"{path_to['workspace']}/styles.csv"
+    path_to['ui_config_file'] = f"{path_to['workspace']}/ui-config.json"
+    path_to['ui_settings_file'] = f"{path_to['workspace']}/config.json"
 
-    os.makedirs(PATHS['workspace'], exist_ok=True)
-    os.makedirs(PATHS['embeddings'], exist_ok=True)
-    os.makedirs(PATHS['localizations'], exist_ok=True)
-    os.makedirs(PATHS['scripts'], exist_ok=True)
-    os.makedirs(PATHS['logs'], exist_ok=True)
+    os.makedirs(path_to['workspace'], exist_ok=True)
+    os.makedirs(path_to['embeddings'], exist_ok=True)
+    os.makedirs(path_to['localizations'], exist_ok=True)
+    os.makedirs(path_to['scripts'], exist_ok=True)
+    os.makedirs(path_to['logs'], exist_ok=True)
 
-    log_path = os.path.join(PATHS['logs'], datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S.log'))
+    log_path = os.path.join(path_to['logs'], datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S.log'))
 
     # 기존 로그 파일이 존재한다면 옮기기
     if LOG_FILE:
@@ -467,7 +477,7 @@ ADDITIONAL_SCRIPTS = [
     # 번역 파일
     lambda: download(
         'https://gist.github.com/toriato/72847da83f44d8d9d1eb6b0027fc329f/raw/a7e9896d9a796d20ec55077b81d32cc5155e83ab/ko-KR_easy-stable-diffusion.json',
-        PATHS['localizations'],
+        path_to['localizations'],
     ),
 
     # 태그 자동 완성 유저스크립트
@@ -633,9 +643,9 @@ ADDITIONAL_SCRIPTS = [
         ),
         [
             # 코랩 + 사용자 디렉터리가 존재한다면 심볼릭 링크 만들기
-            lambda: not (IN_COLAB and os.path.isdir(os.path.join(PATHS['workspace'], 'tags'))),  # True 반환시 현재 리스트 실행 정지
+            lambda: not (IN_COLAB and os.path.isdir(os.path.join(path_to['workspace'], 'tags'))),  # True 반환시 현재 리스트 실행 정지
             lambda: shutil.rmtree('repo/tags', ignore_errors=True),
-            lambda: os.symlink('repo/tags', os.path.join(PATHS['workspace'], 'tags'))
+            lambda: os.symlink('repo/tags', os.path.join(path_to['workspace'], 'tags'))
         ],
         [
             # 사용자 디렉터리가 존재하지 않는다면 기본 데이터셋 가져오기
@@ -659,32 +669,18 @@ LOG_FILE = None
 # 로그 HTML 위젯
 LOG_WIDGET = None
 
-# 로그 HTML 위젯 스타일
 LOG_WIDGET_STYLES = {
-    'dialog': {
+    'success': {
         'display': 'block',
         'margin-top': '.5em',
         'padding': '.5em',
+        'border': '3px dashed darkgreen',
+        'background-color': 'green',
         'font-weight': 'bold',
         'font-size': '1.5em',
         'line-height': '1em',
         'color': 'black'
     }
-}
-LOG_WIDGET_STYLES['dialog_success'] = {
-    **LOG_WIDGET_STYLES['dialog'],
-    'border': '3px dashed darkgreen',
-    'background-color': 'green',
-}
-LOG_WIDGET_STYLES['dialog_warning'] = {
-    **LOG_WIDGET_STYLES['dialog'],
-    'border': '3px dashed darkyellow',
-    'background-color': 'yellow',
-}
-LOG_WIDGET_STYLES['dialog_error'] = {
-    **LOG_WIDGET_STYLES['dialog'],
-    'border': '3px dashed darkred',
-    'background-color': 'red',
 }
 
 # 현재 코랩 환경에서 구동 중인지?
@@ -810,11 +806,11 @@ def download_checkpoint(checkpoint: str) -> None:
     log(f"파일 {len(checkpoint['files'])}개를 받습니다")
 
     for file in checkpoint['files']:
-        target = os.path.join(f"{PATHS['models']}/Stable-diffusion", file.get('target', ''))
+        target = os.path.join(f"{path_to['models']}/Stable-diffusion", file.get('target', ''))
         download(**{**file, 'target': target})
 
 def has_checkpoint() -> bool:
-    for p in Path(f"{PATHS['models']}/Stable-diffusion").glob('**/*.ckpt'):
+    for p in Path(f"{path_to['models']}/Stable-diffusion").glob('**/*.ckpt'):
         # aria2 로 받다만 파일은 무시하기
         if os.path.isfile(f'{p}.aria2'):
             continue
@@ -850,14 +846,14 @@ def patch_webui_repository() -> None:
 
         configs = {
             # 기본 언어 파일
-            'localization': os.path.join(PATHS['localizations'], 'ko-KR_easy-stable-diffusion.json'),
+            'localization': os.path.join(path_to['localizations'], 'ko-KR_easy-stable-diffusion.json'),
 
             # 결과 이미지 디렉터리
-            'outdir_txt2img_samples': os.path.join(PATHS['outputs'], 'txt2img-samples'),
-            'outdir_img2img_samples': os.path.join(PATHS['outputs'], 'img2img-samples'),
-            'outdir_extras_samples': os.path.join(PATHS['outputs'], 'extras-samples'),
-            'outdir_txt2img_grids': os.path.join(PATHS['outputs'], 'txt2img-grids'),
-            'outdir_img2img_grids': os.path.join(PATHS['outputs'], 'img2img-grids'),
+            'outdir_txt2img_samples': os.path.join(path_to['outputs'], 'txt2img-samples'),
+            'outdir_img2img_samples': os.path.join(path_to['outputs'], 'img2img-samples'),
+            'outdir_extras_samples': os.path.join(path_to['outputs'], 'extras-samples'),
+            'outdir_txt2img_grids': os.path.join(path_to['outputs'], 'txt2img-grids'),
+            'outdir_img2img_grids': os.path.join(path_to['outputs'], 'img2img-grids'),
 
             # NAI 기본 설정(?)
             'CLIP_stop_at_last_layers': 2,
@@ -884,10 +880,10 @@ def patch_webui_repository() -> None:
             f.write(replaced_code)
 
     # 기본 설정 파일 (config.json)
-    if not os.path.isfile(PATHS['ui_config_file']):
+    if not os.path.isfile(path_to['ui_config_file']):
         log('UI 설정 파일이 존재하지 않습니다, 추천 값으로 새로 생성합니다')
 
-        with open(PATHS['ui_config_file'], 'w') as f:
+        with open(path_to['ui_config_file'], 'w') as f:
             configs = {
                 'txt2img/Prompt/value': 'best quality, masterpiece',
                 'txt2img/Negative prompt/value': 'lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry',
@@ -910,8 +906,8 @@ def patch_webui_repository() -> None:
 
     # 사용자 스크립트 심볼릭 링크 생성
     log('사용자 스크립트의 심볼릭 링크를 만듭니다')
-    for path in os.listdir(PATHS['scripts']):
-        src = os.path.join(PATHS['scripts'], path)
+    for path in os.listdir(path_to['scripts']):
+        src = os.path.join(path_to['scripts'], path)
         dst = os.path.join('repo/scripts', os.path.basename(path))
 
         # 이미 파일이 존재한다면 기존 파일 삭제하기
@@ -982,7 +978,7 @@ def parse_webui_output(line: str) -> bool:
                     f'아이디: {GRADIO_USERNAME}',
                     f'비밀번호: {GRADIO_PASSWORD}'
                 ]),
-                LOG_WIDGET_STYLES['dialog_success'], 
+                LOG_WIDGET_STYLES['success'], 
                 print_to_file=False
             )
 
@@ -992,16 +988,13 @@ def parse_webui_output(line: str) -> bool:
             if NGROK_URL == None:
                 raise Exception('ngrok 터널을 여는 중 알 수 없는 오류가 발생했습니다')
 
-            if LOG_WIDGET:
-                log(
-                    '\n'.join([
-                        '성공적으로 ngrok 터널이 열렸습니다',
-                        NGROK_URL if LOG_WIDGET is None else f'<a target="_blank" href="{NGROK_URL}">{NGROK_URL}</a>',
-                    ]),
-                    LOG_WIDGET_STYLES['dialog_success']
-                )
-            else:
-                log(f'성공적으로 ngrok 터널이 열렸습니다: {NGROK_URL}')
+            log(
+                '\n'.join([
+                    '성공적으로 ngrok 터널이 열렸습니다',
+                    NGROK_URL if LOG_WIDGET is None else f'<a target="_blank" href="{NGROK_URL}">{NGROK_URL}</a>',
+                ]),
+                LOG_WIDGET_STYLES['success']
+            )
 
         return
 
@@ -1012,17 +1005,13 @@ def parse_webui_output(line: str) -> bool:
 
         # gradio 는 웹 서버가 켜진 이후 바로 나오기 때문에 사용자에게 바로 보여줘도 상관 없음
         if 'gradio.app' in url:
-            if LOG_WIDGET:
-                log(
-                    '\n'.join([
-                        '성공적으로 Gradio 터널이 열렸습니다',
-                        '<a target="_blank" href="https://arca.live/b/aiart/60683088">Gradio 는 느리고 버그가 있으므로 ngrok 사용을 추천합니다</a>',
-                        f'<a target="_blank" href="{url}">{url}</a>',
-                    ]),
-                    LOG_WIDGET_STYLES['dialog_warning']
-                )
-            else:
-                log(f'성공적으로 Gradio 터널이 열렸습니다: {url}')
+            log(
+                '\n'.join([
+                    '성공적으로 Gradio 터널이 열렸습니다',
+                    url if LOG_WIDGET is None else f'<a target="_blank" href="{url}">{url}</a>',
+                ]),
+                LOG_WIDGET_STYLES['success']
+            )
 
         # ngork 는 우선 터널이 시작되고 이후에 웹 서버가 켜지기 때문에
         # 미리 주소를 저장해두고 이후에 로컬호스트 주소가 나온 뒤에 사용자에게 알려야함
@@ -1103,7 +1092,7 @@ try:
             log('트랜스포머 모델 캐시 디렉터리에 심볼릭 링크를 만듭니다')
             shutil.rmtree(dst, ignore_errors=True)
 
-            src = os.path.join(PATHS['workspace'], 'cache', 'huggingface')
+            src = os.path.join(path_to['workspace'], 'cache', 'huggingface')
             os.makedirs(src, exist_ok=True)
             os.symlink(src, dst, target_is_directory=True)
 
@@ -1128,22 +1117,22 @@ try:
     # WebUI 실행
     args = [
         # 동적 경로들
-        '--ckpt-dir', f"{PATHS['models']}/Stable-diffusion",
-        '--embeddings-dir', PATHS['embeddings'],
-        '--hypernetwork-dir', f"{PATHS['models']}/hypernetworks",
-        '--localizations-dir', PATHS['localizations'],
-        '--codeformer-models-path', f"{PATHS['models']}/Codeformer",
-        '--gfpgan-models-path', f"{PATHS['models']}/GFPGAN",
-        '--esrgan-models-path', f"{PATHS['models']}/ESRGAN",
-        '--bsrgan-models-path', f"{PATHS['models']}/BSRGAN",
-        '--realesrgan-models-path', f"{PATHS['models']}/RealESRGAN",
-        '--scunet-models-path', f"{PATHS['models']}/ScuNET",
-        '--swinir-models-path', f"{PATHS['models']}/SwinIR",
-        '--ldsr-models-path', f"{PATHS['models']}/LDSR",
+        '--ckpt-dir', f"{path_to['models']}/Stable-diffusion",
+        '--embeddings-dir', path_to['embeddings'],
+        '--hypernetwork-dir', f"{path_to['models']}/hypernetworks",
+        '--localizations-dir', path_to['localizations'],
+        '--codeformer-models-path', f"{path_to['models']}/Codeformer",
+        '--gfpgan-models-path', f"{path_to['models']}/GFPGAN",
+        '--esrgan-models-path', f"{path_to['models']}/ESRGAN",
+        '--bsrgan-models-path', f"{path_to['models']}/BSRGAN",
+        '--realesrgan-models-path', f"{path_to['models']}/RealESRGAN",
+        '--scunet-models-path', f"{path_to['models']}/ScuNET",
+        '--swinir-models-path', f"{path_to['models']}/SwinIR",
+        '--ldsr-models-path', f"{path_to['models']}/LDSR",
 
-        '--styles-file', f"{PATHS['styles_file']}",
-        '--ui-config-file', f"{PATHS['ui_config_file']}",
-        '--ui-settings-file', f"{PATHS['ui_settings_file']}",
+        '--styles-file', f"{path_to['styles_file']}",
+        '--ui-config-file', f"{path_to['ui_config_file']}",
+        '--ui-settings-file', f"{path_to['ui_settings_file']}",
     ]
 
     cmd_args = [ '--skip-torch-cuda-test' ]
