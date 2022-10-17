@@ -262,7 +262,7 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
     return output, returncode
 
 def runs(item: Union[Callable, List[Callable]]) -> bool:
-    # 이게 다 파이썬이 재대로된 익명 함수 지원 안해서 그런거임
+    # 이게 다 파이썬이 익명 함수 지원 안해서 그런거임
     # 심플리티 뭐시기 ㅇㅈㄹ하면서 멀티 라인 없는 람다만 쓰게 강요하니까 이런거...
     # Pythonic 좆까 ㅗㅗ
 
