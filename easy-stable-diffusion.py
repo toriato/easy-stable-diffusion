@@ -452,8 +452,7 @@ ADDITIONAL_SCRIPTS = [
     # https://github.com/ThereforeGames/txt2mask
     [
         lambda: shutil.rmtree('.tmp', ignore_errors=True),
-        lambda: os.makedirs('.tmp', exist_ok=True),
-        lambda: execute('curl -sSL https://github.com/ThereforeGames/txt2mask/tarball/master | tar xzvf - --strip-components=1 -C .tmp', shell=True),
+        lambda: execute(['git', 'clone', 'https://github.com/ThereforeGames/txt2mask.git', '.tmp']),
         lambda: shutil.rmtree('repo/repositories/clipseg', ignore_errors=True),
         lambda: shutil.copytree('.tmp/repositories/clipseg', 'repo/repositories/clipseg'),
         lambda: shutil.copy('.tmp/scripts/txt2mask.py', 'repo/scripts'),
@@ -462,17 +461,15 @@ ADDITIONAL_SCRIPTS = [
 
     # Img2img Video
     # https://github.com/memes-forever/Stable-diffusion-webui-video
-    [
-        lambda: download(
-            'https://raw.githubusercontent.com/memes-forever/Stable-diffusion-webui-video/main/videos.py',
-            'repo/scripts'
-        )
-    ],
+    lambda: download(
+        'https://raw.githubusercontent.com/memes-forever/Stable-diffusion-webui-video/main/videos.py',
+        'repo/scripts'
+    ),
 
     # Seed Travel
     # https://github.com/yownas/seed_travel
     [
-        lambda: execute(['pip', 'install', 'moviepy']) if has_python_package('moviepy') is None else None,
+        lambda: None if has_python_package('moviepy') else execute(['pip', 'install', 'moviepy']),
         lambda: download(
             'https://raw.githubusercontent.com/yownas/seed_travel/main/scripts/seed_travel.py',
             'repo/scripts',
@@ -503,7 +500,7 @@ ADDITIONAL_SCRIPTS = [
     # Shift Attention
     # https://github.com/yownas/shift-attention
     [
-        lambda: execute(['pip', 'install', 'moviepy']) if has_python_package('moviepy') is None else None,
+        lambda: None if has_python_package('moviepy') else execute(['pip', 'install', 'moviepy']),
         lambda: download(
             'https://raw.githubusercontent.com/yownas/shift-attention/main/scripts/shift_attention.py',
             'repo/scripts'
@@ -534,7 +531,7 @@ ADDITIONAL_SCRIPTS = [
     # prompt-morph
     # https://github.com/feffy380/prompt-morph
     [
-        lambda: execute(['pip', 'install', 'moviepy']) if has_python_package('moviepy') is None else None,
+        lambda: None if has_python_package('moviepy') else execute(['pip', 'install', 'moviepy']),
         lambda: download(
             'https://raw.githubusercontent.com/feffy380/prompt-morph/master/prompt_morph.py',
             'repo/scripts'
@@ -552,8 +549,19 @@ ADDITIONAL_SCRIPTS = [
     # https://github.com/tjm35/asymmetric-tiling-sd-webui/
     lambda: download(
         'https://raw.githubusercontent.com/tjm35/asymmetric-tiling-sd-webui/main/asymmetric_tiling.py',
-        'repo/scritps'
-    )
+        'repo/scripts'
+    ),
+
+    # Booru tag autocompletion for A1111
+    # https://github.com/DominikDoom/a1111-sd-webui-tagcomplete
+    [
+        lambda: shutil.rmtree('.tmp', ignore_errors=True),
+        lambda: execute(['git', 'clone', 'git@github.com:DominikDoom/a1111-sd-webui-tagcomplete.git', '.tmp']),
+        lambda: None if os.path.islink('repo/tags') else shutil.copytree('.tmp/tags', 'repo/tags'),
+        lambda: shutil.copy('.tmp/javascript/tagAutocomplete.js', 'repo/javascript'),
+        lambda: shutil.copy('.tmp/scripts/tag_autocomplete_helper.py', 'repo/scripts'),
+        lambda: shutil.rmtree('.tmp', ignore_errors=True),
+    ]
 ]
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 추가 인자***</font>
@@ -671,7 +679,6 @@ def download(url: str, target=''):
 
                 # TODO: 파일 길이가 적합한지?
                 shutil.copyfileobj(res.raw, file, length=16*1024*1024)
-
 
 def download_checkpoint(checkpoint: str) -> None:
     if checkpoint in CHECKPOINTS:
