@@ -984,7 +984,7 @@ def parse_webui_output(line: str) -> bool:
         return
 
     # 외부 주소 출력되면 성공적으로 실행한 것으로 판단
-    matches = re.search('https?://([0-9a-f-]+\.gradio\.app|ngrok\.io)', line)
+    matches = re.search('https?://[0-9a-f-]+\.(gradio\.app|ngrok\.io)', line)
     if matches:
         url = matches[0]
 
