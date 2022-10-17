@@ -1124,60 +1124,62 @@ try:
     if IN_COLAB:
         args.append('--lowram')
 
-    # xformers
-    if USE_XFORMERS:
-        log('xformers 를 사용합니다')
+        # xformers
+        if USE_XFORMERS:
+            log('xformers 를 사용합니다')
 
-        if has_python_package('xformers'):
-            cmd_args.append('--xformers')
+            if has_python_package('xformers'):
+                cmd_args.append('--xformers')
 
-        elif IN_COLAB:
-            log('xformers 패키지가 존재하지 않습니다, 미리 컴파일된 파일로부터 xformers 패키지를 가져옵니다')
-            download('https://github.com/toriato/easy-stable-diffusion/raw/prebuilt-xformers/cu113/xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl')
-            execute(
-                ['pip', 'install', 'xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl'],
-                summary='xformers 패키지를 설치합니다'
-            )
-            cmd_args.append('--xformers')
+            elif IN_COLAB:
+                log('xformers 패키지가 존재하지 않습니다, 미리 컴파일된 파일로부터 xformers 패키지를 가져옵니다')
+                download('https://github.com/toriato/easy-stable-diffusion/raw/prebuilt-xformers/cu113/xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl')
+                execute(
+                    ['pip', 'install', 'xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl'],
+                    summary='xformers 패키지를 설치합니다'
+                )
+                cmd_args.append('--xformers')
 
-        else:
-            # TODO: 패키지 빌드
-            log('xformers 패키지가 존재하지 않습니다, --xformers 인자를 사용하지 않습니다')
+            else:
+                # TODO: 패키지 빌드
+                log('xformers 패키지가 존재하지 않습니다, --xformers 인자를 사용하지 않습니다')
 
-    # deepdanbooru
-    if USE_DEEPDANBOORU:
-        log('deepbooru 를 사용합니다')
-        cmd_args.append('--deepdanbooru')
+        # deepdanbooru
+        if USE_DEEPDANBOORU:
+            log('deepbooru 를 사용합니다')
+            cmd_args.append('--deepdanbooru')
 
-    # gradio
-    if USE_GRADIO_TUNNEL:
-        log('Gradio 터널을 사용합니다')
-        args.append('--share')
+        # gradio
+        if USE_GRADIO_TUNNEL:
+            log('Gradio 터널을 사용합니다')
+            args.append('--share')
 
-    # gradio 인증
-    if GRADIO_USERNAME != '':
-        # 다계정이 아니고 비밀번호가 없다면 무작위로 만들기
-        if GRADIO_PASSWORD == '' and ';' not in GRADIO_USERNAME:
-            from secrets import token_urlsafe
-            GRADIO_PASSWORD = token_urlsafe(8)
-            GRADIO_PASSWORD_GENERATED = True
+        # gradio 인증
+        if GRADIO_USERNAME != '':
+            # 다계정이 아니고 비밀번호가 없다면 무작위로 만들기
+            if GRADIO_PASSWORD == '' and ';' not in GRADIO_USERNAME:
+                from secrets import token_urlsafe
+                GRADIO_PASSWORD = token_urlsafe(8)
+                GRADIO_PASSWORD_GENERATED = True
 
-        args += [
-            f'--gradio-auth',
-            GRADIO_USERNAME + ('' if GRADIO_PASSWORD == '' else ':' + GRADIO_PASSWORD)
-        ]
+            args += [
+                f'--gradio-auth',
+                GRADIO_USERNAME + ('' if GRADIO_PASSWORD == '' else ':' + GRADIO_PASSWORD)
+            ]
 
-    # ngrok
-    if NGROK_API_TOKEN != '':
-        log('ngrok 터널을 사용합니다')
-        args += ['--ngrok', NGROK_API_TOKEN]
+        # ngrok
+        if NGROK_API_TOKEN != '':
+            log('ngrok 터널을 사용합니다')
+            args += ['--ngrok', NGROK_API_TOKEN]
 
-        if has_python_package('pyngrok') is None:
-            log('ngrok 사용에 필요한 패키지가 존재하지 않습니다, 설치를 시작합니다')
-            execute(['pip', 'install', 'pyngrok'])
+            if has_python_package('pyngrok') is None:
+                log('ngrok 사용에 필요한 패키지가 존재하지 않습니다, 설치를 시작합니다')
+                execute(['pip', 'install', 'pyngrok'])
 
-    if ADDITIONAL_ARGS != '':
-        args.append(ADDITIONAL_ARGS)
+        # 추가 인자
+        # TODO: 받은 문자열을 리스트로 안나누고 그대로 사용할 수 있는지?
+        if ADDITIONAL_ARGS != '':
+            args.append(ADDITIONAL_ARGS)
 
     start_webui(args, env={'COMMANDLINE_ARGS': ' '.join(cmd_args)})
 
