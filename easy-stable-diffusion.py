@@ -499,7 +499,7 @@ ADDITIONAL_SCRIPTS = [
         [
             # 사용자 디렉터리가 존재하지 않는다면 기본 데이터셋 가져오기
             # https://github.com/Lopyter/stable-soup-prompts
-            lambda: os.path.exists('repo/scripts/wildcards'),
+            lambda: os.path.exists('repo/scripts/wildcards'), # True 반환시 현재 리스트 실행 정지
             lambda: shutil.rmtree('.tmp', ignore_errors=True),
             lambda: execute(
                 ['git', 'clone', 'https://github.com/Lopyter/stable-soup-prompts.git', '.tmp'],
@@ -629,14 +629,14 @@ ADDITIONAL_SCRIPTS = [
         ),
         [
             # 코랩 + 사용자 디렉터리가 존재한다면 심볼릭 링크 만들기
-            lambda: not (IN_COLAB and os.path.isdir(os.path.join(path_to['workspace'], 'tags'))),
+            lambda: not (IN_COLAB and os.path.isdir(os.path.join(path_to['workspace'], 'tags'))),  # True 반환시 현재 리스트 실행 정지
             lambda: shutil.rmtree('repo/tags', ignore_errors=True),
             lambda: os.symlink('repo/tags', os.path.join(path_to['workspace'], 'tags'))
         ],
         [
             # 사용자 디렉터리가 존재하지 않는다면 기본 데이터셋 가져오기
-            lambda: IN_COLAB and os.path.islink('repo/tags'),
-            lambda: not IN_COLAB and os.path.isdir('repo/tags'),
+            lambda: IN_COLAB and os.path.islink('repo/tags'),  # True 반환시 현재 리스트 실행 정지
+            lambda: not IN_COLAB and os.path.isdir('repo/tags'),  # True 반환시 현재 리스트 실행 정지
             lambda: shutil.rmtree('repo/tags', ignore_errors=True),
             lambda: shutil.copytree('.tmp/tags', 'repo/tags'),
         ],
