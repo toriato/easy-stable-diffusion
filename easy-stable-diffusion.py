@@ -82,8 +82,8 @@ def log(msg: str, styles={}, newline=True, block_index: int=None,
         print_to_file=True, print_to_widget=True) -> None:
     # 기록할 내용이 ngrok API 키와 일치한다면 숨기기
     # TODO: 더 나은 문자열 검사, 원치 않은 내용이 가려질 수도 있음
-    if NGROK_API_KEY != '':
-        msg = msg.replace(NGROK_API_KEY, '**REDACTED**')
+    if NGROK_API_TOKEN != '':
+        msg = msg.replace(NGROK_API_TOKEN, '**REDACTED**')
 
     if newline:
         msg += '\n'
@@ -316,32 +316,64 @@ CHECKPOINTS = {
     'NAI - animefull-final-pruned': {
         'files': [
             {
-                'url': 'https://cloudflare-ipfs.com/ipfs/bafybeicpamreyp2bsocyk3hpxr7ixb2g2rnrequub3j2ahrkdxbvfbvjc4/model.ckpt',
-                'target': 'nai-animefull-final-pruned.ckpt',
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animefull-final-pruned.ckpt',
+                'target': 'nai/animefull-final-pruned.ckpt',
             },
             {
-                'url': 'https://cloudflare-ipfs.com/ipfs/bafybeiccldswdd3wvg57jhclcq53lvsc6gizasiblwayvhlv6eq4wow7wu/animevae.pt',
-                'target': 'nai-animefull-final-pruned.vae.pt'
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
+                'target': 'nai/animefull-final-pruned.vae.pt'
             },
             {
                 'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-final-pruned.yaml',
-                'target': 'nai-animefull-final-pruned.yaml'
+                'target': 'nai/animefull-final-pruned.yaml'
             }
         ]
     },
     'NAI - animefull-latest': {
         'files': [
             {
-                'url': 'https://anonfiles.com/8fm7QdB1y9',
-                'target': 'nai-animefull-latest.ckpt'
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animefull-latest.ckpt',
+                'target': 'nai/animefull-latest.ckpt'
             },
             {
-                'url': 'https://anonfiles.com/66c1QcB7y6',
-                'target': 'nai-animefull-latest.vae.pt'
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
+                'target': 'nai/animefull-latest.vae.pt'
             },
             {
                 'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-latest.yaml',
-                'target': 'nai-animefull-latest.yaml'
+                'target': 'nai/animefull-latest.yaml'
+            }
+        ]
+    },
+    'NAI - animesfw-final-pruned': {
+        'files': [
+            {
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animesfw-final-pruned.ckpt',
+                'target': 'nai/animesfw-final-pruned.ckpt'
+            },
+            {
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
+                'target': 'nai/animesfw-final-pruned.vae.pt'
+            },
+            {
+                'url': 'https://gist.github.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-final-pruned.yaml',
+                'target': 'nai/animesfw-final-pruned.yaml'
+            }
+        ]
+    },
+    'NAI - animesfw-latest': {
+        'files': [
+            {
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animesfw-latest.ckpt',
+                'target': 'nai/animesfw-latest.ckpt'
+            },
+            {
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
+                'target': 'nai/animesfw-latest.vae.pt'
+            },
+            {
+                'url': 'https://gist.github.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-latest.yaml',
+                'target': 'nai/animesfw-latest.yaml'
             }
         ]
     },
@@ -382,8 +414,9 @@ CHECKPOINTS = {
     },
 }
 
-# @markdown ### <font color="orange">***체크포인트 모델 선택***</font>
-CHECKPOINT = 'NAI - animefull-final-pruned' # @param ['NAI - animefull-final-pruned', 'NAI - animefull-latest', 'Waifu Diffusion 1.3', 'Trinart Stable Diffusion v2 60,000 Steps', 'Trinart Stable Diffusion v2 95,000 Steps', 'Trinart Stable Diffusion v2 115,000 Steps', 'Furry (epoch 4)', 'Zack3D Kinky v1', 'Pokemon', 'Dreambooth - Hiten'] {allow-input: true}
+# @markdown ### <font color="orange">***다운로드 받을 체크포인트 선택***</font>
+# @markdown 입력 란을 <font color="red">비워두면</font> 체크포인트를 받지 않고 바로 실행함
+CHECKPOINT = '' #@param ["", "NAI - animefull-final-pruned", "NAI - animefull-latest", "NAI - animesfw-final-pruned", "NAI - animesfw-latest", "Waifu Diffusion 1.3", "Trinart Stable Diffusion v2 60,000 Steps", "Trinart Stable Diffusion v2 95,000 Steps", "Trinart Stable Diffusion v2 115,000 Steps", "Furry (epoch 4)", "Zack3D Kinky v1", "Pokemon", "Dreambooth - Hiten"] {allow-input: true}
 
 # @markdown ### <font color="orange">***구글 드라이브 동기화를 사용할지?***</font>
 USE_GOOGLE_DRIVE = True  # @param {type:"boolean"}
@@ -392,12 +425,12 @@ USE_GOOGLE_DRIVE = True  # @param {type:"boolean"}
 # @markdown 임베딩, 모델, 결과, 설정 등 영구적으로 보관될 파일이 저장될 디렉터리의 경로
 PATH_TO_GOOGLE_DRIVE = 'SD' # @param {type:"string"}
 
-# @markdown ### <font color="orange">***xformers 를 사용할지?***</font>
-# @markdown - <font color="green">장점</font>: 성능 향상
-# @markdown - <font color="red">단점</font>: 미리 빌드된 패키지가 지원하지 않는 환경에선 빌드할 필요가 있음
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***xformers 를 사용할지?***</font>
+# @markdown - <font color="green">장점</font>: 성능 향생
+# @markdown - <font color="red">단점</font>: 미리 빌드한 패키지가 지원하지 않는 환경에선 직접 빌드할 필요가 있음
 USE_XFORMERS = True  # @param {type:"boolean"}
 
-# @markdown ### <font color="orange">***DeepBooru 를 사용할지?***</font>
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***deepbooru 를 사용할지?***</font>
 # @markdown IMG2IMG 에 올린 이미지를 단부루 태그로 변환(예측)해 프롬프트로 추출해내는 기능
 # @markdown - <font color="red">단점</font>: 처음 실행할 때 추가 패키지를 받기 때문에 시간이 조금 더 걸림
 USE_DEEPDANBOORU = True  # @param {type:"boolean"}
@@ -415,10 +448,10 @@ GRADIO_PASSWORD = '' # @param {type:"string"}
 GRADIO_PASSWORD_GENERATED = False
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***ngrok API 키***</font>
-# @markdown ngrok 터널에 사용할 API 키
-# @markdown <br>[API 키는 여기를 눌러 계정을 만든 뒤 얻을 수 있음](https://dashboard.ngrok.com/get-started/your-authtoken)
+# @markdown ngrok 터널에 사용할 API 토큰
+# @markdown <br>[API 토큰은 여기를 눌러 계정을 만든 뒤 얻을 수 있음](https://dashboard.ngrok.com/get-started/your-authtoken)
 # @markdown <br>입력 란을 <font color="red">비워두면</font> ngrok 터널을 비활성화함
-NGROK_API_KEY = '' # @param {type:"string"}
+NGROK_API_TOKEN = '' # @param {type:"string"}
 NGROK_URL = None
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 주소***</font>
@@ -472,7 +505,7 @@ ADDITIONAL_SCRIPTS = [
                 ['git', 'clone', 'https://github.com/Lopyter/stable-soup-prompts.git', '.tmp'],
                 hide_summary=True    
             ),
-            lambda: os.remove('repo/scripts/wildcards'), # 심볼릭 링크는  파일로 삭제해야함
+            lambda: os.remove('repo/scripts/wildcards') if os.path.islink('repo/scripts/wildcards') else None, # 심볼릭 링크는 파일로 삭제해야함
             lambda: shutil.rmtree('repo/scripts/wildcards', ignore_errors=True),
             lambda: shutil.copytree('.tmp/wildcards', 'repo/scripts/wildcards'),
             lambda: shutil.rmtree('.tmp', ignore_errors=True)
@@ -483,7 +516,10 @@ ADDITIONAL_SCRIPTS = [
     # https://github.com/ThereforeGames/txt2mask
     [
         lambda: shutil.rmtree('.tmp', ignore_errors=True),
-        lambda: execute(['git', 'clone', 'https://github.com/ThereforeGames/txt2mask.git', '.tmp']),
+        lambda: execute(
+            ['git', 'clone', 'https://github.com/ThereforeGames/txt2mask.git', '.tmp'],
+            hide_summary=True
+        ),
         lambda: shutil.rmtree('repo/repositories/clipseg', ignore_errors=True),
         lambda: shutil.copytree('.tmp/repositories/clipseg', 'repo/repositories/clipseg'),
         lambda: shutil.copy('.tmp/scripts/txt2mask.py', 'repo/scripts'),
@@ -618,6 +654,20 @@ LOG_FILE = None
 
 # 로그 HTML 위젯
 LOG_WIDGET = None
+
+LOG_WIDGET_STYLES = {
+    'success': {
+        'display': 'block',
+        'margin-top': '.5em',
+        'padding': '.5em',
+        'border': '3px dashed darkgreen',
+        'background-color': 'green',
+        'font-weight': 'bold',
+        'font-size': '1.5em',
+        'line-height': '1em',
+        'color': 'black'
+    }
+}
 
 # 현재 코랩 환경에서 구동 중인지?
 IN_COLAB = has_python_package('google') and has_python_package('google.colab')
@@ -891,18 +941,6 @@ def setup_webui() -> None:
 def parse_webui_output(line: str) -> bool:
     global NGROK_URL
 
-    styles = {
-        'display': 'block',
-        'margin-top': '.5em',
-        'padding': '.5em',
-        'border': '3px dashed darkgreen',
-        'background-color': 'green',
-        'font-weight': 'bold',
-        'font-size': '1.5em',
-        'line-height': '1em',
-        'color': 'black'
-    }
-
     # 하위 파이썬 실행 중 오류가 발생하면 전체 기록 표시하기
     # TODO: 더 나은 오류 핸들링, 잘못된 내용으로 트리거 될 수 있음
     if LOG_WIDGET and 'Traceback (most recent call last):' in line:
@@ -910,28 +948,35 @@ def parse_webui_output(line: str) -> bool:
         return
 
     if line == 'Invalid ngrok authtoken, ngrok connection aborted.\n':
-        raise Exception('ngrok 인증 토큰이 잘못됐습니다, 올바른 토큰을 입력하거나 토큰 값을 빼고 실행해주세요')
+        raise Exception('ngrok 인증 토큰이 잘못됐습니다, 올바른 토큰을 입력하거나 토큰 값 없이 실행해주세요')
 
     # 로컬 웹 서버가 열렸을 때
     if line.startswith('Running on local URL:'):
         if GRADIO_PASSWORD_GENERATED:
             # gradio 인증
-            log('\n'.join([
-                'Gradio 비밀번호가 자동으로 생성됐습니다',
-                f'아이디: {GRADIO_USERNAME}',
-                f'비밀번호: {GRADIO_PASSWORD}'
-            ]), styles=styles, print_to_file=False)
+            log(
+                '\n'.join([
+                    'Gradio 비밀번호가 자동으로 생성됐습니다',
+                    f'아이디: {GRADIO_USERNAME}',
+                    f'비밀번호: {GRADIO_PASSWORD}'
+                ]),
+                LOG_WIDGET_STYLES['success'], 
+                print_to_file=False
+            )
 
         # ngork
-        if NGROK_API_KEY != '':
+        if NGROK_API_TOKEN != '':
             # 이전 로그에서 ngrok 주소가 표시되지 않았다면 ngrok 관련 오류 발생한 것으로 판단
             if NGROK_URL == None:
                 raise Exception('ngrok 터널을 여는 중 알 수 없는 오류가 발생했습니다')
 
-            log(styles=styles, msg='\n'.join([
-                '성공적으로 ngrok 터널이 열렸습니다',
-                NGROK_URL if LOG_WIDGET is None else f'<a target="_blank" href="{NGROK_URL}">{NGROK_URL}</a>',
-            ]))
+            log(
+                '\n'.join([
+                    '성공적으로 ngrok 터널이 열렸습니다',
+                    NGROK_URL if LOG_WIDGET is None else f'<a target="_blank" href="{NGROK_URL}">{NGROK_URL}</a>',
+                ]),
+                LOG_WIDGET_STYLES['success']
+            )
 
         return
 
@@ -942,10 +987,13 @@ def parse_webui_output(line: str) -> bool:
 
         # gradio 는 웹 서버가 켜진 이후 바로 나오기 때문에 사용자에게 바로 보여줘도 상관 없음
         if 'gradio.app' in url:
-            log('\n'.join([
-                '성공적으로 Gradio 터널이 열렸습니다',
-                url if LOG_WIDGET is None else f'<a target="_blank" href="{url}">{url}</a>',
-            ]), styles=styles)
+            log(
+                '\n'.join([
+                    '성공적으로 Gradio 터널이 열렸습니다',
+                    url if LOG_WIDGET is None else f'<a target="_blank" href="{url}">{url}</a>',
+                ]),
+                LOG_WIDGET_STYLES['success']
+            )
 
         # ngork 는 우선 터널이 시작되고 이후에 웹 서버가 켜지기 때문에
         # 미리 주소를 저장해두고 이후에 로컬호스트 주소가 나온 뒤에 사용자에게 알려야함
@@ -982,7 +1030,8 @@ def start_webui(args: List[str]=[], env={}) -> None:
 # ==============================
 try:
     # 코랩 폼 입력 란을 생성을 위한 코드
-    # log(', '.join(map(lambda s:f"'{s}'", CHECKPOINTS.keys())))
+    # log(', '.join(map(lambda s:f'"{s}"', CHECKPOINTS.keys())))
+    # raise
 
     # 인터페이스 출력
     if 'ipykernel' in sys.modules:
@@ -992,17 +1041,7 @@ try:
         LOG_WIDGET = widgets.HTML()
         LOG_WIDGET.blocks = []
 
-        btn_download_checkpoint = widgets.Button(description='체크포인트 받기')
-        btn_download_checkpoint.on_click(
-            lambda _: download_checkpoint(CHECKPOINT)
-        )
-
-        display(
-            widgets.VBox([
-                btn_download_checkpoint,
-                LOG_WIDGET
-            ])
-        )
+        display(LOG_WIDGET)
 
     # 기본 작업 경로 설정
     update_path_to(os.path.abspath(os.curdir))
@@ -1014,7 +1053,7 @@ try:
     if IN_COLAB:
         log('코랩을 사용하고 있습니다')
 
-        assert USE_GRADIO_TUNNEL or NGROK_API_KEY != '', '터널링 서비스를 하나 이상 선택해주세요' 
+        assert USE_GRADIO_TUNNEL or NGROK_API_TOKEN != '', '터널링 서비스를 하나 이상 선택해주세요' 
 
         import torch
         assert torch.cuda.is_available(), 'GPU 가 없습니다, 런타임 유형이 잘못됐거나 GPU 할당량이 초과된 것 같습니다'
@@ -1029,17 +1068,30 @@ try:
         os.chdir('/usr/local/content')
 
         # huggingface 모델 캐시 심볼릭 만들기
-        src = os.path.join(path_to['workspace'], 'cache', 'huggingface')
         dst = '/root/.cache/huggingface'
+
         if not os.path.islink(dst):
-            log('트랜스포머 모델 캐시 디렉터리의 심볼릭 링크를 만듭니다')
+            log('트랜스포머 모델 캐시 디렉터리에 심볼릭 링크를 만듭니다')
             shutil.rmtree(dst, ignore_errors=True)
+
+            src = os.path.join(path_to['workspace'], 'cache', 'huggingface')
             os.makedirs(src, exist_ok=True)
             os.symlink(src, dst, target_is_directory=True)
 
-    # 체크포인트가 없을 시 다운로드
-    if not has_checkpoint():
+    # 체크포인트가 선택 존재한다면 해당 체크포인트 받기
+    if CHECKPOINT == '':
+        if not has_checkpoint():
+            if IN_COLAB:
+                log('체크포인트가 존재하지 않습니다')
+                log('추천 체크포인트를 자동으로 다운로드 합니다')
+                download_checkpoint('NAI - animefull-final-pruned')
+            else: 
+                raise Exception('체크포인트가 존재하지 않습니다')
+    else:
+        log('선택한 체크포인트를 다운로드 합니다')
+        log('다운로드 작업을 원치 않는다면 CHECKPOINT 옵션의 입력 란을 비워두고 다시 실행해주세요')
         download_checkpoint(CHECKPOINT)
+
 
     # WebUI 가져오기
     setup_webui()
@@ -1077,9 +1129,12 @@ try:
             cmd_args.append('--xformers')
 
         elif IN_COLAB:
-            log('xformers 패키지가 존재하지 않습니다, xformers 를 미리 컴파일된 파일로부터 설치를 시작합니다')
+            log('xformers 패키지가 존재하지 않습니다, 미리 컴파일된 파일로부터 xformers 패키지를 가져옵니다')
             download('https://github.com/toriato/easy-stable-diffusion/raw/prebuilt-xformers/cu113/xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl')
-            execute(['pip', 'install', 'xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl'])
+            execute(
+                ['pip', 'install', 'xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl'],
+                summary='xformers 패키지를 설치합니다'
+            )
             cmd_args.append('--xformers')
 
         else:
@@ -1110,9 +1165,9 @@ try:
         ]
 
     # ngrok
-    if NGROK_API_KEY != '':
+    if NGROK_API_TOKEN != '':
         log('ngrok 터널을 사용합니다')
-        args.append(f'--ngrok={NGROK_API_KEY}')
+        args += ['--ngrok', NGROK_API_TOKEN]
 
         if has_python_package('pyngrok') is None:
             log('ngrok 사용에 필요한 패키지가 존재하지 않습니다, 설치를 시작합니다')
@@ -1121,12 +1176,7 @@ try:
     if ADDITIONAL_ARGS != '':
         args.append(ADDITIONAL_ARGS)
 
-    start_webui(
-        args, 
-        env={
-            'COMMANDLINE_ARGS': ' '.join(cmd_args)
-        }
-    )
+    start_webui(args, env={'COMMANDLINE_ARGS': ' '.join(cmd_args)})
 
 # ^c 종료 무시하기
 except KeyboardInterrupt:
