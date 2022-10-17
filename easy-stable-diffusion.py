@@ -289,6 +289,7 @@ def update_path_to(path_to_workspace: str) -> None:
     path_to['outputs'] = f"{path_to['workspace']}/outputs"
     path_to['models'] = f"{path_to['workspace']}/models"
     path_to['embeddings'] = f"{path_to['workspace']}/embeddings"
+    path_to['localizations'] = f"{path_to['workspace']}/localizations"
     path_to['scripts'] = f"{path_to['workspace']}/scripts"
     path_to['logs'] = f"{path_to['workspace']}/logs"
     path_to['styles_file'] = f"{path_to['workspace']}/styles.csv"
@@ -297,6 +298,7 @@ def update_path_to(path_to_workspace: str) -> None:
 
     os.makedirs(path_to['workspace'], exist_ok=True)
     os.makedirs(path_to['embeddings'], exist_ok=True)
+    os.makedirs(path_to['localizations'], exist_ok=True)
     os.makedirs(path_to['scripts'], exist_ok=True)
     os.makedirs(path_to['logs'], exist_ok=True)
 
@@ -472,6 +474,12 @@ REPO_PULL_REQUESTS = []
 
 # 추가로 받을 스크립트
 ADDITIONAL_SCRIPTS = [
+    # 번역 파일
+    lambda: download(
+        'https://gist.github.com/toriato/72847da83f44d8d9d1eb6b0027fc329f/raw/a7e9896d9a796d20ec55077b81d32cc5155e83ab/ko-KR_easy-stable-diffusion.json',
+        path_to['localizations'],
+    ),
+
     # 태그 자동 완성 유저스크립트
     # https://arca.live/b/aiart/60536925/272094058
     lambda: download(
@@ -833,24 +841,25 @@ def patch_webui_repository() -> None:
     # 기본 UI 설정 값 (ui-config.json)
     # 설정 파일 자체를 덮어씌우면 새로 추가된 키를 인식하지 못해서 코드 자체를 수정함
     # https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/shared.py
-    path_to_shared = f"repo/modules/shared.py"
-    if os.path.isfile(path_to_shared):
+    if os.path.isfile('repo/modules/shared.py'):
         log('설정 파일의 기본 값을 추천 값으로 변경합니다')
 
         configs = {
+            # 기본 언어 파일
+            'localization': os.path.join(path_to['localizations'], 'ko-KR_easy-stable-diffusion.json'),
+
             # 결과 이미지 디렉터리
-            'outdir_txt2img_samples': f"{path_to['outputs']}/txt2img-samples",
-            'outdir_img2img_samples': f"{path_to['outputs']}/img2img-samples",
-            'outdir_extras_samples': f"{path_to['outputs']}/extras-samples",
-            'outdir_txt2img_grids': f"{path_to['outputs']}/txt2img-grids",
-            'outdir_img2img_grids': f"{path_to['outputs']}/img2img-grids",
+            'outdir_txt2img_samples': os.path.join(path_to['outputs'], 'txt2img-samples'),
+            'outdir_img2img_samples': os.path.join(path_to['outputs'], 'img2img-samples'),
+            'outdir_extras_samples': os.path.join(path_to['outputs'], 'extras-samples'),
+            'outdir_txt2img_grids': os.path.join(path_to['outputs'], 'txt2img-grids'),
+            'outdir_img2img_grids': os.path.join(path_to['outputs'], 'img2img-grids'),
 
             # NAI 기본 설정(?)
-            'eta_ancestral': 0.2,
             'CLIP_stop_at_last_layers': 2,
         }
 
-        with open(path_to_shared, 'r+') as f:
+        with open('repo/modules/shared.py', 'r+') as f:
             def replace(m: re.Match) -> str:
                 if m[2] in configs:
                     # log(f'{m[2]} -> {configs[m[2]]}')
@@ -1108,21 +1117,22 @@ try:
     # WebUI 실행
     args = [
         # 동적 경로들
-        f"--ckpt-dir={path_to['models']}/Stable-diffusion",
-        f"--embeddings-dir={path_to['embeddings']}",
-        f"--hypernetwork-dir={path_to['models']}/hypernetworks",
-        f"--codeformer-models-path={path_to['models']}/Codeformer",
-        f"--gfpgan-models-path={path_to['models']}/GFPGAN",
-        f"--esrgan-models-path={path_to['models']}/ESRGAN",
-        f"--bsrgan-models-path={path_to['models']}/BSRGAN",
-        f"--realesrgan-models-path={path_to['models']}/RealESRGAN",
-        f"--scunet-models-path={path_to['models']}/ScuNET",
-        f"--swinir-models-path={path_to['models']}/SwinIR",
-        f"--ldsr-models-path={path_to['models']}/LDSR",
+        '--ckpt-dir', f"{path_to['models']}/Stable-diffusion",
+        '--embeddings-dir', path_to['embeddings'],
+        '--hypernetwork-dir', f"{path_to['models']}/hypernetworks",
+        '--localizations-dir', path_to['localizations'],
+        '--codeformer-models-path', f"{path_to['models']}/Codeformer",
+        '--gfpgan-models-path', f"{path_to['models']}/GFPGAN",
+        '--esrgan-models-path', f"{path_to['models']}/ESRGAN",
+        '--bsrgan-models-path', f"{path_to['models']}/BSRGAN",
+        '--realesrgan-models-path', f"{path_to['models']}/RealESRGAN",
+        '--scunet-models-path', f"{path_to['models']}/ScuNET",
+        '--swinir-models-path', f"{path_to['models']}/SwinIR",
+        '--ldsr-models-path', f"{path_to['models']}/LDSR",
 
-        f"--styles-file={path_to['styles_file']}",
-        f"--ui-config-file={path_to['ui_config_file']}",
-        f"--ui-settings-file={path_to['ui_settings_file']}",
+        '--styles-file', f"{path_to['styles_file']}",
+        '--ui-config-file', f"{path_to['ui_config_file']}",
+        '--ui-settings-file', f"{path_to['ui_settings_file']}",
     ]
 
     cmd_args = [ '--skip-torch-cuda-test' ]
