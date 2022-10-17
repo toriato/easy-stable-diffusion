@@ -947,6 +947,9 @@ def parse_webui_output(line: str) -> bool:
         LOG_WIDGET.blocks[running_subprocess.block_index]['max_lines'] = 0
         return
 
+    if line == 'paramiko.ssh_exception.SSHException: Error reading SSH protocol banner[Errno 104] Connection reset by peer\n':
+        raise Exception('Gradio 연결 중 알 수 없는 오류가 발생했습니다, 다시 실행해주세요')
+
     if line == 'Invalid ngrok authtoken, ngrok connection aborted.\n':
         raise Exception('ngrok 인증 토큰이 잘못됐습니다, 올바른 토큰을 입력하거나 토큰 값 없이 실행해주세요')
 
