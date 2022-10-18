@@ -633,9 +633,9 @@ ADDITIONAL_SCRIPTS = [
         ),
         [
             # 코랩 + 사용자 디렉터리가 존재한다면 심볼릭 링크 만들기
-            lambda: not (IN_COLAB and os.path.isdir(os.path.join(PATHS['workspace'], 'tags'))),  # True 반환시 현재 리스트 실행 정지
+            lambda: not IN_COLAB or not os.path.isdir(os.path.join(PATHS['workspace'], 'tags')),  # True 반환시 현재 리스트 실행 정지
             lambda: shutil.rmtree('repo/tags', ignore_errors=True),
-            lambda: os.symlink('repo/tags', os.path.join(PATHS['workspace'], 'tags'))
+            lambda: os.symlink(os.path.join(PATHS['workspace'], 'tags'), 'repo/tags')
         ],
         [
             # 사용자 디렉터리가 존재하지 않는다면 기본 데이터셋 가져오기
