@@ -1,9 +1,9 @@
 .venv
 embeddings
-localizations
 logs
 models
 outputs
 repo
 scripts
-*.json
+config.json
+ui-config.json
