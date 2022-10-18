@@ -1006,7 +1006,7 @@ def parse_webui_output(line: str) -> bool:
         return
 
     # 외부 주소 출력되면 성공적으로 실행한 것으로 판단
-    matches = re.search('https?://[0-9a-f-]+\.(gradio\.app|ngrok\.io)', line)
+    matches = re.search('https?://[0-9a-f-]+\.(gradio\.app|([a-z]{2}\.)?ngrok\.io)', line)
     if matches:
         url = matches[0]
 
@@ -1197,7 +1197,10 @@ try:
         # ngrok
         if NGROK_API_TOKEN != '':
             log('ngrok 터널을 사용합니다')
-            args += ['--ngrok', NGROK_API_TOKEN]
+            args += [
+                '--ngrok', NGROK_API_TOKEN,
+                '--ngrok-region', 'jp'
+            ]
 
             if has_python_package('pyngrok') is None:
                 log('ngrok 사용에 필요한 패키지가 존재하지 않습니다, 설치를 시작합니다')
