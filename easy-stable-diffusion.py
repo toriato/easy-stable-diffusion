@@ -466,7 +466,7 @@ REPO_PULL_REQUESTS = []
 ADDITIONAL_SCRIPTS = [
     # 번역 파일
     lambda: download(
-        'https://gist.github.com/toriato/72847da83f44d8d9d1eb6b0027fc329f/raw/a7e9896d9a796d20ec55077b81d32cc5155e83ab/ko-KR_easy-stable-diffusion.json',
+        'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/localizations/ko-KR.json',
         PATHS['localizations'],
     ),
 
@@ -850,7 +850,7 @@ def patch_webui_repository() -> None:
 
         configs = {
             # 기본 언어 파일
-            'localization': os.path.join(PATHS['localizations'], 'ko-KR_easy-stable-diffusion.json'),
+            'localization': os.path.join(PATHS['localizations'], 'ko-KR.json'),
 
             # 결과 이미지 디렉터리
             'outdir_txt2img_samples': os.path.join(PATHS['outputs'], 'txt2img-samples'),
