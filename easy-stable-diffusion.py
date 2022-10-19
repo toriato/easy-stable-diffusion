@@ -413,22 +413,6 @@ def format_list(value):
     else:
         return '\n'.join(value)
 
-def append_log_block(summary: str='', lines: List[str]=None,
-                     summary_styles: dict=None, line_styles: dict=None,
-                     max_lines=0) -> int:
-    block = {**locals()}
-
-    # 인자에 직접 기본 값을 넣으면 값을 돌려쓰기 때문에 직접 생성해줘야됨
-    if block['lines'] is None: block['lines'] = []
-    if block['summary_styles'] is None: block['summary_styles'] = {}
-    if block['line_styles'] is None: block['line_styles'] = {
-        'padding-left': '1.5em',
-        'color': 'gray'
-    }
-
-    LOG_WIDGET.blocks.append(block)
-    return len(LOG_WIDGET.blocks) - 1
-
 def render_log() -> None:
     styles = {
         'overflow-x': 'auto',
@@ -445,28 +429,29 @@ def render_log() -> None:
     html = f'<div style="{format_styles(styles)}">'
 
     for block in LOG_WIDGET.blocks:
-        summary_styles = {
+        styles = {
             'display': 'inline-block',
-            **block['summary_styles']
+            **block['styles']
         }
-        line_styles = {
+        child_styles = {
             'display': 'inline-block',
-            **block['line_styles']
+            **block['child_styles']
         }
 
-        html += f'<span style="{format_styles(summary_styles)}">{block["summary"]}</span>\n'
+        html += f'<span style="{format_styles(styles)}">{block["msg"]}</span>\n'
 
-        if block['max_lines'] is not None and len(block['lines']) > 0:
-            html += f'<div style="{format_styles(line_styles)}">'
-            html += ''.join(block['lines'][-block['max_lines']:])
+        if block['max_childs'] is not None and len(block['childs']) > 0:
+            html += f'<div style="{format_styles(child_styles)}">'
+            html += ''.join(block['childs'][-block['max_childs']:])
             html += '</div>'
 
     html += '</div>'
 
     LOG_WIDGET.value = html
 
-def log(msg: str, styles={}, newline=True, block_index: int=None,
-        print_to_file=True, print_to_widget=True) -> None:
+def log(msg: str, styles={}, newline=True,
+        parent=False, parent_index: int=None, child_styles={}, max_childs=0,
+        print_to_file=True, print_to_widget=True) -> Tuple[None, int]:
     # 기록할 내용이 ngrok API 키와 일치한다면 숨기기
     # TODO: 더 나은 문자열 검사, 원치 않은 내용이 가려질 수도 있음
     if OPTIONS['ngrok_api_token'] != '':
@@ -478,21 +463,37 @@ def log(msg: str, styles={}, newline=True, block_index: int=None,
     # 파일에 기록하기
     if print_to_file:
         if LOG_FILE:
-            if block_index and msg.endswith('\n'):
+            if parent_index and msg.endswith('\n'):
                 LOG_FILE.write('\t')
             LOG_FILE.write(msg)
             LOG_FILE.flush()
 
-    # 로그 위젯이 존재한다면 위젯에 표시하기
+    # 로그 위젯에 기록하기
     if print_to_widget and LOG_WIDGET:
-        if block_index is None:
-            block_index = append_log_block(summary=msg, summary_styles=styles)
-        else:
-            LOG_WIDGET.blocks[block_index]['lines'].append(msg)
+        # 부모 로그가 없다면 새 블록 만들기
+        if parent or parent_index is None:
+            LOG_WIDGET.blocks.append({
+                'msg': msg,
+                'styles': styles,
+                'childs': [],
+                'child_styles': child_styles,
+                'max_childs': max_childs
+            })
+            render_log()
+            return len(LOG_WIDGET.blocks) - 1
+
+        # 로그 위젯이 존재하지 않는다면 그냥 출력하기
+        if not LOG_WIDGET:
+            print('\t' + msg, end='')
+            return
+
+        # 부모 로그가 존재한다면 추가하기
+        LOG_WIDGET.blocks[parent_index]['childs'].append(msg)
         render_log()
         return
 
     print(msg, end='')
+    return
 
 def log_trace() -> None:
     import traceback
@@ -500,24 +501,21 @@ def log_trace() -> None:
     # 스택 가져오기
     ex_type, ex_value, ex_traceback = sys.exc_info()
 
-    summary_styles = {}
+    styles = {}
 
     # 오류가 존재한다면 메세지 빨간색으로 출력하기
     # https://docs.python.org/3/library/sys.html#sys.exc_info
     # TODO: 오류 유무 이렇게 확인하면 안될거 같은데 일단 귀찮아서 대충 써둠
-    if ex_type is not None and 'color' not in summary_styles:
-        summary_styles = LOG_WIDGET_STYLES['dialog_error']
+    if ex_type is not None:
+        styles = LOG_WIDGET_STYLES['dialog_error']
 
-    block_index = None if LOG_WIDGET is None else append_log_block(
-        summary='보고서를 만들고 있습니다...', 
-        summary_styles=summary_styles
-    )
+    parent_index = log('보고서를 만들고 있습니다...', styles)
 
     # 오류가 존재한다면 오류 정보와 스택 트레이스 출력하기
     if ex_type is not None:
-        log(block_index=block_index, msg=f'{ex_type.__name__}: {ex_value}')
+        log(parent_index=parent_index, msg=f'{ex_type.__name__}: {ex_value}')
         log(
-            block_index=block_index, 
+            parent_index=parent_index, 
             msg=format_list(
                 map(
                     lambda v: f'{v[0]}#{v[1]}\n\t{v[2]}\n\t{v[3]}',
@@ -534,7 +532,7 @@ def log_trace() -> None:
 
     # 로그 위젯이 존재한다면 보고서 올리고 내용 업데이트하기
     if LOG_WIDGET:
-        # 이전 로그 싹 긁어오기
+        # 이전 로그 전부 긁어오기
         logs = ''   
         with open(LOG_FILE.name) as file:
             logs = file.read()
@@ -545,7 +543,7 @@ def log_trace() -> None:
         url = f"https://hastebin.com/{json.loads(res.text)['key']}"
 
         # 기존 오류 메세지 업데이트
-        LOG_WIDGET.blocks[block_index]['summary'] = '\n'.join([
+        LOG_WIDGET.blocks[parent_index]['msg'] = '\n'.join([
             '오류가 발생했습니다, 아래 주소를 복사해 보고해주세요',
             f'<a target="_blank" href="{url}">{url}</a>',
         ])
@@ -581,15 +579,11 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
     formatted_args = args if isinstance(args, str) else ' '.join(args)
     summary = formatted_args if summary is None else f'{summary}\n   {formatted_args}'
 
-    if LOG_WIDGET:
-        running_subprocess.block_index = append_log_block(
-            f'=> {summary}\n',
-            summary_styles={ 'color': 'yellow' },
-            max_lines = 5,
-        )
-    else:
-        running_subprocess.block_index = None
-        log(f'=> {summary}')
+    running_subprocess.parent_index = log(
+        f'=> {summary}',
+        styles={ 'color': 'yellow' },
+        max_childs = 5,
+    )
 
     # 프로세스 출력 위젯에 리다이렉션하기
     while running_subprocess.poll() is None:
@@ -610,7 +604,7 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
         log(
             line, 
             newline=False, 
-            block_index=running_subprocess.block_index, 
+            parent_index=running_subprocess.parent_index, 
             print_to_file=print_to_file, 
             print_to_widget=print_to_widget
         )
@@ -623,14 +617,15 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
     if LOG_WIDGET:
         if returncode == 0:
             if hide_summary:
-                del LOG_WIDGET.blocks[running_subprocess.block_index]
+                del LOG_WIDGET.blocks[running_subprocess.parent_index]
             else:
-                LOG_WIDGET.blocks[running_subprocess.block_index]['summary_styles']['color'] = 'green'
-                LOG_WIDGET.blocks[running_subprocess.block_index]['max_lines'] = None
-
+                LOG_WIDGET.blocks[running_subprocess.parent_index]['styles']['color'] = 'green'
+                LOG_WIDGET.blocks[running_subprocess.parent_index]['max_childs'] = None
         else:
-            LOG_WIDGET.blocks[running_subprocess.block_index]['summary_styles']['color'] = 'red'
-            LOG_WIDGET.blocks[running_subprocess.block_index]['max_lines'] = 0
+            LOG_WIDGET.blocks[running_subprocess.parent_index]['styles']['color'] = 'red'
+            LOG_WIDGET.blocks[running_subprocess.parent_index]['max_childs'] = 0
+
+        render_log()
 
     # 오류 코드를 반환했다면
     if returncode != 0 and throw:
@@ -964,7 +959,8 @@ def parse_webui_output(line: str) -> bool:
     # 하위 파이썬 실행 중 오류가 발생하면 전체 기록 표시하기
     # TODO: 더 나은 오류 핸들링, 잘못된 내용으로 트리거 될 수 있음
     if LOG_WIDGET and 'Traceback (most recent call last):' in line:
-        LOG_WIDGET.blocks[running_subprocess.block_index]['max_lines'] = 0
+        LOG_WIDGET.blocks[running_subprocess.parent_index]['max_childs'] = 0
+        render_log()
         return
 
     if line == 'paramiko.ssh_exception.SSHException: Error reading SSH protocol banner[Errno 104] Connection reset by peer\n':
