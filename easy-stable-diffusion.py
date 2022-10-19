@@ -712,11 +712,11 @@ def chdir(cwd: str) -> None:
             override_options = json.loads(file.read())
             for key, value in override_options.items():
                 if key not in OPTIONS:
-                    log(f'{key} 값은 존재하지 않는 설정 키입니다', styles={'color':'red'})
+                    log(f'{key} 키은 존재하는 설정 키가 아닙니다', styles={'color':'red'})
                     continue
 
                 if type(value) != type(OPTIONS[key]):
-                    log(f'{key} 키는 {type(OPTIONS[key])} 자료형이여만 합니다', styles={'color':'red'})
+                    log(f'{key} 키는 {type(OPTIONS[key]).__name__} 자료형이여만 합니다', styles={'color':'red'})
                     continue
 
                 OPTIONS[key] = value
