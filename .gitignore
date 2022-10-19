@@ -1,9 +1,2 @@
 .venv
-embeddings
-logs
-models
-outputs
-repo
-scripts
-config.json
-ui-config.json
+SD
