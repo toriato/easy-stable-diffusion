@@ -1052,8 +1052,8 @@ def start_webui(args: List[str]=None, env: Dict[str, str]=None) -> None:
         args = [
             '--ckpt-dir', os.path.join(cwd, 'models', 'Stable-diffusion'),
             '--embeddings-dir', os.path.join(cwd, 'embeddings'),
-            '--hypernetwork-dir', os.path.join(cwd, 'hypernetworks'),
             '--localizations-dir', os.path.join(cwd, 'localizations'),
+            '--hypernetwork-dir', os.path.join(cwd, 'models', 'hypernetworks'),
             '--codeformer-models-path', os.path.join(cwd, 'models', 'Codeformer'),
             '--gfpgan-models-path', os.path.join(cwd, 'models', 'GFPGAN'),
             '--esrgan-models-path', os.path.join(cwd, 'models', 'ESRGAN'),
