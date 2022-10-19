@@ -14,6 +14,285 @@ from importlib.util import find_spec
 from pathlib import Path
 from datetime import datetime
 
+# @markdown ### <font color="orange">***다운로드 받을 모델(체크포인트) 선택***</font>
+# @markdown 입력 란을 <font color="red">비워두면</font> 모델을 받지 않고 바로 실행함
+# @markdown <br>우측 <font color="red">화살표(🔽)</font> 클릭하면 모델 선택 가능
+CHECKPOINT = '' #@param ["", "NAI - animefull-final-pruned", "NAI - animefull-latest", "NAI - animesfw-final-pruned", "NAI - animesfw-latest", "Waifu Diffusion 1.3", "Trinart Stable Diffusion v2 60,000 Steps", "Trinart Stable Diffusion v2 95,000 Steps", "Trinart Stable Diffusion v2 115,000 Steps", "Furry (epoch 4)", "Zack3D Kinky v1", "Pokemon", "Dreambooth - Hiten"] {allow-input: true}
+
+# @markdown ### <font color="orange">***구글 드라이브 동기화를 사용할지?***</font>
+USE_GOOGLE_DRIVE = True  # @param {type:"boolean"}
+
+# @markdown ### <font color="orange">***구글 드라이브 작업 디렉터리 경로***</font>
+# @markdown 임베딩, 모델, 결과, 설정 등 영구적으로 보관될 파일이 저장될 디렉터리의 경로
+PATH_TO_GOOGLE_DRIVE = 'SD' # @param {type:"string"}
+
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***xformers 를 사용할지?***</font>
+# @markdown - <font color="green">장점</font>: 성능 향생
+# @markdown - <font color="red">단점</font>: 미리 빌드한 패키지가 지원하지 않는 환경에선 직접 빌드할 필요가 있음
+USE_XFORMERS = True  # @param {type:"boolean"}
+
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***deepbooru 를 사용할지?***</font>
+# @markdown IMG2IMG 에 올린 이미지를 단부루 태그로 변환(예측)해 프롬프트로 추출해내는 기능
+# @markdown - <font color="red">단점</font>: 처음 실행할 때 추가 패키지를 받기 때문에 시간이 조금 더 걸림
+USE_DEEPDANBOORU = True  # @param {type:"boolean"}
+
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 터널을 사용할지?***</font>
+USE_GRADIO_TUNNEL = True # @param {type:"boolean"}
+
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 인증 정보***</font>
+# @markdown Gradio 접속 시 사용할 사용자 아이디와 비밀번호
+# @markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> 인증을 사용하지 않음
+# @markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
+# @markdown <br>`GRADIO_PASSWORD` 입력 란을 <font color="red">비워두면</font> 자동으로 비밀번호를 생성함
+GRADIO_USERNAME = 'gradio' # @param {type:"string"}
+GRADIO_PASSWORD = '' # @param {type:"string"}
+GRADIO_PASSWORD_GENERATED = False
+
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***ngrok API 키***</font>
+# @markdown ngrok 터널에 사용할 API 토큰
+# @markdown <br>[API 토큰은 여기를 눌러 계정을 만든 뒤 얻을 수 있음](https://dashboard.ngrok.com/get-started/your-authtoken)
+# @markdown <br>입력 란을 <font color="red">비워두면</font> ngrok 터널을 비활성화함
+NGROK_API_TOKEN = '' # @param {type:"string"}
+NGROK_URL = None
+
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 주소***</font>
+REPO_URL = 'https://github.com/AUTOMATIC1111/stable-diffusion-webui.git' # @param {type:"string"}
+
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 커밋 해시***</font>
+# @markdown 입력 란을 <font color="red">비워두면</font> 가장 최신 커밋을 가져옴
+REPO_COMMIT = '' # @param {type:"string"}
+
+# 레포지토리에 적용할 풀 리퀘스트
+REPO_PULL_REQUESTS = []
+
+# 추가로 받을 스크립트
+ADDITIONAL_SCRIPTS = [
+    # 번역 파일
+    lambda: download(
+        'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/localizations/ko-KR.json',
+        PATHS['localizations'],
+    ),
+
+    # 태그 자동 완성 유저스크립트
+    # https://arca.live/b/aiart/60536925/272094058
+    lambda: download(
+        'https://greasyfork.org/scripts/452929-webui-%ED%83%9C%EA%B7%B8-%EC%9E%90%EB%8F%99%EC%99%84%EC%84%B1/code/WebUI%20%ED%83%9C%EA%B7%B8%20%EC%9E%90%EB%8F%99%EC%99%84%EC%84%B1.user.js',
+        'repo/javascript',
+    ),
+
+    # Advanced prompt matrix
+    # https://github.com/GRMrGecko/stable-diffusion-webui-automatic/blob/advanced_matrix/scripts/advanced_prompt_matrix.py
+    lambda: download(
+        'https://raw.githubusercontent.com/GRMrGecko/stable-diffusion-webui-automatic/advanced_matrix/scripts/advanced_prompt_matrix.py',
+        'repo/scripts'
+    ),
+
+    # Dynamic Prompt Templates
+    # https://github.com/adieyal/sd-dynamic-prompting
+    lambda: download(
+        'https://github.com/adieyal/sd-dynamic-prompting/raw/main/dynamic_prompting.py',
+        'repo/scripts'
+    ),
+
+    # Wildcards
+    # https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts#wildcards
+    [
+        lambda: download(
+            'https://raw.githubusercontent.com/jtkelm2/stable-diffusion-webui-1/master/scripts/wildcards.py',
+            'repo/scripts'
+        ),
+        # 스크립트 디렉터리는 patch_webui_repository 메소드에서
+        # 코랩 환경일 때 심볼릭 링크를 만들기 때문에 따로 처리할 필요가 없음
+        [
+            # 사용자 디렉터리가 존재하지 않는다면 기본 데이터셋 가져오기
+            # https://github.com/Lopyter/stable-soup-prompts
+            lambda: os.path.exists('repo/scripts/wildcards'), # True 반환시 현재 리스트 실행 정지
+            lambda: shutil.rmtree('.tmp', ignore_errors=True),
+            lambda: execute(
+                ['git', 'clone', 'https://github.com/Lopyter/stable-soup-prompts.git', '.tmp'],
+                hide_summary=True    
+            ),
+            lambda: os.remove('repo/scripts/wildcards') if os.path.islink('repo/scripts/wildcards') else None, # 심볼릭 링크는 파일로 삭제해야함
+            lambda: shutil.rmtree('repo/scripts/wildcards', ignore_errors=True),
+            lambda: shutil.copytree('.tmp/wildcards', 'repo/scripts/wildcards'),
+            lambda: shutil.rmtree('.tmp', ignore_errors=True)
+        ]
+    ],
+
+    # txt2mask
+    # https://github.com/ThereforeGames/txt2mask
+    [
+        lambda: shutil.rmtree('.tmp', ignore_errors=True),
+        lambda: execute(
+            ['git', 'clone', 'https://github.com/ThereforeGames/txt2mask.git', '.tmp'],
+            hide_summary=True
+        ),
+        lambda: shutil.rmtree('repo/repositories/clipseg', ignore_errors=True),
+        lambda: shutil.copytree('.tmp/repositories/clipseg', 'repo/repositories/clipseg'),
+        lambda: shutil.copy('.tmp/scripts/txt2mask.py', 'repo/scripts'),
+        lambda: shutil.rmtree('.tmp', ignore_errors=True),
+    ],
+
+    # Img2img Video
+    # https://github.com/memes-forever/Stable-diffusion-webui-video
+    lambda: download(
+        'https://raw.githubusercontent.com/memes-forever/Stable-diffusion-webui-video/main/videos.py',
+        'repo/scripts'
+    ),
+
+    # Seed Travel
+    # https://github.com/yownas/seed_travel
+    [
+        lambda: None if has_python_package('moviepy') else execute(['pip', 'install', 'moviepy']),
+        lambda: download(
+            'https://raw.githubusercontent.com/yownas/seed_travel/main/scripts/seed_travel.py',
+            'repo/scripts',
+        )
+    ],
+
+    # Animator
+    # https://github.com/Animator-Anon/Animator
+    lambda: download(
+        'https://raw.githubusercontent.com/Animator-Anon/Animator/main/animation.py',
+        'repo/scripts'
+    ),
+
+    # Alternate Noise Schedules
+    # https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts#alternate-noise-schedules
+    lambda: download(
+        'https://gist.githubusercontent.com/dfaker/f88aa62e3a14b559fe4e5f6b345db664/raw/791dabfa0ab26399aa2635bcbc1cf6267aa4ffc2/alternate_sampler_noise_schedules.py',
+        'repo/scripts'
+    ),
+
+    # Vid2Vid
+    # https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts#vid2vid
+    lambda: download(
+        'https://raw.githubusercontent.com/Filarius/stable-diffusion-webui/master/scripts/vid2vid.py',
+        'repo/scripts'
+    ),
+
+    # Shift Attention
+    # https://github.com/yownas/shift-attention
+    [
+        lambda: None if has_python_package('moviepy') else execute(['pip', 'install', 'moviepy']),
+        lambda: download(
+            'https://raw.githubusercontent.com/yownas/shift-attention/main/scripts/shift_attention.py',
+            'repo/scripts'
+        )
+    ],
+
+    # Loopback and Superimpose
+    # https://github.com/DiceOwl/StableDiffusionStuff
+    lambda: download(
+        'https://raw.githubusercontent.com/DiceOwl/StableDiffusionStuff/main/loopback_superimpose.py',
+        'repo/scripts'
+    ),
+
+    # Run n times
+    # https://gist.github.com/camenduru/9ec5f8141db9902e375967e93250860f
+    lambda: download(
+        'https://gist.githubusercontent.com/camenduru/9ec5f8141db9902e375967e93250860f/raw/b5c741676c5514105b9a1ea7dd438ca83802f16f/run_n_times.py',
+        'repo/scripts'
+    ),
+
+    # Advanced Loopback
+    # https://github.com/Extraltodeus/advanced-loopback-for-sd-webui
+    lambda: download(
+        'https://raw.githubusercontent.com/Extraltodeus/advanced-loopback-for-sd-webui/main/advanced_loopback.py',
+        'repo/scripts'
+    ),
+
+    # prompt-morph
+    # https://github.com/feffy380/prompt-morph
+    [
+        lambda: None if has_python_package('moviepy') else execute(['pip', 'install', 'moviepy']),
+        lambda: download(
+            'https://raw.githubusercontent.com/feffy380/prompt-morph/master/prompt_morph.py',
+            'repo/scripts'
+        ),
+    ],
+
+    # prompt interpolation
+    # https://github.com/EugeoSynthesisThirtyTwo/prompt-interpolation-script-for-sd-webui
+    lambda: download(
+        'https://raw.githubusercontent.com/EugeoSynthesisThirtyTwo/prompt-interpolation-script-for-sd-webui/main/prompt_interpolation.py',
+        'repo/scripts'
+    ),
+
+    # Asymmetric Tiling
+    # https://github.com/tjm35/asymmetric-tiling-sd-webui/
+    lambda: download(
+        'https://raw.githubusercontent.com/tjm35/asymmetric-tiling-sd-webui/main/asymmetric_tiling.py',
+        'repo/scripts'
+    ),
+
+    # Booru tag autocompletion for A1111
+    # https://github.com/DominikDoom/a1111-sd-webui-tagcomplete
+    [
+        lambda: shutil.rmtree('.tmp', ignore_errors=True),
+        lambda: execute(
+            ['git', 'clone', 'https://github.com/DominikDoom/a1111-sd-webui-tagcomplete.git', '.tmp'],
+            hide_summary=True
+        ),
+        [
+            # 코랩 + 사용자 디렉터리가 존재한다면 심볼릭 링크 만들기
+            lambda: not IN_COLAB or not os.path.isdir(os.path.join(PATHS['workspace'], 'tags')),  # True 반환시 현재 리스트 실행 정지
+            lambda: shutil.rmtree('repo/tags', ignore_errors=True),
+            lambda: os.symlink(os.path.join(PATHS['workspace'], 'tags'), 'repo/tags')
+        ],
+        [
+            # 사용자 디렉터리가 존재하지 않는다면 기본 데이터셋 가져오기
+            lambda: IN_COLAB and os.path.islink('repo/tags'),  # True 반환시 현재 리스트 실행 정지
+            lambda: not IN_COLAB and os.path.isdir('repo/tags'),  # True 반환시 현재 리스트 실행 정지
+            lambda: shutil.rmtree('repo/tags', ignore_errors=True),
+            lambda: shutil.copytree('.tmp/tags', 'repo/tags'),
+        ],
+        lambda: shutil.copy('.tmp/javascript/tagAutocomplete.js', 'repo/javascript'),
+        lambda: shutil.copy('.tmp/scripts/tag_autocomplete_helper.py', 'repo/scripts'),
+        lambda: shutil.rmtree('.tmp', ignore_errors=True),
+    ]
+]
+
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 추가 인자***</font>
+ADDITIONAL_ARGS = '' # @param {type:"string"}
+
+# 로그 파일
+LOG_FILE = None
+
+# 로그 HTML 위젯
+LOG_WIDGET = None
+
+# 로그 HTML 위젯 스타일
+LOG_WIDGET_STYLES = {
+    'dialog': {
+        'display': 'block',
+        'margin-top': '.5em',
+        'padding': '.5em',
+        'font-weight': 'bold',
+        'font-size': '1.5em',
+        'line-height': '1em',
+        'color': 'black'
+    }
+}
+LOG_WIDGET_STYLES['dialog_success'] = {
+    **LOG_WIDGET_STYLES['dialog'],
+    'border': '3px dashed darkgreen',
+    'background-color': 'green',
+}
+LOG_WIDGET_STYLES['dialog_warning'] = {
+    **LOG_WIDGET_STYLES['dialog'],
+    'border': '3px dashed darkyellow',
+    'background-color': 'yellow',
+}
+LOG_WIDGET_STYLES['dialog_error'] = {
+    **LOG_WIDGET_STYLES['dialog'],
+    'border': '3px dashed darkred',
+    'background-color': 'red',
+}
+
+# 현재 코랩 환경에서 구동 중인지?
+IN_COLAB = False
+
 # ==============================
 # 로그
 # ==============================
@@ -411,285 +690,6 @@ CHECKPOINTS = {
     },
 }
 
-# @markdown ### <font color="orange">***다운로드 받을 모델(체크포인트) 선택***</font>
-# @markdown 입력 란을 <font color="red">비워두면</font> 모델을 받지 않고 바로 실행함
-# @markdown <br>우측 <font color="red">화살표(🔽)</font> 클릭하면 모델 선택 가능
-CHECKPOINT = '' #@param ["", "NAI - animefull-final-pruned", "NAI - animefull-latest", "NAI - animesfw-final-pruned", "NAI - animesfw-latest", "Waifu Diffusion 1.3", "Trinart Stable Diffusion v2 60,000 Steps", "Trinart Stable Diffusion v2 95,000 Steps", "Trinart Stable Diffusion v2 115,000 Steps", "Furry (epoch 4)", "Zack3D Kinky v1", "Pokemon", "Dreambooth - Hiten"] {allow-input: true}
-
-# @markdown ### <font color="orange">***구글 드라이브 동기화를 사용할지?***</font>
-USE_GOOGLE_DRIVE = True  # @param {type:"boolean"}
-
-# @markdown ### <font color="orange">***구글 드라이브 작업 디렉터리 경로***</font>
-# @markdown 임베딩, 모델, 결과, 설정 등 영구적으로 보관될 파일이 저장될 디렉터리의 경로
-PATH_TO_GOOGLE_DRIVE = 'SD' # @param {type:"string"}
-
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***xformers 를 사용할지?***</font>
-# @markdown - <font color="green">장점</font>: 성능 향생
-# @markdown - <font color="red">단점</font>: 미리 빌드한 패키지가 지원하지 않는 환경에선 직접 빌드할 필요가 있음
-USE_XFORMERS = True  # @param {type:"boolean"}
-
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***deepbooru 를 사용할지?***</font>
-# @markdown IMG2IMG 에 올린 이미지를 단부루 태그로 변환(예측)해 프롬프트로 추출해내는 기능
-# @markdown - <font color="red">단점</font>: 처음 실행할 때 추가 패키지를 받기 때문에 시간이 조금 더 걸림
-USE_DEEPDANBOORU = True  # @param {type:"boolean"}
-
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 터널을 사용할지?***</font>
-USE_GRADIO_TUNNEL = True # @param {type:"boolean"}
-
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 인증 정보***</font>
-# @markdown Gradio 접속 시 사용할 사용자 아이디와 비밀번호
-# @markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> 인증을 사용하지 않음
-# @markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
-# @markdown <br>`GRADIO_PASSWORD` 입력 란을 <font color="red">비워두면</font> 자동으로 비밀번호를 생성함
-GRADIO_USERNAME = 'gradio' # @param {type:"string"}
-GRADIO_PASSWORD = '' # @param {type:"string"}
-GRADIO_PASSWORD_GENERATED = False
-
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***ngrok API 키***</font>
-# @markdown ngrok 터널에 사용할 API 토큰
-# @markdown <br>[API 토큰은 여기를 눌러 계정을 만든 뒤 얻을 수 있음](https://dashboard.ngrok.com/get-started/your-authtoken)
-# @markdown <br>입력 란을 <font color="red">비워두면</font> ngrok 터널을 비활성화함
-NGROK_API_TOKEN = '' # @param {type:"string"}
-NGROK_URL = None
-
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 주소***</font>
-REPO_URL = 'https://github.com/AUTOMATIC1111/stable-diffusion-webui.git' # @param {type:"string"}
-
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 커밋 해시***</font>
-# @markdown 입력 란을 <font color="red">비워두면</font> 가장 최신 커밋을 가져옴
-REPO_COMMIT = '' # @param {type:"string"}
-
-# 레포지토리에 적용할 풀 리퀘스트
-REPO_PULL_REQUESTS = []
-
-# 추가로 받을 스크립트
-ADDITIONAL_SCRIPTS = [
-    # 번역 파일
-    lambda: download(
-        'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/localizations/ko-KR.json',
-        PATHS['localizations'],
-    ),
-
-    # 태그 자동 완성 유저스크립트
-    # https://arca.live/b/aiart/60536925/272094058
-    lambda: download(
-        'https://greasyfork.org/scripts/452929-webui-%ED%83%9C%EA%B7%B8-%EC%9E%90%EB%8F%99%EC%99%84%EC%84%B1/code/WebUI%20%ED%83%9C%EA%B7%B8%20%EC%9E%90%EB%8F%99%EC%99%84%EC%84%B1.user.js',
-        'repo/javascript',
-    ),
-
-    # Advanced prompt matrix
-    # https://github.com/GRMrGecko/stable-diffusion-webui-automatic/blob/advanced_matrix/scripts/advanced_prompt_matrix.py
-    lambda: download(
-        'https://raw.githubusercontent.com/GRMrGecko/stable-diffusion-webui-automatic/advanced_matrix/scripts/advanced_prompt_matrix.py',
-        'repo/scripts'
-    ),
-
-    # Dynamic Prompt Templates
-    # https://github.com/adieyal/sd-dynamic-prompting
-    lambda: download(
-        'https://github.com/adieyal/sd-dynamic-prompting/raw/main/dynamic_prompting.py',
-        'repo/scripts'
-    ),
-
-    # Wildcards
-    # https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts#wildcards
-    [
-        lambda: download(
-            'https://raw.githubusercontent.com/jtkelm2/stable-diffusion-webui-1/master/scripts/wildcards.py',
-            'repo/scripts'
-        ),
-        # 스크립트 디렉터리는 patch_webui_repository 메소드에서
-        # 코랩 환경일 때 심볼릭 링크를 만들기 때문에 따로 처리할 필요가 없음
-        [
-            # 사용자 디렉터리가 존재하지 않는다면 기본 데이터셋 가져오기
-            # https://github.com/Lopyter/stable-soup-prompts
-            lambda: os.path.exists('repo/scripts/wildcards'), # True 반환시 현재 리스트 실행 정지
-            lambda: shutil.rmtree('.tmp', ignore_errors=True),
-            lambda: execute(
-                ['git', 'clone', 'https://github.com/Lopyter/stable-soup-prompts.git', '.tmp'],
-                hide_summary=True    
-            ),
-            lambda: os.remove('repo/scripts/wildcards') if os.path.islink('repo/scripts/wildcards') else None, # 심볼릭 링크는 파일로 삭제해야함
-            lambda: shutil.rmtree('repo/scripts/wildcards', ignore_errors=True),
-            lambda: shutil.copytree('.tmp/wildcards', 'repo/scripts/wildcards'),
-            lambda: shutil.rmtree('.tmp', ignore_errors=True)
-        ]
-    ],
-
-    # txt2mask
-    # https://github.com/ThereforeGames/txt2mask
-    [
-        lambda: shutil.rmtree('.tmp', ignore_errors=True),
-        lambda: execute(
-            ['git', 'clone', 'https://github.com/ThereforeGames/txt2mask.git', '.tmp'],
-            hide_summary=True
-        ),
-        lambda: shutil.rmtree('repo/repositories/clipseg', ignore_errors=True),
-        lambda: shutil.copytree('.tmp/repositories/clipseg', 'repo/repositories/clipseg'),
-        lambda: shutil.copy('.tmp/scripts/txt2mask.py', 'repo/scripts'),
-        lambda: shutil.rmtree('.tmp', ignore_errors=True),
-    ],
-
-    # Img2img Video
-    # https://github.com/memes-forever/Stable-diffusion-webui-video
-    lambda: download(
-        'https://raw.githubusercontent.com/memes-forever/Stable-diffusion-webui-video/main/videos.py',
-        'repo/scripts'
-    ),
-
-    # Seed Travel
-    # https://github.com/yownas/seed_travel
-    [
-        lambda: None if has_python_package('moviepy') else execute(['pip', 'install', 'moviepy']),
-        lambda: download(
-            'https://raw.githubusercontent.com/yownas/seed_travel/main/scripts/seed_travel.py',
-            'repo/scripts',
-        )
-    ],
-
-    # Animator
-    # https://github.com/Animator-Anon/Animator
-    lambda: download(
-        'https://raw.githubusercontent.com/Animator-Anon/Animator/main/animation.py',
-        'repo/scripts'
-    ),
-
-    # Alternate Noise Schedules
-    # https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts#alternate-noise-schedules
-    lambda: download(
-        'https://gist.githubusercontent.com/dfaker/f88aa62e3a14b559fe4e5f6b345db664/raw/791dabfa0ab26399aa2635bcbc1cf6267aa4ffc2/alternate_sampler_noise_schedules.py',
-        'repo/scripts'
-    ),
-
-    # Vid2Vid
-    # https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts#vid2vid
-    lambda: download(
-        'https://raw.githubusercontent.com/Filarius/stable-diffusion-webui/master/scripts/vid2vid.py',
-        'repo/scripts'
-    ),
-
-    # Shift Attention
-    # https://github.com/yownas/shift-attention
-    [
-        lambda: None if has_python_package('moviepy') else execute(['pip', 'install', 'moviepy']),
-        lambda: download(
-            'https://raw.githubusercontent.com/yownas/shift-attention/main/scripts/shift_attention.py',
-            'repo/scripts'
-        )
-    ],
-
-    # Loopback and Superimpose
-    # https://github.com/DiceOwl/StableDiffusionStuff
-    lambda: download(
-        'https://raw.githubusercontent.com/DiceOwl/StableDiffusionStuff/main/loopback_superimpose.py',
-        'repo/scripts'
-    ),
-
-    # Run n times
-    # https://gist.github.com/camenduru/9ec5f8141db9902e375967e93250860f
-    lambda: download(
-        'https://gist.githubusercontent.com/camenduru/9ec5f8141db9902e375967e93250860f/raw/b5c741676c5514105b9a1ea7dd438ca83802f16f/run_n_times.py',
-        'repo/scripts'
-    ),
-
-    # Advanced Loopback
-    # https://github.com/Extraltodeus/advanced-loopback-for-sd-webui
-    lambda: download(
-        'https://raw.githubusercontent.com/Extraltodeus/advanced-loopback-for-sd-webui/main/advanced_loopback.py',
-        'repo/scripts'
-    ),
-
-    # prompt-morph
-    # https://github.com/feffy380/prompt-morph
-    [
-        lambda: None if has_python_package('moviepy') else execute(['pip', 'install', 'moviepy']),
-        lambda: download(
-            'https://raw.githubusercontent.com/feffy380/prompt-morph/master/prompt_morph.py',
-            'repo/scripts'
-        ),
-    ],
-
-    # prompt interpolation
-    # https://github.com/EugeoSynthesisThirtyTwo/prompt-interpolation-script-for-sd-webui
-    lambda: download(
-        'https://raw.githubusercontent.com/EugeoSynthesisThirtyTwo/prompt-interpolation-script-for-sd-webui/main/prompt_interpolation.py',
-        'repo/scripts'
-    ),
-
-    # Asymmetric Tiling
-    # https://github.com/tjm35/asymmetric-tiling-sd-webui/
-    lambda: download(
-        'https://raw.githubusercontent.com/tjm35/asymmetric-tiling-sd-webui/main/asymmetric_tiling.py',
-        'repo/scripts'
-    ),
-
-    # Booru tag autocompletion for A1111
-    # https://github.com/DominikDoom/a1111-sd-webui-tagcomplete
-    [
-        lambda: shutil.rmtree('.tmp', ignore_errors=True),
-        lambda: execute(
-            ['git', 'clone', 'https://github.com/DominikDoom/a1111-sd-webui-tagcomplete.git', '.tmp'],
-            hide_summary=True
-        ),
-        [
-            # 코랩 + 사용자 디렉터리가 존재한다면 심볼릭 링크 만들기
-            lambda: not IN_COLAB or not os.path.isdir(os.path.join(PATHS['workspace'], 'tags')),  # True 반환시 현재 리스트 실행 정지
-            lambda: shutil.rmtree('repo/tags', ignore_errors=True),
-            lambda: os.symlink(os.path.join(PATHS['workspace'], 'tags'), 'repo/tags')
-        ],
-        [
-            # 사용자 디렉터리가 존재하지 않는다면 기본 데이터셋 가져오기
-            lambda: IN_COLAB and os.path.islink('repo/tags'),  # True 반환시 현재 리스트 실행 정지
-            lambda: not IN_COLAB and os.path.isdir('repo/tags'),  # True 반환시 현재 리스트 실행 정지
-            lambda: shutil.rmtree('repo/tags', ignore_errors=True),
-            lambda: shutil.copytree('.tmp/tags', 'repo/tags'),
-        ],
-        lambda: shutil.copy('.tmp/javascript/tagAutocomplete.js', 'repo/javascript'),
-        lambda: shutil.copy('.tmp/scripts/tag_autocomplete_helper.py', 'repo/scripts'),
-        lambda: shutil.rmtree('.tmp', ignore_errors=True),
-    ]
-]
-
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 추가 인자***</font>
-ADDITIONAL_ARGS = '' # @param {type:"string"}
-
-# 로그 파일
-LOG_FILE = None
-
-# 로그 HTML 위젯
-LOG_WIDGET = None
-
-# 로그 HTML 위젯 스타일
-LOG_WIDGET_STYLES = {
-    'dialog': {
-        'display': 'block',
-        'margin-top': '.5em',
-        'padding': '.5em',
-        'font-weight': 'bold',
-        'font-size': '1.5em',
-        'line-height': '1em',
-        'color': 'black'
-    }
-}
-LOG_WIDGET_STYLES['dialog_success'] = {
-    **LOG_WIDGET_STYLES['dialog'],
-    'border': '3px dashed darkgreen',
-    'background-color': 'green',
-}
-LOG_WIDGET_STYLES['dialog_warning'] = {
-    **LOG_WIDGET_STYLES['dialog'],
-    'border': '3px dashed darkyellow',
-    'background-color': 'yellow',
-}
-LOG_WIDGET_STYLES['dialog_error'] = {
-    **LOG_WIDGET_STYLES['dialog'],
-    'border': '3px dashed darkred',
-    'background-color': 'red',
-}
-
-# 현재 코랩 환경에서 구동 중인지?
-IN_COLAB = has_python_package('google') and has_python_package('google.colab')
-
 # ==============================
 # 구글 드라이브 동기화
 # ==============================
@@ -1079,8 +1079,9 @@ try:
     log(f'Python {platform.python_version()}')
     log('')
 
-    if IN_COLAB:
+    if has_python_package('google') and has_python_package('google.colab'):
         log('코랩을 사용하고 있습니다')
+        IN_COLAB = True
 
         assert USE_GRADIO_TUNNEL or NGROK_API_TOKEN != '', '터널링 서비스를 하나 이상 선택해주세요' 
 
