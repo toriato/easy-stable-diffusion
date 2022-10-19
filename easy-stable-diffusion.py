@@ -1089,7 +1089,7 @@ def start_webui(args: List[str]=None, env: Dict[str, str]=None) -> None:
                 args.append('--xformers')
 
             elif IN_COLAB:
-                log('xformers 패키지가 존재하지 않습니다, 미리 컴파일된 파일로부터 xformers 패키지를 가져옵니다')
+                log('xformers 패키지가 존재하지 않습니다, 미리 컴파일된 xformers 패키지를 가져옵니다')
                 download('https://github.com/toriato/easy-stable-diffusion/raw/prebuilt-xformers/cu113/xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl', tempfile.gettempdir())
                 execute(
                     ['pip', 'install', os.path.join(tempfile.gettempdir(), 'xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl')],
@@ -1171,24 +1171,30 @@ try:
     log(f'Python {platform.python_version()}')
     log('')
 
-    if has_python_package('google') and has_python_package('google.colab'):
-        log('코랩을 사용하고 있습니다')
-        IN_COLAB = True
+    IN_COLAB = has_python_package('google') and has_python_package('google.colab')
 
+    # 구글 드라이브 마운팅 시도
+    if IN_COLAB and OPTIONS['USE_GOOGLE_DRIVE']:
+        log('구글 드라이브 마운트를 시도합니다')
+
+        from google.colab import drive
+        drive.mount('/content/drive')
+
+        # 구글 드라이브 기준
+        chdir(os.path.join('/content/drive/MyDrive', OPTIONS['WORKSPACE']))
+    else:
+        chdir(os.path.join(os.path.abspath(os.curdir), OPTIONS['WORKSPACE']))
+
+    # 코랩 환경 설정
+    if IN_COLAB:
+        log('코랩을 사용하고 있습니다')
+
+        # 터널링 서비스가 아예 존재하지 않다면 오류 반환하기
         assert OPTIONS['USE_GRADIO'] or OPTIONS['NGROK_API_TOKEN'] != '', '터널링 서비스를 하나 이상 선택해주세요' 
 
+        # 코랩 환경인데 글카가 왜 없어...?
         import torch
         assert torch.cuda.is_available(), 'GPU 가 없습니다, 런타임 유형이 잘못됐거나 GPU 할당량이 초과된 것 같습니다'
-
-        # 구글 드라이브 마운팅 시도
-        if OPTIONS['USE_GOOGLE_DRIVE']:
-            log('구글 드라이브 마운트를 시도합니다')
-
-            from google.colab import drive
-            drive.mount('/content/drive')
-
-            # 경로 업데이트
-            chdir(os.path.join('/content/drive/MyDrive', OPTIONS['WORKSPACE']))
 
         # 코랩 환경에서 이유는 알 수 없지만 /usr 디렉터리 내에서 읽기/쓰기 속도가 다른 곳보다 월등히 빠름
         # 아마 /content 에 큰 용량을 박아두는 사용하는 사람들이 많아서 그런듯...?
@@ -1196,14 +1202,12 @@ try:
         os.symlink('/usr/local/repository', 'repository')
 
         # huggingface 모델 캐시 심볼릭 만들기
+        # TODO: 다운로드 받는거보다 캐시가 더 빠른지 확인할 필요가 있음
         src = os.path.abspath(os.path.join('cache', 'huggingface'))
         dst = '/root/.cache/huggingface'
         os.remove(dst) if os.path.islink(dst) else shutil.rmtree(dst, ignore_errors=True)
         os.makedirs(src, exist_ok=True)
         os.symlink(src, dst, target_is_directory=True)
-
-    else:
-        chdir(os.path.join(os.path.abspath(os.curdir), OPTIONS['WORKSPACE']))
 
     # 체크포인트가 선택 존재한다면 해당 체크포인트 받기
     if OPTIONS['CHECKPOINT'] == '':
