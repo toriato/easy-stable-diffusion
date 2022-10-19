@@ -45,6 +45,10 @@ OPTIONS['USE_XFORMERS'] = USE_XFORMERS
 USE_DEEPBOORU = True  # @param {type:"boolean"}
 OPTIONS['USE_DEEPBOORU'] = USE_DEEPBOORU
 
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***사용자 스크립트를 받아올지?***</font>
+DOWNLOAD_CUSTOM_SCRIPTS = True  # @param {type:"boolean"}
+OPTIONS['DOWNLOAD_CUSTOM_SCRIPTS'] = DOWNLOAD_CUSTOM_SCRIPTS
+
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 터널을 사용할지?***</font>
 USE_GRADIO = True # @param {type:"boolean"}
 OPTIONS['USE_GRADIO'] = USE_GRADIO
@@ -906,8 +910,9 @@ def patch_webui_repository() -> None:
             f.write(json.dumps(configs, indent=4))
 
     # 스크립트 다운로드
-    log('사용자 스크립트를 받습니다')
-    runs(PREDEFINED_SCRIPTS)
+    if OPTIONS['DOWNLOAD_CUSTOM_SCRIPTS']:
+        log('사용자 스크립트를 받습니다')
+        runs(PREDEFINED_SCRIPTS)
 
     # 사용자 스크립트 심볼릭 링크 생성
     log('사용자 스크립트의 심볼릭 링크를 만듭니다')
