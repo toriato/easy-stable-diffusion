@@ -1,97 +1,205 @@
 # @title
 # fmt: off
 import os
-import shutil
 import sys
+import shutil
 import platform
+import tempfile
 import re
 import json
 import requests
-from typing import Union, Callable, Tuple, List
+from typing import Dict, Union, Callable, Tuple, List
 from subprocess import Popen, PIPE, STDOUT
 from distutils.spawn import find_executable
 from importlib.util import find_spec
 from pathlib import Path
+from io import FileIO
 from datetime import datetime
+
+OPTIONS = {}
 
 # @markdown ### <font color="orange">***다운로드 받을 모델(체크포인트) 선택***</font>
 # @markdown 입력 란을 <font color="red">비워두면</font> 모델을 받지 않고 바로 실행함
 # @markdown <br>우측 <font color="red">화살표(🔽)</font> 클릭하면 모델 선택 가능
-CHECKPOINT = '' #@param ["", "NAI - animefull-final-pruned", "NAI - animefull-latest", "NAI - animesfw-final-pruned", "NAI - animesfw-latest", "Waifu Diffusion 1.3", "Trinart Stable Diffusion v2 60,000 Steps", "Trinart Stable Diffusion v2 95,000 Steps", "Trinart Stable Diffusion v2 115,000 Steps", "Furry (epoch 4)", "Zack3D Kinky v1", "Pokemon", "Dreambooth - Hiten"] {allow-input: true}
-
-# @markdown ### <font color="orange">***구글 드라이브 동기화를 사용할지?***</font>
-USE_GOOGLE_DRIVE = True  # @param {type:"boolean"}
+OPTIONS['checkpoint'] = '' #@param ["", "NAI - animefull-final-pruned", "NAI - animefull-latest", "NAI - animesfw-final-pruned", "NAI - animesfw-latest", "Waifu Diffusion 1.3", "Trinart Stable Diffusion v2 60,000 Steps", "Trinart Stable Diffusion v2 95,000 Steps", "Trinart Stable Diffusion v2 115,000 Steps", "Furry (epoch 4)", "Zack3D Kinky v1", "Pokemon", "Dreambooth - Hiten"] {allow-input: true}
 
 # @markdown ### <font color="orange">***구글 드라이브 작업 디렉터리 경로***</font>
 # @markdown 임베딩, 모델, 결과, 설정 등 영구적으로 보관될 파일이 저장될 디렉터리의 경로
-PATH_TO_GOOGLE_DRIVE = 'SD' # @param {type:"string"}
+OPTIONS['workspace'] = 'SD' # @param {type:"string"}
+
+# @markdown ### <font color="orange">***구글 드라이브 동기화를 사용할지?***</font>
+OPTIONS['use_google_drive'] = True  # @param {type:"boolean"}
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***xformers 를 사용할지?***</font>
 # @markdown - <font color="green">장점</font>: 성능 향생
 # @markdown - <font color="red">단점</font>: 미리 빌드한 패키지가 지원하지 않는 환경에선 직접 빌드할 필요가 있음
-USE_XFORMERS = True  # @param {type:"boolean"}
+OPTIONS['use_xformers'] = True  # @param {type:"boolean"}
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***deepbooru 를 사용할지?***</font>
 # @markdown IMG2IMG 에 올린 이미지를 단부루 태그로 변환(예측)해 프롬프트로 추출해내는 기능
 # @markdown - <font color="red">단점</font>: 처음 실행할 때 추가 패키지를 받기 때문에 시간이 조금 더 걸림
-USE_DEEPDANBOORU = True  # @param {type:"boolean"}
+OPTIONS['use_deepbooru'] = True  # @param {type:"boolean"}
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 터널을 사용할지?***</font>
-USE_GRADIO_TUNNEL = True # @param {type:"boolean"}
+OPTIONS['use_gradio'] = True # @param {type:"boolean"}
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 인증 정보***</font>
 # @markdown Gradio 접속 시 사용할 사용자 아이디와 비밀번호
 # @markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> 인증을 사용하지 않음
 # @markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
 # @markdown <br>`GRADIO_PASSWORD` 입력 란을 <font color="red">비워두면</font> 자동으로 비밀번호를 생성함
-GRADIO_USERNAME = 'gradio' # @param {type:"string"}
-GRADIO_PASSWORD = '' # @param {type:"string"}
+OPTIONS['gradio_username'] = 'gradio' # @param {type:"string"}
+OPTIONS['gradio_password'] = '' # @param {type:"string"}
 GRADIO_PASSWORD_GENERATED = False
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***ngrok API 키***</font>
 # @markdown ngrok 터널에 사용할 API 토큰
 # @markdown <br>[API 토큰은 여기를 눌러 계정을 만든 뒤 얻을 수 있음](https://dashboard.ngrok.com/get-started/your-authtoken)
 # @markdown <br>입력 란을 <font color="red">비워두면</font> ngrok 터널을 비활성화함
-NGROK_API_TOKEN = '' # @param {type:"string"}
+OPTIONS['ngrok_api_token'] = '' # @param {type:"string"}
 NGROK_URL = None
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 주소***</font>
-REPO_URL = 'https://github.com/AUTOMATIC1111/stable-diffusion-webui.git' # @param {type:"string"}
+OPTIONS['repo_url'] = 'https://github.com/AUTOMATIC1111/stable-diffusion-webui.git' # @param {type:"string"}
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 커밋 해시***</font>
 # @markdown 입력 란을 <font color="red">비워두면</font> 가장 최신 커밋을 가져옴
-REPO_COMMIT = '' # @param {type:"string"}
+OPTIONS['repo_commit'] = '' # @param {type:"string"}
 
-# 레포지토리에 적용할 풀 리퀘스트
-REPO_PULL_REQUESTS = []
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 추가 인자***</font>
+OPTIONS['extra_args'] = '' # @param {type:"string"}
 
-# 추가로 받을 스크립트
-ADDITIONAL_SCRIPTS = [
+# 받을 수 있는 체크포인트들
+PREDEFINED_CHECKPOINTS = {
+    # NAI leaks
+    'NAI - animefull-final-pruned': {
+        'files': [
+            {
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animefull-final-pruned.ckpt',
+                'target': 'nai/animefull-final-pruned.ckpt',
+            },
+            {
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
+                'target': 'nai/animefull-final-pruned.vae.pt'
+            },
+            {
+                'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-final-pruned.yaml',
+                'target': 'nai/animefull-final-pruned.yaml'
+            }
+        ]
+    },
+    'NAI - animefull-latest': {
+        'files': [
+            {
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animefull-latest.ckpt',
+                'target': 'nai/animefull-latest.ckpt'
+            },
+            {
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
+                'target': 'nai/animefull-latest.vae.pt'
+            },
+            {
+                'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-latest.yaml',
+                'target': 'nai/animefull-latest.yaml'
+            }
+        ]
+    },
+    'NAI - animesfw-final-pruned': {
+        'files': [
+            {
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animesfw-final-pruned.ckpt',
+                'target': 'nai/animesfw-final-pruned.ckpt'
+            },
+            {
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
+                'target': 'nai/animesfw-final-pruned.vae.pt'
+            },
+            {
+                'url': 'https://gist.github.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-final-pruned.yaml',
+                'target': 'nai/animesfw-final-pruned.yaml'
+            }
+        ]
+    },
+    'NAI - animesfw-latest': {
+        'files': [
+            {
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animesfw-latest.ckpt',
+                'target': 'nai/animesfw-latest.ckpt'
+            },
+            {
+                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
+                'target': 'nai/animesfw-latest.vae.pt'
+            },
+            {
+                'url': 'https://gist.github.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-latest.yaml',
+                'target': 'nai/animesfw-latest.yaml'
+            }
+        ]
+    },
+
+    # Waifu Diffusion
+    'Waifu Diffusion 1.3': {
+        'files': [{
+            'url': 'https://huggingface.co/hakurei/waifu-diffusion-v1-3/resolve/main/wd-v1-3-float16.ckpt',
+            'args': ['-o', 'wd-v1-3-epoch09-float16.ckpt']
+        }]
+    },
+
+    # Trinart2
+    'Trinart Stable Diffusion v2 60,000 Steps': {
+        'files': [{'url': 'https://huggingface.co/naclbit/trinart_stable_diffusion_v2/resolve/main/trinart2_step60000.ckpt'}]
+    },
+    'Trinart Stable Diffusion v2 95,000 Steps': {
+        'files': [{'url': 'https://huggingface.co/naclbit/trinart_stable_diffusion_v2/resolve/main/trinart2_step95000.ckpt'}]
+    },
+    'Trinart Stable Diffusion v2 115,000 Steps': {
+        'files': [{'url': 'https://huggingface.co/naclbit/trinart_stable_diffusion_v2/resolve/main/trinart2_step115000.ckpt'}]
+    },
+
+    'Furry (epoch 4)': {
+        'files': [{'url': 'https://iwiftp.yerf.org/Furry/Software/Stable%20Diffusion%20Furry%20Finetune%20Models/Finetune%20models/furry_epoch4.ckpt'}]
+    },
+    'Zack3D Kinky v1': {
+        'files': [{'url': 'https://iwiftp.yerf.org/Furry/Software/Stable%20Diffusion%20Furry%20Finetune%20Models/Finetune%20models/Zack3D_Kinky-v1.ckpt'}]
+    },
+    'Pokemon': {
+        'files': [{
+            'url': 'https://huggingface.co/justinpinkney/pokemon-stable-diffusion/resolve/main/ema-only-epoch%3D000142.ckpt',
+            'args': ['-o', 'pokemon-ema-pruned.ckpt']
+        }]
+    },
+    'Dreambooth - Hiten': {
+        'files': [{'url': 'https://huggingface.co/BumblingOrange/Hiten/resolve/main/Hiten%20girl_anime_8k_wallpaper_4k.ckpt'}]
+    },
+}
+
+# 추가로 받을 스크립트들
+PREDEFINED_SCRIPTS = [
     # 번역 파일
     lambda: download(
         'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/localizations/ko-KR.json',
-        PATHS['localizations'],
+        'localizations',
     ),
 
     # 태그 자동 완성 유저스크립트
     # https://arca.live/b/aiart/60536925/272094058
     lambda: download(
         'https://greasyfork.org/scripts/452929-webui-%ED%83%9C%EA%B7%B8-%EC%9E%90%EB%8F%99%EC%99%84%EC%84%B1/code/WebUI%20%ED%83%9C%EA%B7%B8%20%EC%9E%90%EB%8F%99%EC%99%84%EC%84%B1.user.js',
-        'repo/javascript',
+        'repository/javascript',
     ),
 
     # Advanced prompt matrix
     # https://github.com/GRMrGecko/stable-diffusion-webui-automatic/blob/advanced_matrix/scripts/advanced_prompt_matrix.py
     lambda: download(
         'https://raw.githubusercontent.com/GRMrGecko/stable-diffusion-webui-automatic/advanced_matrix/scripts/advanced_prompt_matrix.py',
-        'repo/scripts'
+        'repository/scripts'
     ),
 
     # Dynamic Prompt Templates
     # https://github.com/adieyal/sd-dynamic-prompting
     lambda: download(
         'https://github.com/adieyal/sd-dynamic-prompting/raw/main/dynamic_prompting.py',
-        'repo/scripts'
+        'repository/scripts'
     ),
 
     # Wildcards
@@ -99,45 +207,45 @@ ADDITIONAL_SCRIPTS = [
     [
         lambda: download(
             'https://raw.githubusercontent.com/jtkelm2/stable-diffusion-webui-1/master/scripts/wildcards.py',
-            'repo/scripts'
+            'repository/scripts'
         ),
         # 스크립트 디렉터리는 patch_webui_repository 메소드에서
         # 코랩 환경일 때 심볼릭 링크를 만들기 때문에 따로 처리할 필요가 없음
         [
             # 사용자 디렉터리가 존재하지 않는다면 기본 데이터셋 가져오기
             # https://github.com/Lopyter/stable-soup-prompts
-            lambda: os.path.exists('repo/scripts/wildcards'), # True 반환시 현재 리스트 실행 정지
-            lambda: shutil.rmtree('.tmp', ignore_errors=True),
+            lambda: os.path.exists('repository/scripts/wildcards'), # True 반환시 현재 리스트 실행 정지
+            lambda: shutil.rmtree(TEMP_DIR, ignore_errors=True),
             lambda: execute(
-                ['git', 'clone', 'https://github.com/Lopyter/stable-soup-prompts.git', '.tmp'],
+                ['git', 'clone', 'https://github.com/Lopyter/stable-soup-prompts.git', TEMP_DIR],
                 hide_summary=True    
             ),
-            lambda: os.remove('repo/scripts/wildcards') if os.path.islink('repo/scripts/wildcards') else None, # 심볼릭 링크는 파일로 삭제해야함
-            lambda: shutil.rmtree('repo/scripts/wildcards', ignore_errors=True),
-            lambda: shutil.copytree('.tmp/wildcards', 'repo/scripts/wildcards'),
-            lambda: shutil.rmtree('.tmp', ignore_errors=True)
+            lambda: os.remove('repository/scripts/wildcards') if os.path.islink('repository/scripts/wildcards') else None, # 심볼릭 링크는 파일로 삭제해야함
+            lambda: shutil.rmtree('repository/scripts/wildcards', ignore_errors=True),
+            lambda: shutil.copytree(os.path.join(TEMP_DIR, 'wildcards'), 'repository/scripts/wildcards'),
+            lambda: shutil.rmtree(TEMP_DIR, ignore_errors=True)
         ]
     ],
 
     # txt2mask
     # https://github.com/ThereforeGames/txt2mask
     [
-        lambda: shutil.rmtree('.tmp', ignore_errors=True),
+        lambda: shutil.rmtree(TEMP_DIR, ignore_errors=True),
         lambda: execute(
-            ['git', 'clone', 'https://github.com/ThereforeGames/txt2mask.git', '.tmp'],
+            ['git', 'clone', 'https://github.com/ThereforeGames/txt2mask.git', TEMP_DIR],
             hide_summary=True
         ),
-        lambda: shutil.rmtree('repo/repositories/clipseg', ignore_errors=True),
-        lambda: shutil.copytree('.tmp/repositories/clipseg', 'repo/repositories/clipseg'),
-        lambda: shutil.copy('.tmp/scripts/txt2mask.py', 'repo/scripts'),
-        lambda: shutil.rmtree('.tmp', ignore_errors=True),
+        lambda: shutil.rmtree('repository/repositories/clipseg', ignore_errors=True),
+        lambda: shutil.copytree(os.path.join(TEMP_DIR, 'repositories/clipseg'), 'repository/repositories/clipseg'),
+        lambda: shutil.copy(os.path.join(TEMP_DIR, 'scripts/txt2mask.py'), 'repository/scripts'),
+        lambda: shutil.rmtree(TEMP_DIR, ignore_errors=True),
     ],
 
     # Img2img Video
     # https://github.com/memes-forever/Stable-diffusion-webui-video
     lambda: download(
         'https://raw.githubusercontent.com/memes-forever/Stable-diffusion-webui-video/main/videos.py',
-        'repo/scripts'
+        'repository/scripts'
     ),
 
     # Seed Travel
@@ -146,7 +254,7 @@ ADDITIONAL_SCRIPTS = [
         lambda: None if has_python_package('moviepy') else execute(['pip', 'install', 'moviepy']),
         lambda: download(
             'https://raw.githubusercontent.com/yownas/seed_travel/main/scripts/seed_travel.py',
-            'repo/scripts',
+            'repository/scripts',
         )
     ],
 
@@ -154,21 +262,21 @@ ADDITIONAL_SCRIPTS = [
     # https://github.com/Animator-Anon/Animator
     lambda: download(
         'https://raw.githubusercontent.com/Animator-Anon/Animator/main/animation.py',
-        'repo/scripts'
+        'repository/scripts'
     ),
 
     # Alternate Noise Schedules
     # https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts#alternate-noise-schedules
     lambda: download(
         'https://gist.githubusercontent.com/dfaker/f88aa62e3a14b559fe4e5f6b345db664/raw/791dabfa0ab26399aa2635bcbc1cf6267aa4ffc2/alternate_sampler_noise_schedules.py',
-        'repo/scripts'
+        'repository/scripts'
     ),
 
     # Vid2Vid
     # https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts#vid2vid
     lambda: download(
         'https://raw.githubusercontent.com/Filarius/stable-diffusion-webui/master/scripts/vid2vid.py',
-        'repo/scripts'
+        'repository/scripts'
     ),
 
     # Shift Attention
@@ -177,7 +285,7 @@ ADDITIONAL_SCRIPTS = [
         lambda: None if has_python_package('moviepy') else execute(['pip', 'install', 'moviepy']),
         lambda: download(
             'https://raw.githubusercontent.com/yownas/shift-attention/main/scripts/shift_attention.py',
-            'repo/scripts'
+            'repository/scripts'
         )
     ],
 
@@ -185,21 +293,21 @@ ADDITIONAL_SCRIPTS = [
     # https://github.com/DiceOwl/StableDiffusionStuff
     lambda: download(
         'https://raw.githubusercontent.com/DiceOwl/StableDiffusionStuff/main/loopback_superimpose.py',
-        'repo/scripts'
+        'repository/scripts'
     ),
 
     # Run n times
     # https://gist.github.com/camenduru/9ec5f8141db9902e375967e93250860f
     lambda: download(
         'https://gist.githubusercontent.com/camenduru/9ec5f8141db9902e375967e93250860f/raw/b5c741676c5514105b9a1ea7dd438ca83802f16f/run_n_times.py',
-        'repo/scripts'
+        'repository/scripts'
     ),
 
     # Advanced Loopback
     # https://github.com/Extraltodeus/advanced-loopback-for-sd-webui
     lambda: download(
         'https://raw.githubusercontent.com/Extraltodeus/advanced-loopback-for-sd-webui/main/advanced_loopback.py',
-        'repo/scripts'
+        'repository/scripts'
     ),
 
     # prompt-morph
@@ -208,7 +316,7 @@ ADDITIONAL_SCRIPTS = [
         lambda: None if has_python_package('moviepy') else execute(['pip', 'install', 'moviepy']),
         lambda: download(
             'https://raw.githubusercontent.com/feffy380/prompt-morph/master/prompt_morph.py',
-            'repo/scripts'
+            'repository/scripts'
         ),
     ],
 
@@ -216,48 +324,48 @@ ADDITIONAL_SCRIPTS = [
     # https://github.com/EugeoSynthesisThirtyTwo/prompt-interpolation-script-for-sd-webui
     lambda: download(
         'https://raw.githubusercontent.com/EugeoSynthesisThirtyTwo/prompt-interpolation-script-for-sd-webui/main/prompt_interpolation.py',
-        'repo/scripts'
+        'repository/scripts'
     ),
 
     # Asymmetric Tiling
     # https://github.com/tjm35/asymmetric-tiling-sd-webui/
     lambda: download(
         'https://raw.githubusercontent.com/tjm35/asymmetric-tiling-sd-webui/main/asymmetric_tiling.py',
-        'repo/scripts'
+        'repository/scripts'
     ),
 
     # Booru tag autocompletion for A1111
     # https://github.com/DominikDoom/a1111-sd-webui-tagcomplete
     [
-        lambda: shutil.rmtree('.tmp', ignore_errors=True),
+        lambda: shutil.rmtree(TEMP_DIR, ignore_errors=True),
         lambda: execute(
-            ['git', 'clone', 'https://github.com/DominikDoom/a1111-sd-webui-tagcomplete.git', '.tmp'],
+            ['git', 'clone', 'https://github.com/DominikDoom/a1111-sd-webui-tagcomplete.git', TEMP_DIR],
             hide_summary=True
         ),
         [
             # 코랩 + 사용자 디렉터리가 존재한다면 심볼릭 링크 만들기
-            lambda: not IN_COLAB or not os.path.isdir(os.path.join(PATHS['workspace'], 'tags')),  # True 반환시 현재 리스트 실행 정지
-            lambda: shutil.rmtree('repo/tags', ignore_errors=True),
-            lambda: os.symlink(os.path.join(PATHS['workspace'], 'tags'), 'repo/tags')
+            lambda: not IN_COLAB or not os.path.isdir('tags'),  # True 반환시 현재 리스트 실행 정지
+            lambda: shutil.rmtree('repository/tags', ignore_errors=True),
+            lambda: os.symlink('tags', 'repository/tags')
         ],
         [
             # 사용자 디렉터리가 존재하지 않는다면 기본 데이터셋 가져오기
-            lambda: IN_COLAB and os.path.islink('repo/tags'),  # True 반환시 현재 리스트 실행 정지
-            lambda: not IN_COLAB and os.path.isdir('repo/tags'),  # True 반환시 현재 리스트 실행 정지
-            lambda: shutil.rmtree('repo/tags', ignore_errors=True),
-            lambda: shutil.copytree('.tmp/tags', 'repo/tags'),
+            lambda: IN_COLAB and os.path.islink('repository/tags'),  # True 반환시 현재 리스트 실행 정지
+            lambda: not IN_COLAB and os.path.isdir('repository/tags'),  # True 반환시 현재 리스트 실행 정지
+            lambda: shutil.rmtree('repository/tags', ignore_errors=True),
+            lambda: shutil.copytree(os.path.join(TEMP_DIR, 'tags'), 'repository/tags'),
         ],
-        lambda: shutil.copy('.tmp/javascript/tagAutocomplete.js', 'repo/javascript'),
-        lambda: shutil.copy('.tmp/scripts/tag_autocomplete_helper.py', 'repo/scripts'),
-        lambda: shutil.rmtree('.tmp', ignore_errors=True),
+        lambda: shutil.copy(os.path.join(TEMP_DIR, 'javascript/tagAutocomplete.js'), 'repository/javascript'),
+        lambda: shutil.copy(os.path.join(TEMP_DIR, 'scripts/tag_autocomplete_helper.py'), 'repository/scripts'),
+        lambda: shutil.rmtree(TEMP_DIR, ignore_errors=True),
     ]
 ]
 
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 추가 인자***</font>
-ADDITIONAL_ARGS = '' # @param {type:"string"}
+# 임시 디렉터리
+TEMP_DIR = tempfile.mkdtemp()
 
 # 로그 파일
-LOG_FILE = None
+LOG_FILE: FileIO = None
 
 # 로그 HTML 위젯
 LOG_WIDGET = None
@@ -361,8 +469,8 @@ def log(msg: str, styles={}, newline=True, block_index: int=None,
         print_to_file=True, print_to_widget=True) -> None:
     # 기록할 내용이 ngrok API 키와 일치한다면 숨기기
     # TODO: 더 나은 문자열 검사, 원치 않은 내용이 가려질 수도 있음
-    if NGROK_API_TOKEN != '':
-        msg = msg.replace(NGROK_API_TOKEN, '**REDACTED**')
+    if OPTIONS['ngrok_api_token'] != '':
+        msg = msg.replace(OPTIONS['ngrok_api_token'], '**REDACTED**')
 
     if newline:
         msg += '\n'
@@ -549,158 +657,49 @@ def runs(item: Union[Callable, List[Callable]]) -> bool:
 # ==============================
 # 작업 경로
 # ==============================
-PATHS = {}
-
-def update_path_to(path_to_workspace: str) -> None:
+def chdir(cwd: str) -> None:
     global LOG_FILE
 
-    PATHS['workspace'] = path_to_workspace
-    PATHS['outputs'] = f"{PATHS['workspace']}/outputs"
-    PATHS['models'] = f"{PATHS['workspace']}/models"
-    PATHS['embeddings'] = f"{PATHS['workspace']}/embeddings"
-    PATHS['localizations'] = f"{PATHS['workspace']}/localizations"
-    PATHS['scripts'] = f"{PATHS['workspace']}/scripts"
-    PATHS['logs'] = f"{PATHS['workspace']}/logs"
-    PATHS['styles_file'] = f"{PATHS['workspace']}/styles.csv"
-    PATHS['ui_config_file'] = f"{PATHS['workspace']}/ui-config.json"
-    PATHS['ui_settings_file'] = f"{PATHS['workspace']}/config.json"
+    # 작업 경로 변경
+    old_cwd = os.path.abspath(os.curdir)
+    os.makedirs(cwd, exist_ok=True)
+    os.chdir(cwd)
 
-    os.makedirs(PATHS['workspace'], exist_ok=True)
-    os.makedirs(PATHS['embeddings'], exist_ok=True)
-    os.makedirs(PATHS['localizations'], exist_ok=True)
-    os.makedirs(PATHS['scripts'], exist_ok=True)
-    os.makedirs(PATHS['logs'], exist_ok=True)
+    # 필수 디렉터리 만들기
+    os.makedirs('embeddings', exist_ok=True)
+    os.makedirs('localizations', exist_ok=True)
+    os.makedirs('scripts', exist_ok=True)
+    os.makedirs('logs', exist_ok=True)
 
-    log_path = os.path.join(PATHS['logs'], datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S.log'))
+    # 기존 로그 파일이 옮기기
+    log_path = os.path.join('logs', datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S.log'))
 
-    # 기존 로그 파일이 존재한다면 옮기기
     if LOG_FILE:
         LOG_FILE.close()
-        shutil.move(LOG_FILE.name, log_path)
+        shutil.move(os.path.join(old_cwd, LOG_FILE.name), log_path)
 
     LOG_FILE = open(log_path, 'a')
+
+    #  덮어쓸 설정 파일 가져오기
+    if os.path.isfile(os.path.join(cwd, 'override.json')):
+        log('설정 파일이 존재합니다, 기존 설정을 덮어씁니다')
+
+        with open(os.path.join(cwd, 'override.json'), 'r') as file:
+            override_options = json.loads(file.read())
+            for key, value in override_options.items():
+                if key not in OPTIONS:
+                    log(f'{key} 값은 존재하지 않는 설정 키입니다', styles={'color':'red'})
+                    continue
+
+                if type(value) != type(OPTIONS[key]):
+                    log(f'{key} 키는 {type(OPTIONS[key])} 자료형이여만 합니다', styles={'color':'red'})
+                    continue
+
+                OPTIONS[key] = value
 
 def has_python_package(pkg: str, check_loader=True) -> bool:
     spec = find_spec(pkg)
     return spec and (check_loader and spec.loader is not None)
-
-# ==============================
-# 사용자 설정
-# ==============================
-CHECKPOINTS = {
-    # NAI leaks
-    'NAI - animefull-final-pruned': {
-        'files': [
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animefull-final-pruned.ckpt',
-                'target': 'nai/animefull-final-pruned.ckpt',
-            },
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
-                'target': 'nai/animefull-final-pruned.vae.pt'
-            },
-            {
-                'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-final-pruned.yaml',
-                'target': 'nai/animefull-final-pruned.yaml'
-            }
-        ]
-    },
-    'NAI - animefull-latest': {
-        'files': [
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animefull-latest.ckpt',
-                'target': 'nai/animefull-latest.ckpt'
-            },
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
-                'target': 'nai/animefull-latest.vae.pt'
-            },
-            {
-                'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-latest.yaml',
-                'target': 'nai/animefull-latest.yaml'
-            }
-        ]
-    },
-    'NAI - animesfw-final-pruned': {
-        'files': [
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animesfw-final-pruned.ckpt',
-                'target': 'nai/animesfw-final-pruned.ckpt'
-            },
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
-                'target': 'nai/animesfw-final-pruned.vae.pt'
-            },
-            {
-                'url': 'https://gist.github.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-final-pruned.yaml',
-                'target': 'nai/animesfw-final-pruned.yaml'
-            }
-        ]
-    },
-    'NAI - animesfw-latest': {
-        'files': [
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animesfw-latest.ckpt',
-                'target': 'nai/animesfw-latest.ckpt'
-            },
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
-                'target': 'nai/animesfw-latest.vae.pt'
-            },
-            {
-                'url': 'https://gist.github.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-latest.yaml',
-                'target': 'nai/animesfw-latest.yaml'
-            }
-        ]
-    },
-
-    # Waifu Diffusion
-    'Waifu Diffusion 1.3': {
-        'files': [{
-            'url': 'https://huggingface.co/hakurei/waifu-diffusion-v1-3/resolve/main/wd-v1-3-float16.ckpt',
-            'args': ['-o', 'wd-v1-3-epoch09-float16.ckpt']
-        }]
-    },
-
-    # Trinart2
-    'Trinart Stable Diffusion v2 60,000 Steps': {
-        'files': [{'url': 'https://huggingface.co/naclbit/trinart_stable_diffusion_v2/resolve/main/trinart2_step60000.ckpt'}]
-    },
-    'Trinart Stable Diffusion v2 95,000 Steps': {
-        'files': [{'url': 'https://huggingface.co/naclbit/trinart_stable_diffusion_v2/resolve/main/trinart2_step95000.ckpt'}]
-    },
-    'Trinart Stable Diffusion v2 115,000 Steps': {
-        'files': [{'url': 'https://huggingface.co/naclbit/trinart_stable_diffusion_v2/resolve/main/trinart2_step115000.ckpt'}]
-    },
-
-    'Furry (epoch 4)': {
-        'files': [{'url': 'https://iwiftp.yerf.org/Furry/Software/Stable%20Diffusion%20Furry%20Finetune%20Models/Finetune%20models/furry_epoch4.ckpt'}]
-    },
-    'Zack3D Kinky v1': {
-        'files': [{'url': 'https://iwiftp.yerf.org/Furry/Software/Stable%20Diffusion%20Furry%20Finetune%20Models/Finetune%20models/Zack3D_Kinky-v1.ckpt'}]
-    },
-    'Pokemon': {
-        'files': [{
-            'url': 'https://huggingface.co/justinpinkney/pokemon-stable-diffusion/resolve/main/ema-only-epoch%3D000142.ckpt',
-            'args': ['-o', 'pokemon-ema-pruned.ckpt']
-        }]
-    },
-    'Dreambooth - Hiten': {
-        'files': [{'url': 'https://huggingface.co/BumblingOrange/Hiten/resolve/main/Hiten%20girl_anime_8k_wallpaper_4k.ckpt'}]
-    },
-}
-
-# ==============================
-# 구글 드라이브 동기화
-# ==============================
-def mount_google_drive() -> None:
-    log('구글 드라이브 마운트를 시작합니다')
-
-    from google.colab import drive
-    drive.mount('/content/drive', force_remount=True)
-
-    # 전체 경로 업데이트
-    update_path_to(os.path.join('/content/drive/MyDrive', PATH_TO_GOOGLE_DRIVE))
 
 
 # ==============================
@@ -799,8 +798,8 @@ def download(url: str, target=''):
                 shutil.copyfileobj(res.raw, file, length=16*1024*1024)
 
 def download_checkpoint(checkpoint: str) -> None:
-    if checkpoint in CHECKPOINTS:
-        checkpoint = CHECKPOINTS[checkpoint]
+    if checkpoint in PREDEFINED_CHECKPOINTS:
+        checkpoint = PREDEFINED_CHECKPOINTS[checkpoint]
     else:
         # 미리 선언된 체크포인트가 아니라면 주소로써 사용하기
         checkpoint = {'files': [{'url': checkpoint}]}
@@ -810,11 +809,12 @@ def download_checkpoint(checkpoint: str) -> None:
     log(f"파일 {len(checkpoint['files'])}개를 받습니다")
 
     for file in checkpoint['files']:
-        target = os.path.join(f"{PATHS['models']}/Stable-diffusion", file.get('target', ''))
+        target = os.path.join('models', 'Stable-diffusion', file.get('target', ''))
         download(**{**file, 'target': target})
 
 def has_checkpoint() -> bool:
-    for p in Path(f"{PATHS['models']}/Stable-diffusion").glob('**/*.ckpt'):
+    for p in Path(os.path.join('models', 'Stable-diffusion')).glob('**/*.ckpt'):
+        print(p)
         # aria2 로 받다만 파일은 무시하기
         if os.path.isfile(f'{p}.aria2'):
             continue
@@ -838,32 +838,32 @@ def patch_webui_pull_request(number: int) -> None:
     execute(f"curl -sSL {payload['patch_url']} | git apply", 
         throw=False,
         shell=True,
-        cwd='repo'
+        cwd='repository'
     )
 
 def patch_webui_repository() -> None:
     # 기본 UI 설정 값 (ui-config.json)
     # 설정 파일 자체를 덮어씌우면 새로 추가된 키를 인식하지 못해서 코드 자체를 수정함
     # https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/shared.py
-    if os.path.isfile('repo/modules/shared.py'):
+    if os.path.isfile('repository/modules/shared.py'):
         log('설정 파일의 기본 값을 추천 값으로 변경합니다')
 
         configs = {
             # 기본 언어 파일
-            'localization': os.path.join(PATHS['localizations'], 'ko-KR.json'),
+            'localization': os.path.join('localizations', 'ko-KR.json'),
 
             # 결과 이미지 디렉터리
-            'outdir_txt2img_samples': os.path.join(PATHS['outputs'], 'txt2img-samples'),
-            'outdir_img2img_samples': os.path.join(PATHS['outputs'], 'img2img-samples'),
-            'outdir_extras_samples': os.path.join(PATHS['outputs'], 'extras-samples'),
-            'outdir_txt2img_grids': os.path.join(PATHS['outputs'], 'txt2img-grids'),
-            'outdir_img2img_grids': os.path.join(PATHS['outputs'], 'img2img-grids'),
+            'outdir_txt2img_samples': os.path.join('outputs', 'txt2img-samples'),
+            'outdir_img2img_samples': os.path.join('outputs', 'img2img-samples'),
+            'outdir_extras_samples': os.path.join('outputs', 'extras-samples'),
+            'outdir_txt2img_grids': os.path.join('outputs', 'txt2img-grids'),
+            'outdir_img2img_grids': os.path.join('outputs', 'img2img-grids'),
 
             # NAI 기본 설정(?)
             'CLIP_stop_at_last_layers': 2,
         }
 
-        with open('repo/modules/shared.py', 'r+') as f:
+        with open('repository/modules/shared.py', 'r+') as f:
             def replace(m: re.Match) -> str:
                 if m[2] in configs:
                     # log(f'{m[2]} -> {configs[m[2]]}')
@@ -884,10 +884,10 @@ def patch_webui_repository() -> None:
             f.write(replaced_code)
 
     # 기본 설정 파일 (config.json)
-    if not os.path.isfile(PATHS['ui_config_file']):
+    if not os.path.isfile('ui-config.json'):
         log('UI 설정 파일이 존재하지 않습니다, 추천 값으로 새로 생성합니다')
 
-        with open(PATHS['ui_config_file'], 'w') as f:
+        with open('ui-config.json', 'w') as f:
             configs = {
                 'txt2img/Prompt/value': 'best quality, masterpiece',
                 'txt2img/Negative prompt/value': 'lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry',
@@ -899,20 +899,15 @@ def patch_webui_repository() -> None:
 
             f.write(json.dumps(configs, indent=4))
 
-    # 풀 리퀘스트 적용
-    if REPO_URL.startswith('https://github.com/AUTOMATIC1111/stable-diffusion-webui'):
-        for number in REPO_PULL_REQUESTS:
-            patch_webui_pull_request(number)
-
     # 스크립트 다운로드
     log('사용자 스크립트를 받습니다')
-    runs(ADDITIONAL_SCRIPTS)
+    runs(PREDEFINED_SCRIPTS)
 
     # 사용자 스크립트 심볼릭 링크 생성
     log('사용자 스크립트의 심볼릭 링크를 만듭니다')
-    for path in os.listdir(PATHS['scripts']):
-        src = os.path.join(PATHS['scripts'], path)
-        dst = os.path.join('repo/scripts', os.path.basename(path))
+    for path in os.listdir('scripts'):
+        src = os.path.join('scripts', path)
+        dst = os.path.join('repository/scripts', os.path.basename(path))
 
         # 이미 파일이 존재한다면 기존 파일 삭제하기
         if os.path.exists(dst):
@@ -925,7 +920,7 @@ def setup_webui() -> None:
     need_clone = True
 
     # 이미 디렉터리가 존재한다면 정상적인 레포인지 확인하기
-    if os.path.isdir('repo'):
+    if os.path.isdir('repository'):
         try:
             # 사용자 파일만 남겨두고 레포지토리 초기화하기
             # https://stackoverflow.com/a/12096327
@@ -933,7 +928,7 @@ def setup_webui() -> None:
                 'git checkout -- . && git pull',
                 summary='레포지토리를 업데이트 합니다',
                 shell=True,
-                cwd='repo'
+                cwd='repository'
             )
 
             need_clone = False
@@ -942,17 +937,23 @@ def setup_webui() -> None:
             log('레포지토리가 잘못됐습니다, 디렉터리를 제거합니다')
 
     if need_clone:
-        shutil.rmtree('repo', ignore_errors=True)
+        # 실제 레포지토리 경로 가져오기
+        # 코랩 환경에선 레포지토리 경로를 심볼릭 링크하기 때문에 경로를 가져와야함
+        path='repository'
+        if os.path.islink(path):
+            path = os.path.realpath(path)
+
+        shutil.rmtree(path, ignore_errors=True)
         execute(
-            ['git', 'clone', REPO_URL, 'repo'],
+            ['git', 'clone', OPTIONS['repo_url'], path],
             summary='레포지토리를 가져옵니다'
         )
 
     # 특정 커밋이 지정됐다면 체크아웃하기
-    if REPO_COMMIT != '':
+    if OPTIONS['repo_commit'] != '':
         execute(
-            ['git', 'checkout', REPO_COMMIT],
-            summary=f'레포지토리를 {REPO_COMMIT} 커밋으로 되돌립니다'
+            ['git', 'checkout', OPTIONS['repo_commit']],
+            summary=f"레포지토리를 {OPTIONS['repo_commit']} 커밋으로 되돌립니다"
         )
 
     patch_webui_repository()
@@ -978,16 +979,16 @@ def parse_webui_output(line: str) -> bool:
             # gradio 인증
             log(
                 '\n'.join([
-                    'Gradio 비밀번호가 자동으로 생성됐습니다',
-                    f'아이디: {GRADIO_USERNAME}',
-                    f'비밀번호: {GRADIO_PASSWORD}'
+                    'Gradio 인증 비밀번호가 자동으로 생성됐습니다',
+                    f"아이디: {OPTIONS['gradio_username']}",
+                    f"비밀번호: {OPTIONS['gradio_password']}"
                 ]),
                 LOG_WIDGET_STYLES['dialog_success'], 
                 print_to_file=False
             )
 
         # ngork
-        if NGROK_API_TOKEN != '':
+        if OPTIONS['ngrok_api_token'] != '':
             # 이전 로그에서 ngrok 주소가 표시되지 않았다면 ngrok 관련 오류 발생한 것으로 판단
             if NGROK_URL == None:
                 raise Exception('ngrok 터널을 여는 중 알 수 없는 오류가 발생했습니다')
@@ -1031,26 +1032,113 @@ def parse_webui_output(line: str) -> bool:
 
         return
 
-def start_webui(args: List[str]=[], env={}) -> None:
+def start_webui(args: List[str]=None, env: Dict[str, str]=None) -> None:
     global running_subprocess
+    global GRADIO_PASSWORD_GENERATED
 
-    # 이미 WebUI 가 실행 중인지 확인하기
-    # TODO: 비동기 없이 순차적으로 실행되는데 이 코드가 꼭 필요한지?
-    if running_subprocess and running_subprocess.poll() is None:
-        if 'launch.py' in running_subprocess.args:
-            log('이미 실행 중인 웹UI를 종료하고 다시 시작합니다')
-            running_subprocess.kill()
+    # 기본 환경 변수 만들기
+    if env is None:
+        env = {
+            **os.environ,
+            'PYTHONUNBUFFERED': '1',
+            'REQS_FILE': 'requirements.txt',
+        }
+
+    # 기본 인자 만들기
+    if args is None:
+        # launch.py 실행할 땐 레포지토리 경로에서 실행해야하기 때문에
+        # 현재 작업 디렉터리를 절대 경로로 가져와 인자로 보내줄 필요가 있음
+        cwd = os.path.abspath(os.curdir)
+        args = [
+            '--ckpt-dir', os.path.join(cwd, 'models', 'Stable-diffusion'),
+            '--embeddings-dir', os.path.join(cwd, 'embeddings'),
+            '--hypernetwork-dir', os.path.join(cwd, 'hypernetworks'),
+            '--localizations-dir', os.path.join(cwd, 'localizations'),
+            '--codeformer-models-path', os.path.join(cwd, 'models', 'Codeformer'),
+            '--gfpgan-models-path', os.path.join(cwd, 'models', 'GFPGAN'),
+            '--esrgan-models-path', os.path.join(cwd, 'models', 'ESRGAN'),
+            '--bsrgan-models-path', os.path.join(cwd, 'models', 'BSRGAN'),
+            '--realesrgan-models-path', os.path.join(cwd, 'models', 'RealESRGAN'),
+            '--scunet-models-path', os.path.join(cwd, 'models', 'ScuNET'),
+            '--swinir-models-path', os.path.join(cwd, 'models', 'SwinIR'),
+            '--ldsr-models-path', os.path.join(cwd, 'models', 'LDSR'),
+
+            '--styles-file', os.path.join(cwd, 'styles.csv'),
+            '--ui-config-file', os.path.join(cwd, 'ui-config.json'),
+            '--ui-settings-file', os.path.join(cwd, 'config.json'),
+
+            # TODO: 기븐으로 설정 해둬도 괜찮을까...?
+            '--gradio-img2img-tool', 'color-sketch',
+        ]
+
+        if IN_COLAB:
+            args.append('--lowram')
+
+        # xformers
+        if OPTIONS['use_xformers']:
+            log('xformers 를 사용합니다')
+
+            if has_python_package('xformers'):
+                args.append('--xformers')
+
+            elif IN_COLAB:
+                log('xformers 패키지가 존재하지 않습니다, 미리 컴파일된 파일로부터 xformers 패키지를 가져옵니다')
+                download('https://github.com/toriato/easy-stable-diffusion/raw/prebuilt-xformers/cu113/xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl', tempfile.gettempdir())
+                execute(
+                    ['pip', 'install', os.path.join(tempfile.gettempdir(), 'xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl')],
+                    summary='xformers 패키지를 설치합니다'
+                )
+                args.append('--xformers')
+
+            else:
+                # TODO: 패키지 빌드
+                log('xformers 패키지가 존재하지 않습니다, --xformers 인자를 사용하지 않습니다')
+
+        # deepdanbooru
+        if OPTIONS['use_deepbooru']:
+            log('deepbooru 를 사용합니다')
+            args.append('--deepdanbooru')
+
+        # gradio
+        if OPTIONS['use_gradio']:
+            log('Gradio 터널을 사용합니다')
+            args.append('--share')
+
+        # gradio 인증
+        if OPTIONS['gradio_username'] != '':
+            # 다계정이 아니고 비밀번호가 없다면 무작위로 만들기
+            if OPTIONS['gradio_password'] == '' and ';' not in OPTIONS['gradio_username']:
+                from secrets import token_urlsafe
+                OPTIONS['gradio_password'] = token_urlsafe(8)
+                GRADIO_PASSWORD_GENERATED = True
+
+            args += [
+                f'--gradio-auth',
+                OPTIONS['gradio_username'] + ('' if OPTIONS['gradio_password'] == '' else ':' + OPTIONS['gradio_password'])
+            ]
+
+        # ngrok
+        if OPTIONS['ngrok_api_token'] != '':
+            log('ngrok 터널을 사용합니다')
+            args += [
+                '--ngrok', OPTIONS['ngrok_api_token'],
+                '--ngrok-region', 'jp'
+            ]
+
+            if has_python_package('pyngrok') is None:
+                log('ngrok 사용에 필요한 패키지가 존재하지 않습니다, 설치를 시작합니다')
+                execute(['pip', 'install', 'pyngrok'])
+
+            # 추가 인자
+            # TODO: 받은 문자열을 리스트로 안나누고 그대로 사용할 수 있는지?
+            if OPTIONS['extra_args'] != '':
+                args.append(OPTIONS['extra_args'])
 
     execute(
         ['python', 'launch.py', *args],
         parser=parse_webui_output,
-        cwd='repo',
-        env={
-            **os.environ,
-            'PYTHONUNBUFFERED': '1',
-            'REQS_FILE': 'requirements.txt',
-            **env
-        }
+        cwd='repository',
+        env=env
     )
 
 
@@ -1072,9 +1160,6 @@ try:
 
         display(LOG_WIDGET)
 
-    # 기본 작업 경로 설정
-    update_path_to(os.path.abspath(os.curdir))
-
     log(platform.platform())
     log(f'Python {platform.python_version()}')
     log('')
@@ -1083,139 +1168,55 @@ try:
         log('코랩을 사용하고 있습니다')
         IN_COLAB = True
 
-        assert USE_GRADIO_TUNNEL or NGROK_API_TOKEN != '', '터널링 서비스를 하나 이상 선택해주세요' 
+        assert OPTIONS['use_gradio'] or OPTIONS['ngrok_api_token'] != '', '터널링 서비스를 하나 이상 선택해주세요' 
 
         import torch
         assert torch.cuda.is_available(), 'GPU 가 없습니다, 런타임 유형이 잘못됐거나 GPU 할당량이 초과된 것 같습니다'
 
         # 구글 드라이브 마운팅 시도
-        if USE_GOOGLE_DRIVE:
-            mount_google_drive()
+        if OPTIONS['use_google_drive']:
+            log('구글 드라이브 마운트를 시도합니다')
+
+            from google.colab import drive
+            drive.mount('/content/drive')
+
+            # 경로 업데이트
+            chdir(os.path.join('/content/drive/MyDrive', OPTIONS['workspace']))
 
         # 코랩 환경에서 이유는 알 수 없지만 /usr 디렉터리 내에서 읽기/쓰기 속도가 다른 곳보다 월등히 빠름
         # 아마 /content 에 큰 용량을 박아두는 사용하는 사람들이 많아서 그런듯...?
-        os.makedirs('/usr/local/content', exist_ok=True)
-        os.chdir('/usr/local/content')
+        os.remove('repository') if os.path.islink('repository') else shutil.rmtree('repository', ignore_errors=True)
+        os.symlink('/usr/local/repository', 'repository')
 
         # huggingface 모델 캐시 심볼릭 만들기
+        src = os.path.abspath(os.path.join('cache', 'huggingface'))
         dst = '/root/.cache/huggingface'
+        os.remove(dst) if os.path.islink(dst) else shutil.rmtree(dst, ignore_errors=True)
+        os.makedirs(src, exist_ok=True)
+        os.symlink(src, dst, target_is_directory=True)
 
-        if not os.path.islink(dst):
-            log('트랜스포머 모델 캐시 디렉터리에 심볼릭 링크를 만듭니다')
-            shutil.rmtree(dst, ignore_errors=True)
-
-            src = os.path.join(PATHS['workspace'], 'cache', 'huggingface')
-            os.makedirs(src, exist_ok=True)
-            os.symlink(src, dst, target_is_directory=True)
+    else:
+        chdir(os.path.join(os.path.abspath(os.curdir), OPTIONS['workspace']))
 
     # 체크포인트가 선택 존재한다면 해당 체크포인트 받기
-    if CHECKPOINT == '':
+    if OPTIONS['checkpoint'] == '':
         if not has_checkpoint():
             if IN_COLAB:
-                log('체크포인트가 존재하지 않습니다')
-                log('추천 체크포인트를 자동으로 다운로드 합니다')
-                download_checkpoint('NAI - animefull-final-pruned')
+                log('체크포인트가 존재하지 않습니다, 자동으로 받아옵니다')
+                download_checkpoint(PREDEFINED_CHECKPOINTS.keys()[0])
             else: 
                 raise Exception('체크포인트가 존재하지 않습니다')
     else:
         log('선택한 체크포인트를 다운로드 합니다')
-        log('다운로드 작업을 원치 않는다면 CHECKPOINT 옵션의 입력 란을 비워두고 다시 실행해주세요')
-        download_checkpoint(CHECKPOINT)
+        log('다운로드 작업을 원치 않는다면 체크포인트 입력 란을 비워두고 실행해주세요')
+        download_checkpoint(OPTIONS['checkpoint'])
 
 
     # WebUI 가져오기
     setup_webui()
 
     # WebUI 실행
-    args = [
-        # 동적 경로들
-        '--ckpt-dir', f"{PATHS['models']}/Stable-diffusion",
-        '--embeddings-dir', PATHS['embeddings'],
-        '--hypernetwork-dir', f"{PATHS['models']}/hypernetworks",
-        '--localizations-dir', PATHS['localizations'],
-        '--codeformer-models-path', f"{PATHS['models']}/Codeformer",
-        '--gfpgan-models-path', f"{PATHS['models']}/GFPGAN",
-        '--esrgan-models-path', f"{PATHS['models']}/ESRGAN",
-        '--bsrgan-models-path', f"{PATHS['models']}/BSRGAN",
-        '--realesrgan-models-path', f"{PATHS['models']}/RealESRGAN",
-        '--scunet-models-path', f"{PATHS['models']}/ScuNET",
-        '--swinir-models-path', f"{PATHS['models']}/SwinIR",
-        '--ldsr-models-path', f"{PATHS['models']}/LDSR",
-
-        '--styles-file', f"{PATHS['styles_file']}",
-        '--ui-config-file', f"{PATHS['ui_config_file']}",
-        '--ui-settings-file', f"{PATHS['ui_settings_file']}",
-
-        # TODO: 기븐으로 설정 해둬도 괜찮을까...?
-        '--gradio-img2img-tool', 'color-sketch',
-    ]
-
-    cmd_args = [ '--skip-torch-cuda-test' ]
-
-    if IN_COLAB:
-        args.append('--lowram')
-
-    # xformers
-    if USE_XFORMERS:
-        log('xformers 를 사용합니다')
-
-        if has_python_package('xformers'):
-            cmd_args.append('--xformers')
-
-        elif IN_COLAB:
-            log('xformers 패키지가 존재하지 않습니다, 미리 컴파일된 파일로부터 xformers 패키지를 가져옵니다')
-            download('https://github.com/toriato/easy-stable-diffusion/raw/prebuilt-xformers/cu113/xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl')
-            execute(
-                ['pip', 'install', 'xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl'],
-                summary='xformers 패키지를 설치합니다'
-            )
-            cmd_args.append('--xformers')
-
-        else:
-            # TODO: 패키지 빌드
-            log('xformers 패키지가 존재하지 않습니다, --xformers 인자를 사용하지 않습니다')
-
-    # deepdanbooru
-    if USE_DEEPDANBOORU:
-        log('deepbooru 를 사용합니다')
-        cmd_args.append('--deepdanbooru')
-
-    # gradio
-    if USE_GRADIO_TUNNEL:
-        log('Gradio 터널을 사용합니다')
-        args.append('--share')
-
-    # gradio 인증
-    if GRADIO_USERNAME != '':
-        # 다계정이 아니고 비밀번호가 없다면 무작위로 만들기
-        if GRADIO_PASSWORD == '' and ';' not in GRADIO_USERNAME:
-            from secrets import token_urlsafe
-            GRADIO_PASSWORD = token_urlsafe(8)
-            GRADIO_PASSWORD_GENERATED = True
-
-        args += [
-            f'--gradio-auth',
-            GRADIO_USERNAME + ('' if GRADIO_PASSWORD == '' else ':' + GRADIO_PASSWORD)
-        ]
-
-    # ngrok
-    if NGROK_API_TOKEN != '':
-        log('ngrok 터널을 사용합니다')
-        args += [
-            '--ngrok', NGROK_API_TOKEN,
-            '--ngrok-region', 'jp'
-        ]
-
-        if has_python_package('pyngrok') is None:
-            log('ngrok 사용에 필요한 패키지가 존재하지 않습니다, 설치를 시작합니다')
-            execute(['pip', 'install', 'pyngrok'])
-
-        # 추가 인자
-        # TODO: 받은 문자열을 리스트로 안나누고 그대로 사용할 수 있는지?
-        if ADDITIONAL_ARGS != '':
-            args.append(ADDITIONAL_ARGS)
-
-    start_webui(args, env={'COMMANDLINE_ARGS': ' '.join(cmd_args)})
+    start_webui()
 
 # ^c 종료 무시하기
 except KeyboardInterrupt:
