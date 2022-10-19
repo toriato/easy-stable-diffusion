@@ -1145,6 +1145,9 @@ try:
         '--styles-file', f"{PATHS['styles_file']}",
         '--ui-config-file', f"{PATHS['ui_config_file']}",
         '--ui-settings-file', f"{PATHS['ui_settings_file']}",
+
+        # TODO: 기븐으로 설정 해둬도 괜찮을까...?
+        '--gradio-img2img-tool', 'color-sketch',
     ]
 
     cmd_args = [ '--skip-torch-cuda-test' ]
