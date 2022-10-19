@@ -809,7 +809,6 @@ def download_checkpoint(checkpoint: str) -> None:
 
 def has_checkpoint() -> bool:
     for p in Path(os.path.join('models', 'Stable-diffusion')).glob('**/*.ckpt'):
-        print(p)
         # aria2 로 받다만 파일은 무시하기
         if os.path.isfile(f'{p}.aria2'):
             continue
