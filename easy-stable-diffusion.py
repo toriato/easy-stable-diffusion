@@ -870,17 +870,18 @@ def patch_webui_repository() -> None:
     # https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/shared.py
     if os.path.isfile('repository/modules/shared.py'):
         log('설정 파일의 기본 값을 추천 값으로 변경합니다')
+        cwd = os.path.abspath(os.curdir)
 
         configs = {
             # 기본 언어 파일
-            'localization': os.path.join('localizations', 'ko-KR.json'),
+            'localization': 'ko-KR',
 
             # 결과 이미지 디렉터리
-            'outdir_txt2img_samples': os.path.join('outputs', 'txt2img-samples'),
-            'outdir_img2img_samples': os.path.join('outputs', 'img2img-samples'),
-            'outdir_extras_samples': os.path.join('outputs', 'extras-samples'),
-            'outdir_txt2img_grids': os.path.join('outputs', 'txt2img-grids'),
-            'outdir_img2img_grids': os.path.join('outputs', 'img2img-grids'),
+            'outdir_txt2img_samples': os.path.join(cwd, 'outputs', 'txt2img-samples'),
+            'outdir_img2img_samples': os.path.join(cwd, 'outputs', 'img2img-samples'),
+            'outdir_extras_samples': os.path.join(cwd, 'outputs', 'extras-samples'),
+            'outdir_txt2img_grids': os.path.join(cwd, 'outputs', 'txt2img-grids'),
+            'outdir_img2img_grids': os.path.join(cwd, 'outputs', 'img2img-grids'),
 
             # NAI 기본 설정(?)
             'CLIP_stop_at_last_layers': 2,
