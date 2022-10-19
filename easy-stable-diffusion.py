@@ -21,53 +21,65 @@ OPTIONS = {}
 # @markdown ### <font color="orange">***다운로드 받을 모델(체크포인트) 선택***</font>
 # @markdown 입력 란을 <font color="red">비워두면</font> 모델을 받지 않고 바로 실행함
 # @markdown <br>우측 <font color="red">화살표(🔽)</font> 클릭하면 모델 선택 가능
-OPTIONS['checkpoint'] = '' #@param ["", "NAI - animefull-final-pruned", "NAI - animefull-latest", "NAI - animesfw-final-pruned", "NAI - animesfw-latest", "Waifu Diffusion 1.3", "Trinart Stable Diffusion v2 60,000 Steps", "Trinart Stable Diffusion v2 95,000 Steps", "Trinart Stable Diffusion v2 115,000 Steps", "Furry (epoch 4)", "Zack3D Kinky v1", "Pokemon", "Dreambooth - Hiten"] {allow-input: true}
+CHECKPOINT = '' #@param ["", "NAI - animefull-final-pruned", "NAI - animefull-latest", "NAI - animesfw-final-pruned", "NAI - animesfw-latest", "Waifu Diffusion 1.3", "Trinart Stable Diffusion v2 60,000 Steps", "Trinart Stable Diffusion v2 95,000 Steps", "Trinart Stable Diffusion v2 115,000 Steps", "Furry (epoch 4)", "Zack3D Kinky v1", "Pokemon", "Dreambooth - Hiten"] {allow-input: true}
+OPTIONS['CHECKPOINT'] = CHECKPOINT
 
-# @markdown ### <font color="orange">***구글 드라이브 작업 디렉터리 경로***</font>
+# @markdown ### <font color="orange">***작업 디렉터리 경로***</font>
 # @markdown 임베딩, 모델, 결과, 설정 등 영구적으로 보관될 파일이 저장될 디렉터리의 경로
-OPTIONS['workspace'] = 'SD' # @param {type:"string"}
+WORKSPACE = 'SD' # @param {type:"string"}
+OPTIONS['WORKSPACE'] = WORKSPACE
 
 # @markdown ### <font color="orange">***구글 드라이브 동기화를 사용할지?***</font>
-OPTIONS['use_google_drive'] = True  # @param {type:"boolean"}
+USE_GOOGLE_DRIVE = True  # @param {type:"boolean"}
+OPTIONS['USE_GOOGLE_DRIVE'] = USE_GOOGLE_DRIVE
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***xformers 를 사용할지?***</font>
 # @markdown - <font color="green">장점</font>: 성능 향생
 # @markdown - <font color="red">단점</font>: 미리 빌드한 패키지가 지원하지 않는 환경에선 직접 빌드할 필요가 있음
-OPTIONS['use_xformers'] = True  # @param {type:"boolean"}
+USE_XFORMERS = True  # @param {type:"boolean"}
+OPTIONS['USE_XFORMERS'] = USE_XFORMERS
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***deepbooru 를 사용할지?***</font>
 # @markdown IMG2IMG 에 올린 이미지를 단부루 태그로 변환(예측)해 프롬프트로 추출해내는 기능
 # @markdown - <font color="red">단점</font>: 처음 실행할 때 추가 패키지를 받기 때문에 시간이 조금 더 걸림
-OPTIONS['use_deepbooru'] = True  # @param {type:"boolean"}
+USE_DEEPBOORU = True  # @param {type:"boolean"}
+OPTIONS['USE_DEEPBOORU'] = USE_DEEPBOORU
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 터널을 사용할지?***</font>
-OPTIONS['use_gradio'] = True # @param {type:"boolean"}
+USE_GRADIO = True # @param {type:"boolean"}
+OPTIONS['USE_GRADIO'] = USE_GRADIO
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 인증 정보***</font>
 # @markdown Gradio 접속 시 사용할 사용자 아이디와 비밀번호
 # @markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> 인증을 사용하지 않음
 # @markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
 # @markdown <br>`GRADIO_PASSWORD` 입력 란을 <font color="red">비워두면</font> 자동으로 비밀번호를 생성함
-OPTIONS['gradio_username'] = 'gradio' # @param {type:"string"}
-OPTIONS['gradio_password'] = '' # @param {type:"string"}
+GRADIO_USERNAME = 'gradio' # @param {type:"string"}
+GRADIO_PASSWORD = '' # @param {type:"string"}
 GRADIO_PASSWORD_GENERATED = False
+OPTIONS['GRADIO_USERNAME'] = GRADIO_USERNAME
+OPTIONS['GRADIO_PASSWORD'] = GRADIO_PASSWORD
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***ngrok API 키***</font>
 # @markdown ngrok 터널에 사용할 API 토큰
 # @markdown <br>[API 토큰은 여기를 눌러 계정을 만든 뒤 얻을 수 있음](https://dashboard.ngrok.com/get-started/your-authtoken)
 # @markdown <br>입력 란을 <font color="red">비워두면</font> ngrok 터널을 비활성화함
-OPTIONS['ngrok_api_token'] = '' # @param {type:"string"}
+NGROK_API_TOKEN = '' # @param {type:"string"}
 NGROK_URL = None
+OPTIONS['NGROK_API_TOKEN'] = NGROK_API_TOKEN
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 주소***</font>
-OPTIONS['repo_url'] = 'https://github.com/AUTOMATIC1111/stable-diffusion-webui.git' # @param {type:"string"}
+REPO_URL = 'https://github.com/AUTOMATIC1111/stable-diffusion-webui.git' # @param {type:"string"}
+OPTIONS['REPO_URL'] = REPO_URL
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 커밋 해시***</font>
 # @markdown 입력 란을 <font color="red">비워두면</font> 가장 최신 커밋을 가져옴
-OPTIONS['repo_commit'] = '' # @param {type:"string"}
+REPO_COMMIT = '' # @param {type:"string"}
+OPTIONS['REPO_COMMIT'] = REPO_COMMIT
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 추가 인자***</font>
-OPTIONS['extra_args'] = '' # @param {type:"string"}
+EXTRA_ARGS = '' # @param {type:"string"}
+OPTIONS['EXTRA_ARGS'] = EXTRA_ARGS
 
 # 받을 수 있는 체크포인트들
 PREDEFINED_CHECKPOINTS = {
@@ -454,8 +466,8 @@ def log(msg: str, styles={}, newline=True,
         print_to_file=True, print_to_widget=True) -> Tuple[None, int]:
     # 기록할 내용이 ngrok API 키와 일치한다면 숨기기
     # TODO: 더 나은 문자열 검사, 원치 않은 내용이 가려질 수도 있음
-    if OPTIONS['ngrok_api_token'] != '':
-        msg = msg.replace(OPTIONS['ngrok_api_token'], '**REDACTED**')
+    if OPTIONS['NGROK_API_TOKEN'] != '':
+        msg = msg.replace(OPTIONS['NGROK_API_TOKEN'], '**REDACTED**')
 
     if newline:
         msg += '\n'
@@ -939,15 +951,15 @@ def setup_webui() -> None:
 
         shutil.rmtree(path, ignore_errors=True)
         execute(
-            ['git', 'clone', OPTIONS['repo_url'], path],
+            ['git', 'clone', OPTIONS['REPO_URL'], path],
             summary='레포지토리를 가져옵니다'
         )
 
     # 특정 커밋이 지정됐다면 체크아웃하기
-    if OPTIONS['repo_commit'] != '':
+    if OPTIONS['REPO_COMMIT'] != '':
         execute(
-            ['git', 'checkout', OPTIONS['repo_commit']],
-            summary=f"레포지토리를 {OPTIONS['repo_commit']} 커밋으로 되돌립니다"
+            ['git', 'checkout', OPTIONS['REPO_COMMIT']],
+            summary=f"레포지토리를 {OPTIONS['REPO_COMMIT']} 커밋으로 되돌립니다"
         )
 
     patch_webui_repository()
@@ -975,15 +987,15 @@ def parse_webui_output(line: str) -> bool:
             log(
                 '\n'.join([
                     'Gradio 인증 비밀번호가 자동으로 생성됐습니다',
-                    f"아이디: {OPTIONS['gradio_username']}",
-                    f"비밀번호: {OPTIONS['gradio_password']}"
+                    f"아이디: {OPTIONS['GRADIO_USERNAME']}",
+                    f"비밀번호: {OPTIONS['GRADIO_PASSWORD']}"
                 ]),
                 LOG_WIDGET_STYLES['dialog_success'], 
                 print_to_file=False
             )
 
         # ngork
-        if OPTIONS['ngrok_api_token'] != '':
+        if OPTIONS['NGROK_API_TOKEN'] != '':
             # 이전 로그에서 ngrok 주소가 표시되지 않았다면 ngrok 관련 오류 발생한 것으로 판단
             if NGROK_URL == None:
                 raise Exception('ngrok 터널을 여는 중 알 수 없는 오류가 발생했습니다')
@@ -1070,7 +1082,7 @@ def start_webui(args: List[str]=None, env: Dict[str, str]=None) -> None:
             args.append('--lowram')
 
         # xformers
-        if OPTIONS['use_xformers']:
+        if OPTIONS['USE_XFORMERS']:
             log('xformers 를 사용합니다')
 
             if has_python_package('xformers'):
@@ -1090,33 +1102,33 @@ def start_webui(args: List[str]=None, env: Dict[str, str]=None) -> None:
                 log('xformers 패키지가 존재하지 않습니다, --xformers 인자를 사용하지 않습니다')
 
         # deepdanbooru
-        if OPTIONS['use_deepbooru']:
+        if OPTIONS['USE_DEEPBOORU']:
             log('deepbooru 를 사용합니다')
             args.append('--deepdanbooru')
 
         # gradio
-        if OPTIONS['use_gradio']:
+        if OPTIONS['USE_GRADIO']:
             log('Gradio 터널을 사용합니다')
             args.append('--share')
 
         # gradio 인증
-        if OPTIONS['gradio_username'] != '':
+        if OPTIONS['GRADIO_USERNAME'] != '':
             # 다계정이 아니고 비밀번호가 없다면 무작위로 만들기
-            if OPTIONS['gradio_password'] == '' and ';' not in OPTIONS['gradio_username']:
+            if OPTIONS['GRADIO_PASSWORD'] == '' and ';' not in OPTIONS['GRADIO_USERNAME']:
                 from secrets import token_urlsafe
-                OPTIONS['gradio_password'] = token_urlsafe(8)
+                OPTIONS['GRADIO_PASSWORD'] = token_urlsafe(8)
                 GRADIO_PASSWORD_GENERATED = True
 
             args += [
                 f'--gradio-auth',
-                OPTIONS['gradio_username'] + ('' if OPTIONS['gradio_password'] == '' else ':' + OPTIONS['gradio_password'])
+                OPTIONS['GRADIO_USERNAME'] + ('' if OPTIONS['GRADIO_PASSWORD'] == '' else ':' + OPTIONS['GRADIO_PASSWORD'])
             ]
 
         # ngrok
-        if OPTIONS['ngrok_api_token'] != '':
+        if OPTIONS['NGROK_API_TOKEN'] != '':
             log('ngrok 터널을 사용합니다')
             args += [
-                '--ngrok', OPTIONS['ngrok_api_token'],
+                '--ngrok', OPTIONS['NGROK_API_TOKEN'],
                 '--ngrok-region', 'jp'
             ]
 
@@ -1126,8 +1138,8 @@ def start_webui(args: List[str]=None, env: Dict[str, str]=None) -> None:
 
             # 추가 인자
             # TODO: 받은 문자열을 리스트로 안나누고 그대로 사용할 수 있는지?
-            if OPTIONS['extra_args'] != '':
-                args.append(OPTIONS['extra_args'])
+            if OPTIONS['EXTRA_ARGS'] != '':
+                args.append(OPTIONS['EXTRA_ARGS'])
 
     execute(
         ['python', 'launch.py', *args],
@@ -1163,20 +1175,20 @@ try:
         log('코랩을 사용하고 있습니다')
         IN_COLAB = True
 
-        assert OPTIONS['use_gradio'] or OPTIONS['ngrok_api_token'] != '', '터널링 서비스를 하나 이상 선택해주세요' 
+        assert OPTIONS['USE_GRADIO'] or OPTIONS['NGROK_API_TOKEN'] != '', '터널링 서비스를 하나 이상 선택해주세요' 
 
         import torch
         assert torch.cuda.is_available(), 'GPU 가 없습니다, 런타임 유형이 잘못됐거나 GPU 할당량이 초과된 것 같습니다'
 
         # 구글 드라이브 마운팅 시도
-        if OPTIONS['use_google_drive']:
+        if OPTIONS['USE_GOOGLE_DRIVE']:
             log('구글 드라이브 마운트를 시도합니다')
 
             from google.colab import drive
             drive.mount('/content/drive')
 
             # 경로 업데이트
-            chdir(os.path.join('/content/drive/MyDrive', OPTIONS['workspace']))
+            chdir(os.path.join('/content/drive/MyDrive', OPTIONS['WORKSPACE']))
 
         # 코랩 환경에서 이유는 알 수 없지만 /usr 디렉터리 내에서 읽기/쓰기 속도가 다른 곳보다 월등히 빠름
         # 아마 /content 에 큰 용량을 박아두는 사용하는 사람들이 많아서 그런듯...?
@@ -1191,20 +1203,20 @@ try:
         os.symlink(src, dst, target_is_directory=True)
 
     else:
-        chdir(os.path.join(os.path.abspath(os.curdir), OPTIONS['workspace']))
+        chdir(os.path.join(os.path.abspath(os.curdir), OPTIONS['WORKSPACE']))
 
     # 체크포인트가 선택 존재한다면 해당 체크포인트 받기
-    if OPTIONS['checkpoint'] == '':
+    if OPTIONS['CHECKPOINT'] == '':
         if not has_checkpoint():
             if IN_COLAB:
                 log('체크포인트가 존재하지 않습니다, 자동으로 받아옵니다')
-                download_checkpoint(PREDEFINED_CHECKPOINTS.keys()[0])
+                download_checkpoint(list(PREDEFINED_CHECKPOINTS.keys())[0])
             else: 
                 raise Exception('체크포인트가 존재하지 않습니다')
     else:
         log('선택한 체크포인트를 다운로드 합니다')
         log('다운로드 작업을 원치 않는다면 체크포인트 입력 란을 비워두고 실행해주세요')
-        download_checkpoint(OPTIONS['checkpoint'])
+        download_checkpoint(OPTIONS['CHECKPOINT'])
 
 
     # WebUI 가져오기
