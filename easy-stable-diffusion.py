@@ -387,7 +387,14 @@ PREDEFINED_SCRIPTS = [
         lambda: shutil.copy(os.path.join(TEMP_DIR, 'javascript/tagAutocomplete.js'), 'repository/javascript'),
         lambda: shutil.copy(os.path.join(TEMP_DIR, 'scripts/tag_autocomplete_helper.py'), 'repository/scripts'),
         lambda: shutil.rmtree(TEMP_DIR, ignore_errors=True),
-    ]
+    ],
+
+    # Embedding to PNG
+    # https://github.com/dfaker/embedding-to-png-script
+    lambda: download(
+        'https://raw.githubusercontent.com/dfaker/embedding-to-png-script/main/embedding_to_png.py',
+        'repository/scripts'
+    ),
 ]
 
 # 임시 디렉터리
