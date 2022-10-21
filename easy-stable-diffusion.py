@@ -235,7 +235,7 @@ PREDEFINED_SCRIPTS = [
     # https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts#wildcards
     [
         lambda: download(
-            'https://raw.githubusercontent.com/jtkelm2/stable-diffusion-webui-1/master/scripts/wildcards.py',
+            'https://gist.github.com/toriato/f295ec7c3fd9a514dff5827f7d3655b9/raw/ad7524013fc00642c03205736387e2f89b1b1999/wildcards.py',
             'repository/scripts'
         ),
         # 스크립트 디렉터리는 patch_webui_repository 메소드에서
