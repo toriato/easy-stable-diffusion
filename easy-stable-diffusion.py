@@ -856,21 +856,6 @@ def has_checkpoint() -> bool:
 # ==============================
 # WebUI 레포지토리 및 종속 패키지 설치
 # ==============================
-def patch_webui_pull_request(number: int) -> None:
-    res = requests.get(f'https://api.github.com/repos/AUTOMATIC1111/stable-diffusion-webui/pulls/{number}')
-    payload = res.json()
-
-    log(f"풀 리퀘스트 적용을 시도합니다: #{number} {payload['title']}")
-    if payload['state'] != 'open':
-        log(f'닫힌 풀 리퀘스트이므로 넘깁니다')
-        return
-
-    execute(f"curl -sSL {payload['patch_url']} | git apply", 
-        throw=False,
-        shell=True,
-        cwd='repository'
-    )
-
 def patch_webui_repository() -> None:
     # 기본 UI 설정 값 (ui-config.json)
     # 설정 파일 자체를 덮어씌우면 새로 추가된 키를 인식하지 못해서 코드 자체를 수정함
