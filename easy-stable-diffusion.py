@@ -970,7 +970,8 @@ def setup_webui() -> None:
     if OPTIONS['REPO_COMMIT'] != '':
         execute(
             ['git', 'checkout', OPTIONS['REPO_COMMIT']],
-            summary=f"레포지토리를 {OPTIONS['REPO_COMMIT']} 커밋으로 되돌립니다"
+            summary=f"레포지토리를 {OPTIONS['REPO_COMMIT']} 커밋으로 되돌립니다",
+            cwd='repository'
         )
 
     patch_webui_repository()
