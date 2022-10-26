@@ -48,12 +48,16 @@ USE_DEEPBOORU = True  # @param {type:"boolean"}
 OPTIONS['USE_DEEPBOORU'] = USE_DEEPBOORU
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***사용자 스크립트를 받아올지?***</font>
-# @markdown 공식 레포지토리에서 [소개된 사용자 스크립트](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts)를 자동으로 받고 설정함
-# @markdown <br>이 옵션을 끈 뒤 `scripts` 경로에 원하는 스크립트를 넣으면 직접 추가할 수 있음
-# @markdown - <font color="green">장점</font>: 매트릭스 프롬프트(*&lt;cyber|cyborg|&gt;*)와 프롬프트 모핑 동영상 등 다양한 기능이 추가됨 
-# @markdown - <font color="red">단점</font>: 추가 오류가 발생할 수 있음
+# @markdown 실행할 때 공식 레포지토리 위키에 [소개된 사용자 스크립트](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts)을 받아옴
+# @markdown <br>`SD/scripts` 경로에 원하는 스크립트를 넣으면 덮어쓸 수 있음
 DOWNLOAD_CUSTOM_SCRIPTS = True  # @param {type:"boolean"}
 OPTIONS['DOWNLOAD_CUSTOM_SCRIPTS'] = DOWNLOAD_CUSTOM_SCRIPTS
+
+# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***확장 기능을 받아올지?***</font>
+# @markdown 실행할 때 공식 레포지토리 위키에 [소개된 확장 기능](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Extensions)을 받아옴
+# @markdown <br>`SD/extensions` 경로에 원하는 확장 기능을 넣어두면 덮어쓸 수 있음
+DOWNLOAD_EXTENSIONS = True  # @param {type:"boolean"}
+OPTIONS['DOWNLOAD_EXTENSIONS'] = DOWNLOAD_EXTENSIONS
 
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 터널을 사용할지?***</font>
 # @markdown - <font color="green">장점</font>: 따로 설정할 필요가 없어 편리함
@@ -204,57 +208,12 @@ PREDEFINED_CHECKPOINTS = {
 
 # 추가로 받을 스크립트들
 PREDEFINED_SCRIPTS = [
-    # 번역 파일
-    lambda: download(
-        'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/localizations/ko-KR.json',
-        'localizations',
-    ),
-
-    # 태그 자동 완성 유저스크립트
-    # https://arca.live/b/aiart/60536925/272094058
-    lambda: download(
-        'https://greasyfork.org/scripts/452929-webui-%ED%83%9C%EA%B7%B8-%EC%9E%90%EB%8F%99%EC%99%84%EC%84%B1/code/WebUI%20%ED%83%9C%EA%B7%B8%20%EC%9E%90%EB%8F%99%EC%99%84%EC%84%B1.user.js',
-        'repository/javascript',
-    ),
-
     # Advanced prompt matrix
     # https://github.com/GRMrGecko/stable-diffusion-webui-automatic/blob/advanced_matrix/scripts/advanced_prompt_matrix.py
     lambda: download(
         'https://raw.githubusercontent.com/GRMrGecko/stable-diffusion-webui-automatic/advanced_matrix/scripts/advanced_prompt_matrix.py',
         'repository/scripts'
     ),
-
-    # Dynamic Prompt Templates
-    # https://github.com/adieyal/sd-dynamic-prompting
-    lambda: download(
-        'https://github.com/adieyal/sd-dynamic-prompting/raw/main/dynamic_prompting.py',
-        'repository/scripts'
-    ),
-
-    # Wildcards
-    # https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts#wildcards
-    [
-        lambda: download(
-            'https://gist.github.com/toriato/f295ec7c3fd9a514dff5827f7d3655b9/raw/ad7524013fc00642c03205736387e2f89b1b1999/wildcards.py',
-            'repository/scripts'
-        ),
-        # 스크립트 디렉터리는 patch_webui_repository 메소드에서
-        # 코랩 환경일 때 심볼릭 링크를 만들기 때문에 따로 처리할 필요가 없음
-        [
-            # 사용자 디렉터리가 존재하지 않는다면 기본 데이터셋 가져오기
-            # https://github.com/Lopyter/stable-soup-prompts
-            lambda: os.path.exists('repository/scripts/wildcards'), # True 반환시 현재 리스트 실행 정지
-            lambda: shutil.rmtree(TEMP_DIR, ignore_errors=True),
-            lambda: execute(
-                ['git', 'clone', 'https://github.com/Lopyter/stable-soup-prompts.git', TEMP_DIR],
-                hide_summary=True    
-            ),
-            lambda: os.remove('repository/scripts/wildcards') if os.path.islink('repository/scripts/wildcards') else None, # 심볼릭 링크는 파일로 삭제해야함
-            lambda: shutil.rmtree('repository/scripts/wildcards', ignore_errors=True),
-            lambda: shutil.copytree(os.path.join(TEMP_DIR, 'wildcards'), 'repository/scripts/wildcards'),
-            lambda: shutil.rmtree(TEMP_DIR, ignore_errors=True)
-        ]
-    ],
 
     # txt2mask
     # https://github.com/ThereforeGames/txt2mask
@@ -363,38 +322,22 @@ PREDEFINED_SCRIPTS = [
         'repository/scripts'
     ),
 
-    # Booru tag autocompletion for A1111
-    # https://github.com/DominikDoom/a1111-sd-webui-tagcomplete
-    [
-        lambda: shutil.rmtree(TEMP_DIR, ignore_errors=True),
-        lambda: execute(
-            ['git', 'clone', 'https://github.com/DominikDoom/a1111-sd-webui-tagcomplete.git', TEMP_DIR],
-            hide_summary=True
-        ),
-        [
-            # 코랩 + 사용자 디렉터리가 존재한다면 심볼릭 링크 만들기
-            lambda: not IN_COLAB or not os.path.isdir('tags'),  # True 반환시 현재 리스트 실행 정지
-            lambda: shutil.rmtree('repository/tags', ignore_errors=True),
-            lambda: os.symlink('tags', 'repository/tags')
-        ],
-        [
-            # 사용자 디렉터리가 존재하지 않는다면 기본 데이터셋 가져오기
-            lambda: IN_COLAB and os.path.islink('repository/tags'),  # True 반환시 현재 리스트 실행 정지
-            lambda: not IN_COLAB and os.path.isdir('repository/tags'),  # True 반환시 현재 리스트 실행 정지
-            lambda: shutil.rmtree('repository/tags', ignore_errors=True),
-            lambda: shutil.copytree(os.path.join(TEMP_DIR, 'tags'), 'repository/tags'),
-        ],
-        lambda: shutil.copy(os.path.join(TEMP_DIR, 'javascript/tagAutocomplete.js'), 'repository/javascript'),
-        lambda: shutil.copy(os.path.join(TEMP_DIR, 'scripts/tag_autocomplete_helper.py'), 'repository/scripts'),
-        lambda: shutil.rmtree(TEMP_DIR, ignore_errors=True),
-    ],
-
     # Embedding to PNG
     # https://github.com/dfaker/embedding-to-png-script
     lambda: download(
         'https://raw.githubusercontent.com/dfaker/embedding-to-png-script/main/embedding_to_png.py',
         'repository/scripts'
     ),
+]
+
+# 추가로 받을 확장 기능
+PREDEFINED_EXTENSIONS = [
+    'https://github.com/AUTOMATIC1111/stable-diffusion-webui-aesthetic-gradients.git',
+    # 'https://github.com/AUTOMATIC1111/stable-diffusion-webui-wildcards.git',
+    'https://github.com/yfszzx/stable-diffusion-webui-images-browser.git',
+    'https://github.com/yfszzx/stable-diffusion-webui-inspiration.git',
+    'https://github.com/tsngo/stable-diffusion-webui-aesthetic-image-scorer',
+    'https://github.com/Klokinator/UnivAICharGen.git',
 ]
 
 # 임시 디렉터리
@@ -920,18 +863,57 @@ def patch_webui_repository() -> None:
         log('사용자 스크립트를 받습니다')
         runs(PREDEFINED_SCRIPTS)
 
-    # 사용자 스크립트 심볼릭 링크 생성
-    log('사용자 스크립트의 심볼릭 링크를 만듭니다')
-    for path in os.listdir('scripts'):
-        src = os.path.join('scripts', path)
-        dst = os.path.join('repository/scripts', os.path.basename(path))
+    # 확장 기능 다운로드
+    if OPTIONS['DOWNLOAD_EXTENSIONS']:
+        log('확장 기능을 받습니다')
+        for ext in PREDEFINED_EXTENSIONS:
+            exts_path = os.path.join(os.curdir, 'repository', 'extensions')
+            ext_name = ext.split('/').pop().rstrip('.git')
+            ext_path = os.path.join(exts_path, ext_name)
+            
+            if os.path.isdir(ext_path):
+                execute(
+                    ['git', 'pull'],
+                    cwd=ext_path,
+                    throw=False,
+                    hide_summary=True
+                )
+            else:
+                execute(
+                    ['git', 'clone', '--recurse-submodules', '--depth', '1', ext],
+                    cwd=exts_path,
+                    throw=False,
+                    hide_summary=True
+                )
 
-        # 이미 파일이 존재한다면 기존 파일 삭제하기
-        if os.path.exists(dst):
-            os.remove(dst) if os.path.islink(dst) else shutil.rmtree(dst, ignore_errors=True)
+    syms = [
+        'extensions',
+        'javascript',
+        'modules',
+        'scripts',
+        'textual_inversion_templates'
+    ]
 
-        # 심볼릭 링크 생성
-        os.symlink(src, dst, target_is_directory=os.path.isdir(path))
+    for sym in syms:
+        if not os.path.isdir(sym):
+            continue
+
+        log(f'{sym} 심볼릭 링크를 만듭니다')
+    
+        for path in os.listdir(sym):
+            src = os.path.join(sym, path)
+            dst = os.path.join('repository', sym, path)
+
+            # 이미 파일 또는 디렉터리가 존재한다면 제거하기
+            if os.path.exists(dst):
+                if os.path.isfile(dst) or os.path.islink(dst):
+                    os.remove(dst)
+                else:
+                    shutil.rmtree(dst, ignore_errors=True)
+
+            # 심볼릭 링크 생성
+            os.symlink(src, dst, target_is_directory=os.path.isdir(src))
+
 
 def setup_webui() -> None:
     need_clone = True
@@ -1071,7 +1053,6 @@ def start_webui(args: List[str]=None, env: Dict[str, str]=None) -> None:
         args = [
             '--ckpt-dir', os.path.join(cwd, 'models', 'Stable-diffusion'),
             '--embeddings-dir', os.path.join(cwd, 'embeddings'),
-            '--localizations-dir', os.path.join(cwd, 'localizations'),
             '--hypernetwork-dir', os.path.join(cwd, 'models', 'hypernetworks'),
             '--codeformer-models-path', os.path.join(cwd, 'models', 'Codeformer'),
             '--gfpgan-models-path', os.path.join(cwd, 'models', 'GFPGAN'),
@@ -1090,6 +1071,11 @@ def start_webui(args: List[str]=None, env: Dict[str, str]=None) -> None:
             '--gradio-img2img-tool', 'color-sketch',
         ]
 
+        # 기본 언어 파일 우선으로 사용하기
+        if os.path.isdir(os.path.join(cwd, 'localizations')):
+            args += ['--localizations-dir', os.path.join(cwd, 'localizations')]
+
+        # 코랩 환경에선 메모리가 낮아 모델을 VRAM 위로 올려 사용해야함
         if IN_COLAB:
             args.append('--lowram')
 
