@@ -41,18 +41,6 @@ OPTIONS['USE_XFORMERS'] = USE_XFORMERS
 USE_DEEPBOORU = True  # @param {type:"boolean"}
 OPTIONS['USE_DEEPBOORU'] = USE_DEEPBOORU
 
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***사용자 스크립트를 받아올지?***</font>
-# @markdown 실행할 때 공식 레포지토리 위키에 [소개된 사용자 스크립트](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Custom-Scripts)을 받아옴
-# @markdown <br>`SD/scripts` 경로에 원하는 스크립트를 넣으면 덮어쓸 수 있음
-DOWNLOAD_CUSTOM_SCRIPTS = True  # @param {type:"boolean"}
-OPTIONS['DOWNLOAD_CUSTOM_SCRIPTS'] = DOWNLOAD_CUSTOM_SCRIPTS
-
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***확장 기능을 받아올지?***</font>
-# @markdown 실행할 때 공식 레포지토리 위키에 [소개된 확장 기능](https://github.com/AUTOMATIC1111/stable-diffusion-webui/wiki/Extensions)을 받아옴
-# @markdown <br>`SD/extensions` 경로에 원하는 확장 기능을 넣어두면 덮어쓸 수 있음
-DOWNLOAD_EXTENSIONS = True  # @param {type:"boolean"}
-OPTIONS['DOWNLOAD_EXTENSIONS'] = DOWNLOAD_EXTENSIONS
-
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 터널을 사용할지?***</font>
 # @markdown - <font color="green">장점</font>: 따로 설정할 필요가 없어 편리함
 # @markdown - <font color="red">**단점**</font>: 접속이 느리고 끊키거나 버튼이 안 눌리는 등 오류 빈도가 높음
@@ -99,13 +87,12 @@ OPTIONS['EXTRA_ARGS'] = EXTRA_ARGS
 # 기본 체크포인트 다운로드 주소
 DEFAULT_CHECKPOINT_URLS = [
     {
-        'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animefull-final-pruned.ckpt'
+        'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animefull-final-pruned.ckpt',
+        'target': 'models/Stable-diffusion/'
     },
     {
-        'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt'
-    },
-    {
-        'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-final-pruned.yaml'
+        'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
+        'target': 'models/VAE'
     }
 ]
 
