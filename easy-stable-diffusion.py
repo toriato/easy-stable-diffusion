@@ -8,7 +8,7 @@ import tempfile
 import re
 import json
 import requests
-from typing import Dict, Union, Callable, Tuple, List
+from typing import Dict, Union, Callable, Tuple, List, Set
 from subprocess import Popen, PIPE, STDOUT
 from distutils.spawn import find_executable
 from importlib.util import find_spec
@@ -96,7 +96,7 @@ OPTIONS['REPO_COMMIT'] = REPO_COMMIT
 EXTRA_ARGS = '' # @param {type:"string"}
 OPTIONS['EXTRA_ARGS'] = EXTRA_ARGS
 
-# 받을 수 있는 체크포인트들
+# 기본 체크포인트 다운로드 주소
 DEFAULT_CHECKPOINT_URLS = [
     {
         'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animefull-final-pruned.ckpt'
@@ -108,6 +108,16 @@ DEFAULT_CHECKPOINT_URLS = [
         'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-final-pruned.yaml'
     }
 ]
+
+# 작업 디렉터리 <-> 레포지토리 심볼릭 링크 블랙리스트
+SYMLINK_BLACKLIST: Set[str] = set([
+    './cache',
+    './logs',
+    './models',
+    './outputs',
+    './repository',
+    './override.json'
+])
 
 # 임시 디렉터리
 TEMP_DIR = tempfile.mkdtemp()
@@ -559,19 +569,8 @@ def patch_webui_repository() -> None:
     # https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/shared.py
     if os.path.isfile('repository/modules/shared.py'):
         log('설정 파일의 기본 값을 추천 값으로 변경합니다')
-        cwd = os.path.abspath(os.curdir)
 
         configs = {
-            # 기본 언어 파일
-            'localization': 'ko-KR',
-
-            # 결과 이미지 디렉터리
-            'outdir_txt2img_samples': os.path.join(cwd, 'outputs', 'txt2img-samples'),
-            'outdir_img2img_samples': os.path.join(cwd, 'outputs', 'img2img-samples'),
-            'outdir_extras_samples': os.path.join(cwd, 'outputs', 'extras-samples'),
-            'outdir_txt2img_grids': os.path.join(cwd, 'outputs', 'txt2img-grids'),
-            'outdir_img2img_grids': os.path.join(cwd, 'outputs', 'img2img-grids'),
-
             # NAI 기본 설정(?)
             'CLIP_stop_at_last_layers': 2,
         }
@@ -579,7 +578,6 @@ def patch_webui_repository() -> None:
         with open('repository/modules/shared.py', 'r+') as f:
             def replace(m: re.Match) -> str:
                 if m[2] in configs:
-                    # log(f'{m[2]} -> {configs[m[2]]}')
                     return f'{m[1]}{configs[m[2]]}{m[3]}'
                 return m[0]
 
@@ -612,33 +610,76 @@ def patch_webui_repository() -> None:
 
             f.write(json.dumps(configs, indent=4))
 
-    syms = [
-        'extensions',
-        'javascript',
-        'modules',
-        'scripts',
-        'textual_inversion_templates'
-    ]
+    # 고정 심볼릭 링크 만들기
+    for src in ['outputs', 'models']:
+        dst = os.path.join('repository', src)
 
-    for sym in syms:
-        if not os.path.isdir(sym):
-            continue
+        # 기존 파일/심볼릭 링크 또는 디렉터리 제거하기
+        if os.path.islink(dst):
+            os.remove(dst)
+        else: 
+            shutil.rmtree(dst, ignore_errors=True)
 
-        log(f'{sym} 심볼릭 링크를 만듭니다')
-    
-        for path in os.listdir(sym):
-            src = os.path.join(sym, path)
-            dst = os.path.join('repository', sym, path)
+        os.makedirs(src, exist_ok=True)
+        os.symlink(os.path.realpath(src), dst)
 
-            # 이미 파일 또는 디렉터리가 존재한다면 제거하기
-            if os.path.exists(dst):
-                if os.path.isfile(dst) or os.path.islink(dst):
+    # 가변 심볼릭 링크 만들기
+    for root, dirs, files in os.walk('.'):
+        # 디렉터리 필터링하기
+        for dir in dirs[:]:
+            src = os.path.join(root, dir)
+            dst = os.path.join('repository', src)
+
+            # 디렉터리가 블랙리스트에 포함됐는지 확인하기
+            for blacklist in SYMLINK_BLACKLIST:
+                if src.startswith(blacklist):
+                    break
+           
+            else:
+                # 소스 디렉터리가 비어있지 않거나 목표 디렉터리가 존재한다면
+                # 하위 디렉터리 또는 파일 심볼릭 링크 만들기
+                if len(os.listdir(src)) < 1 and os.path.isdir(dst):
+                    continue
+
+                # 이미 존재하면 심볼릭 링크를 만들 수 없으므로 기존 파일 제거하기
+                if os.path.exists(dst):
+                    os.remove(dst) if os.path.islink(dst) else shutil.rmtree(dst, ignore_errors=True)
+
+                os.symlink(os.path.realpath(src), dst)
+
+            # os.walk 에서 처리하지 않도록 삭제
+            # TODO: List.remove = 존나 느림, 파이썬 병신~ (https://stackoverflow.com/a/34238688)
+            dirs.remove(dir)
+
+        for src in files:
+            src = os.path.join(root, src)
+            dst = os.path.join('repository', src)
+
+            # 파일이 블랙리스트에 포함됐는지 확인하기
+            for blacklist in SYMLINK_BLACKLIST:
+                if src.startswith(blacklist):
+                    break
+
+            else:
+                # 현재 파일이 심볼릭 링크라면 실제 경로 가져오기
+                if os.path.islink(src):
+                    src = os.path.relpath( # 블랙리스트 경로는 상대 경로이므로 현 작업 경로로부터 상대 경로 가져오기
+                        os.path.realpath(os.readlink(src)), # 심볼릭 링크의 절대 경로 가져오기
+                        os.curdir # 심볼릭 링크의 절대 경로에서 왼쪽으로부터 제거할 경로 (현재 작업 경로)
+                    )
+                        
+                    # 심볼릭 링크가 잘못된 경로를 가르키고 있었다면 무시하기
+                    if not os.path.exists(src):
+                        continue
+
+                # 기존 파일/심볼릭 링크 또는 디렉터리 제거하기
+                if os.path.islink(dst):
                     os.remove(dst)
-                else:
+                else: 
                     shutil.rmtree(dst, ignore_errors=True)
-
-            # 심볼릭 링크 생성
-            os.symlink(src, dst, target_is_directory=os.path.isdir(src))
+                    
+                # 심볼릭 링크 만들기
+                os.symlink(os.path.realpath(src), dst)
 
 
 def setup_webui() -> None:
@@ -650,7 +691,7 @@ def setup_webui() -> None:
             # 사용자 파일만 남겨두고 레포지토리 초기화하기
             # https://stackoverflow.com/a/12096327
             execute(
-                'git checkout -- . && git pull',
+                'git reset --hard && git pull',
                 summary='레포지토리를 업데이트 합니다',
                 shell=True,
                 cwd='repository'
@@ -777,22 +818,6 @@ def start_webui(args: List[str]=None, env: Dict[str, str]=None) -> None:
         # 현재 작업 디렉터리를 절대 경로로 가져와 인자로 보내줄 필요가 있음
         cwd = os.path.abspath(os.curdir)
         args = [
-            '--ckpt-dir', os.path.join(cwd, 'models', 'Stable-diffusion'),
-            '--embeddings-dir', os.path.join(cwd, 'embeddings'),
-            '--hypernetwork-dir', os.path.join(cwd, 'models', 'hypernetworks'),
-            '--codeformer-models-path', os.path.join(cwd, 'models', 'Codeformer'),
-            '--gfpgan-models-path', os.path.join(cwd, 'models', 'GFPGAN'),
-            '--esrgan-models-path', os.path.join(cwd, 'models', 'ESRGAN'),
-            '--bsrgan-models-path', os.path.join(cwd, 'models', 'BSRGAN'),
-            '--realesrgan-models-path', os.path.join(cwd, 'models', 'RealESRGAN'),
-            '--scunet-models-path', os.path.join(cwd, 'models', 'ScuNET'),
-            '--swinir-models-path', os.path.join(cwd, 'models', 'SwinIR'),
-            '--ldsr-models-path', os.path.join(cwd, 'models', 'LDSR'),
-
-            '--styles-file', os.path.join(cwd, 'styles.csv'),
-            '--ui-config-file', os.path.join(cwd, 'ui-config.json'),
-            '--ui-settings-file', os.path.join(cwd, 'config.json'),
-
             # TODO: 기븐으로 설정 해둬도 괜찮을까...?
             '--gradio-img2img-tool', 'color-sketch',
         ]
