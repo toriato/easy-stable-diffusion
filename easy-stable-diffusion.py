@@ -950,8 +950,7 @@ try:
         log('체크포인트가 존재하지 않습니다, 자동으로 추천 체크포인트를 받아옵니다')
 
         for file in DEFAULT_CHECKPOINT_URLS:
-            target = os.path.join('models', 'Stable-diffusion', file.get('target', ''))
-            download(**{**file, 'target': target})
+            download(**file)
 
 
     # WebUI 가져오기
