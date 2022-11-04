@@ -613,7 +613,7 @@ def patch_webui_repository() -> None:
            
             else:
                 # 목표 디렉터리가 존재한다면 하위에서 만드므로 넘어가기
-                if os.path.isdir(dst):
+                if not os.path.islink(dst) and os.path.isdir(dst):
                     continue
 
                 # 이미 존재하면 심볼릭 링크를 만들 수 없으므로 기존 파일 제거하기
