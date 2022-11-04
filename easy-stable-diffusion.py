@@ -638,20 +638,15 @@ def patch_webui_repository() -> None:
             else:
                 # 현재 파일이 심볼릭 링크라면 실제 경로 가져오기
                 if os.path.islink(src):
-                    src = os.path.relpath( # 블랙리스트 경로는 상대 경로이므로 현 작업 경로로부터 상대 경로 가져오기
-                        os.path.realpath(os.readlink(src)), # 심볼릭 링크의 절대 경로 가져오기
-                        os.curdir # 심볼릭 링크의 절대 경로에서 왼쪽으로부터 제거할 경로 (현재 작업 경로)
-                    )
+                    src = os.path.realpath(os.readlink(src))
                         
                     # 심볼릭 링크가 잘못된 경로를 가르키고 있었다면 무시하기
                     if not os.path.exists(src):
                         continue
 
                 # 기존 파일/심볼릭 링크 또는 디렉터리 제거하기
-                if os.path.islink(dst):
+                if os.path.exists(dst):
                     os.remove(dst)
-                else: 
-                    shutil.rmtree(dst, ignore_errors=True)
                     
                 # 심볼릭 링크 만들기
                 os.symlink(os.path.realpath(src), dst)
