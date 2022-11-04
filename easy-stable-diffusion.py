@@ -96,14 +96,19 @@ DEFAULT_CHECKPOINT_URLS = [
     }
 ]
 
-# 작업 디렉터리 <-> 레포지토리 심볼릭 링크 블랙리스트
+# 작업 디렉터리 <-> 레포지토리 심볼릭 중 제외할 경로
 SYMLINK_BLACKLIST: Set[str] = set([
+    # 구동에 불필요하면 파일 및 디렉터리
     './cache',
     './logs',
+    './override.json',
+
+    # 레포지토리 자체
+    './repository',
+
+    # 크거나 많은 파일이 담겨져 있기 때문에 수동으로 만듦
     './models',
     './outputs',
-    './repository',
-    './override.json'
 ])
 
 # 임시 디렉터리
@@ -607,9 +612,8 @@ def patch_webui_repository() -> None:
                     break
            
             else:
-                # 소스 디렉터리가 비어있지 않거나 목표 디렉터리가 존재한다면
-                # 하위 디렉터리 또는 파일 심볼릭 링크 만들기
-                if len(os.listdir(src)) < 1 and os.path.isdir(dst):
+                # 목표 디렉터리가 존재한다면 하위에서 만드므로 넘어가기
+                if os.path.isdir(dst):
                     continue
 
                 # 이미 존재하면 심볼릭 링크를 만들 수 없으므로 기존 파일 제거하기
@@ -651,7 +655,6 @@ def patch_webui_repository() -> None:
                     
                 # 심볼릭 링크 만들기
                 os.symlink(os.path.realpath(src), dst)
-
 
 def setup_webui() -> None:
     need_clone = True
