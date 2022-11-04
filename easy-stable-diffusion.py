@@ -23,12 +23,6 @@ OPTIONS = {}
 WORKSPACE = 'SD' # @param {type:"string"}
 OPTIONS['WORKSPACE'] = WORKSPACE
 
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***자동으로 다운 받을 모델(체크포인트)***</font>
-# @markdown 입력 란을 <font color="red">비워두면</font> 모델을 받지 않고 바로 실행함
-# @markdown <br>우측 <font color="red">화살표(🔽)</font> 클릭하면 모델 선택 가능 ([예시 이미지](https://vmm.pw/MzMz))
-CHECKPOINT = '' #@param ["", "NAI - animefull-final-pruned", "NAI - animefull-latest", "NAI - animesfw-final-pruned", "NAI - animesfw-latest", "Waifu Diffusion 1.3", "Trinart Stable Diffusion v2 60,000 Steps", "Trinart Stable Diffusion v2 95,000 Steps", "Trinart Stable Diffusion v2 115,000 Steps", "Furry (epoch 4)", "Zack3D Kinky v1", "Pokemon", "Dreambooth - Hiten"] {allow-input: true}
-OPTIONS['CHECKPOINT'] = CHECKPOINT
-
 # @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***구글 드라이브와 동기화할지?***</font>
 # @markdown <font color="red">**주의**</font>: 동기화 전 남은 용량이 충분한지 확인 필수 (5GB 이상)
 USE_GOOGLE_DRIVE = True  # @param {type:"boolean"}
@@ -103,108 +97,17 @@ EXTRA_ARGS = '' # @param {type:"string"}
 OPTIONS['EXTRA_ARGS'] = EXTRA_ARGS
 
 # 받을 수 있는 체크포인트들
-PREDEFINED_CHECKPOINTS = {
-    # NAI leaks
-    'NAI - animefull-final-pruned': {
-        'files': [
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animefull-final-pruned.ckpt',
-                'target': 'nai/animefull-final-pruned.ckpt',
-            },
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
-                'target': 'nai/animefull-final-pruned.vae.pt'
-            },
-            {
-                'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-final-pruned.yaml',
-                'target': 'nai/animefull-final-pruned.yaml'
-            }
-        ]
+DEFAULT_CHECKPOINT_URLS = [
+    {
+        'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animefull-final-pruned.ckpt'
     },
-    'NAI - animefull-latest': {
-        'files': [
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animefull-latest.ckpt',
-                'target': 'nai/animefull-latest.ckpt'
-            },
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
-                'target': 'nai/animefull-latest.vae.pt'
-            },
-            {
-                'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-latest.yaml',
-                'target': 'nai/animefull-latest.yaml'
-            }
-        ]
+    {
+        'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt'
     },
-    'NAI - animesfw-final-pruned': {
-        'files': [
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animesfw-final-pruned.ckpt',
-                'target': 'nai/animesfw-final-pruned.ckpt'
-            },
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
-                'target': 'nai/animesfw-final-pruned.vae.pt'
-            },
-            {
-                'url': 'https://gist.github.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-final-pruned.yaml',
-                'target': 'nai/animesfw-final-pruned.yaml'
-            }
-        ]
-    },
-    'NAI - animesfw-latest': {
-        'files': [
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animesfw-latest.ckpt',
-                'target': 'nai/animesfw-latest.ckpt'
-            },
-            {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
-                'target': 'nai/animesfw-latest.vae.pt'
-            },
-            {
-                'url': 'https://gist.github.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animesfw-latest.yaml',
-                'target': 'nai/animesfw-latest.yaml'
-            }
-        ]
-    },
-
-    # Waifu Diffusion
-    'Waifu Diffusion 1.3': {
-        'files': [{
-            'url': 'https://huggingface.co/hakurei/waifu-diffusion-v1-3/resolve/main/wd-v1-3-float16.ckpt',
-            'args': ['-o', 'wd-v1-3-epoch09-float16.ckpt']
-        }]
-    },
-
-    # Trinart2
-    'Trinart Stable Diffusion v2 60,000 Steps': {
-        'files': [{'url': 'https://huggingface.co/naclbit/trinart_stable_diffusion_v2/resolve/main/trinart2_step60000.ckpt'}]
-    },
-    'Trinart Stable Diffusion v2 95,000 Steps': {
-        'files': [{'url': 'https://huggingface.co/naclbit/trinart_stable_diffusion_v2/resolve/main/trinart2_step95000.ckpt'}]
-    },
-    'Trinart Stable Diffusion v2 115,000 Steps': {
-        'files': [{'url': 'https://huggingface.co/naclbit/trinart_stable_diffusion_v2/resolve/main/trinart2_step115000.ckpt'}]
-    },
-
-    'Furry (epoch 4)': {
-        'files': [{'url': 'https://iwiftp.yerf.org/Furry/Software/Stable%20Diffusion%20Furry%20Finetune%20Models/Finetune%20models/furry_epoch4.ckpt'}]
-    },
-    'Zack3D Kinky v1': {
-        'files': [{'url': 'https://iwiftp.yerf.org/Furry/Software/Stable%20Diffusion%20Furry%20Finetune%20Models/Finetune%20models/Zack3D_Kinky-v1.ckpt'}]
-    },
-    'Pokemon': {
-        'files': [{
-            'url': 'https://huggingface.co/justinpinkney/pokemon-stable-diffusion/resolve/main/ema-only-epoch%3D000142.ckpt',
-            'args': ['-o', 'pokemon-ema-pruned.ckpt']
-        }]
-    },
-    'Dreambooth - Hiten': {
-        'files': [{'url': 'https://huggingface.co/BumblingOrange/Hiten/resolve/main/Hiten%20girl_anime_8k_wallpaper_4k.ckpt'}]
-    },
-}
+    {
+        'url': 'https://gist.githubusercontent.com/toriato/ae1f587f4d1e9ee5d0e910c627277930/raw/6019f8782875497f6e5b3e537e30a75df5b64812/animefull-final-pruned.yaml'
+    }
+]
 
 # 추가로 받을 스크립트들
 PREDEFINED_SCRIPTS = [
@@ -771,21 +674,6 @@ def download(url: str, target=''):
                 # TODO: 파일 길이가 적합한지?
                 shutil.copyfileobj(res.raw, file, length=16*1024*1024)
 
-def download_checkpoint(checkpoint: str) -> None:
-    if checkpoint in PREDEFINED_CHECKPOINTS:
-        checkpoint = PREDEFINED_CHECKPOINTS[checkpoint]
-    else:
-        # 미리 선언된 체크포인트가 아니라면 주소로써 사용하기
-        checkpoint = {'files': [{'url': checkpoint}]}
-
-    # Aria2 로 모델 받기
-    # TODO: 토렌트 마그넷 주소 지원
-    log(f"파일 {len(checkpoint['files'])}개를 받습니다")
-
-    for file in checkpoint['files']:
-        target = os.path.join('models', 'Stable-diffusion', file.get('target', ''))
-        download(**{**file, 'target': target})
-
 def has_checkpoint() -> bool:
     for p in Path(os.path.join('models', 'Stable-diffusion')).glob('**/*.ckpt'):
         # aria2 로 받다만 파일은 무시하기
@@ -1208,17 +1096,12 @@ try:
         os.symlink(src, dst, target_is_directory=True)
 
     # 체크포인트가 선택 존재한다면 해당 체크포인트 받기
-    if OPTIONS['CHECKPOINT'] == '':
-        if not has_checkpoint():
-            if IN_COLAB:
-                log('체크포인트가 존재하지 않습니다, 자동으로 받아옵니다')
-                download_checkpoint(list(PREDEFINED_CHECKPOINTS.keys())[0])
-            else: 
-                raise Exception('체크포인트가 존재하지 않습니다')
-    else:
-        log('선택한 체크포인트를 다운로드 합니다')
-        log('다운로드 작업을 원치 않는다면 체크포인트 입력 란을 비워두고 실행해주세요')
-        download_checkpoint(OPTIONS['CHECKPOINT'])
+    if not has_checkpoint():
+        log('체크포인트가 존재하지 않습니다, 자동으로 추천 체크포인트를 받아옵니다')
+
+        for file in DEFAULT_CHECKPOINT_URLS:
+            target = os.path.join('models', 'Stable-diffusion', file.get('target', ''))
+            download(**{**file, 'target': target})
 
 
     # WebUI 가져오기
