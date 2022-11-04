@@ -23,31 +23,31 @@ OPTIONS = {}
 WORKSPACE = 'SD' # @param {type:"string"}
 OPTIONS['WORKSPACE'] = WORKSPACE
 
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***구글 드라이브와 동기화할지?***</font>
+# @markdown ##### <font color="orange">***구글 드라이브와 동기화할지?***</font>
 # @markdown <font color="red">**주의**</font>: 동기화 전 남은 용량이 충분한지 확인 필수 (5GB 이상)
 USE_GOOGLE_DRIVE = True  # @param {type:"boolean"}
 OPTIONS['USE_GOOGLE_DRIVE'] = USE_GOOGLE_DRIVE
 
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***xformers 를 사용할지?***</font>
+# @markdown ##### <font color="orange">***xformers 를 사용할지?***</font>
 # @markdown - <font color="green">장점</font>: 성능 10% 향상
 # @markdown - <font color="red">단점</font>: 미리 빌드한 패키지가 지원하지 않는 환경에선 빌드해 사용해야함 (매우 느림)
 # @markdown - <font color="red">단점</font>: 출력한 그림의 질이 조금 떨어질 수 있음
 USE_XFORMERS = True  # @param {type:"boolean"}
 OPTIONS['USE_XFORMERS'] = USE_XFORMERS
 
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***deepbooru 를 사용할지?***</font>
+# @markdown ##### <font color="orange">***deepbooru 를 사용할지?***</font>
 # @markdown IMG2IMG 이미지를 프롬프트로 사용할 있게 단부루 태그로 변환(예측)하는 기능
 # @markdown - <font color="red">단점</font>: 처음 실행할 때 추가 패키지를 받기 때문에 시간이 조금 더 걸림
 USE_DEEPBOORU = True  # @param {type:"boolean"}
 OPTIONS['USE_DEEPBOORU'] = USE_DEEPBOORU
 
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 터널을 사용할지?***</font>
+# @markdown ##### <font color="orange">***Gradio 터널을 사용할지?***</font>
 # @markdown - <font color="green">장점</font>: 따로 설정할 필요가 없어 편리함
 # @markdown - <font color="red">**단점**</font>: 접속이 느리고 끊키거나 버튼이 안 눌리는 등 오류 빈도가 높음
 USE_GRADIO = True # @param {type:"boolean"}
 OPTIONS['USE_GRADIO'] = USE_GRADIO
 
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***Gradio 인증 정보***</font>
+# @markdown ##### <font color="orange">***Gradio 인증 정보***</font>
 # @markdown Gradio 접속 시 사용할 사용자 아이디와 비밀번호
 # @markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
 # @markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> 인증 과정을 사용하지 않음
@@ -58,7 +58,7 @@ GRADIO_PASSWORD_GENERATED = False
 OPTIONS['GRADIO_USERNAME'] = GRADIO_USERNAME
 OPTIONS['GRADIO_PASSWORD'] = GRADIO_PASSWORD
 
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***ngrok API 키***</font>
+# @markdown ##### <font color="orange">***ngrok API 키***</font>
 # @markdown ngrok 터널에 사용할 API 토큰
 # @markdown <br>[설정하는 방법은 여기를 클릭해 확인](https://arca.live/b/aiart/60683088), [API 토큰은 여기를 눌러 계정을 만든 뒤 얻을 수 있음](https://dashboard.ngrok.com/get-started/your-authtoken)
 # @markdown <br>입력 란을 <font color="red">비워두면</font> ngrok 터널을 비활성화함
@@ -68,18 +68,18 @@ NGROK_API_TOKEN = '' # @param {type:"string"}
 NGROK_URL = None
 OPTIONS['NGROK_API_TOKEN'] = NGROK_API_TOKEN
 
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 주소***</font>
+# @markdown ##### <font color="orange">***WebUI 레포지토리 주소***</font>
 REPO_URL = 'https://github.com/AUTOMATIC1111/stable-diffusion-webui.git' # @param {type:"string"}
 OPTIONS['REPO_URL'] = REPO_URL
 
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 레포지토리 커밋 해시***</font>
+# @markdown ##### <font color="orange">***WebUI 레포지토리 커밋 해시***</font>
 # @markdown 업데이트가 실시간으로 올라올 때 최신 버전에서 오류가 발생할 때 [레포지토리 커밋 목록](https://github.com/AUTOMATIC1111/stable-diffusion-webui/commits/master)에서
 # @markdown <br>과거 커밋 해시 값[(영문과 숫자로된 난수 값; 예시 이미지)](https://vmm.pw/MzMy)을 아래에 붙여넣은 뒤 실행하면 과거 버전을 사용할 수 있음
 # @markdown <br>입력 란을 <font color="red">비워두면</font> 가장 최신 커밋을 가져옴
 REPO_COMMIT = '' # @param {type:"string"}
 OPTIONS['REPO_COMMIT'] = REPO_COMMIT
 
-# @markdown ##### <font size="2" color="red">(선택)</font> <font color="orange">***WebUI 추가 인자***</font>
+# @markdown ##### <font color="orange">***WebUI 추가 인자***</font>
 # @markdown [사용할 수 있는 인자 목록](https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/shared.py#L23)
 EXTRA_ARGS = '' # @param {type:"string"}
 OPTIONS['EXTRA_ARGS'] = EXTRA_ARGS
@@ -712,7 +712,11 @@ def parse_webui_output(line: str) -> bool:
     if line == 'paramiko.ssh_exception.SSHException: Error reading SSH protocol banner[Errno 104] Connection reset by peer\n':
         raise Exception('Gradio 연결 중 알 수 없는 오류가 발생했습니다, 다시 실행해주세요')
 
-    if line == 'Invalid ngrok authtoken, ngrok connection aborted.\n':
+    # 내부에서 재시작할 때 ngrok 세션이 존재해도 다시 열려고 시도하는데
+    # 사용 중인 토큰이 무료 플랜이면 한 세션만 열 수 있다며 뻑 나는 경우가 있음
+    # 애초에 세션이 여러 개 생기면 안되긴 하지만... 일단 자동좌가 수정해주거나 PR 넣는 방법 밖엔 없을듯
+    # NGROK_URL 변수가 비어있을 때만 오류 처리하도록 수정함
+    if NGROK_URL == None and line == 'Invalid ngrok authtoken, ngrok connection aborted.\n':
         raise Exception('ngrok 인증 토큰이 잘못됐습니다, 올바른 토큰을 입력하거나 토큰 값 없이 실행해주세요')
 
     # 로컬 웹 서버가 열렸을 때
