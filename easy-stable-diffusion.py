@@ -285,7 +285,7 @@ def log_trace() -> None:
         # 로그 업로드
         # TODO: 업로드 실패 시 오류 처리
         res = requests.post('https://hastebin.com/documents', data=logs.encode('utf-8'))
-        url = f"https://hastebin.com/{json.loads(res.text)['key']}"
+        url = f"https://hastebin.com/raw/{json.loads(res.text)['key']}"
 
         # 기존 오류 메세지 업데이트
         LOG_WIDGET.blocks[parent_index]['msg'] = '\n'.join([
@@ -377,22 +377,6 @@ def execute(args: Union[str, List[str]], parser: Callable=None,
         raise Exception(f'프로세스가 {returncode} 코드를 반환했습니다')
 
     return output, returncode
-
-def runs(item: Union[Callable, List[Callable]]) -> bool:
-    # 이게 다 파이썬이 익명 함수 지원 안해서 그런거임
-    # 심플리티 뭐시기 ㅇㅈㄹ하면서 멀티 라인 없는 람다만 쓰게 강요하니까 이런거...
-    # Pythonic 좆까 ㅗㅗ
-
-    # 함수가 True 를 반환한다면 현재 단 작업 중단하기
-    if callable(item):
-        return item()
-    elif isinstance(item, list):
-        for child in item:
-            if runs(child) == True:
-                break
-    else:
-        # YOU FUCKING MORON
-        raise('?')
 
 # ==============================
 # 작업 경로
