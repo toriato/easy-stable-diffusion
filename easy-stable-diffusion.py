@@ -799,9 +799,16 @@ def start_webui(args: List[str]=None, env: Dict[str, str]=None) -> None:
         if os.path.isdir(os.path.join(cwd, 'localizations')):
             args += ['--localizations-dir', os.path.join(cwd, 'localizations')]
 
-        # 코랩 환경에선 메모리가 낮아 모델을 VRAM 위로 올려 사용해야함
         if IN_COLAB:
-            args.append('--lowram')
+            args += [
+                # 메모리가 낮아 모델을 VRAM 위로 올려 사용해야함
+                '--lowram',
+
+                # --listen 또는 --share 인자를 사용하면 확장 기능 탭이 막혀버림
+                # 어처피 Gradio 비밀번호는 자동으로 생성되는데 일부러 제거하고 외부 접근 공개한
+                # 바보들은 지들이 책임이니 인자 넣어둠
+                '--enable-insecure-extension-access'
+            ]
 
         # xformers
         if OPTIONS['USE_XFORMERS']:
