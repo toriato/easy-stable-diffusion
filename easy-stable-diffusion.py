@@ -538,11 +538,11 @@ def has_checkpoint() -> bool:
 # WebUI 레포지토리 및 종속 패키지 설치
 # ==============================
 def patch_webui_repository() -> None:
+
     # 기본 파일 만들기
     for path, content in {
         'config.json': json.dumps({
-            'CLIP_stop_at_last_layers': 2,
-            'localization': 'ko_KR'
+            'CLIP_stop_at_last_layers': 2
         }),
         'ui-config.json': json.dumps({
             'txt2img/Prompt/value': 'best quality, masterpiece',
@@ -557,6 +557,22 @@ def patch_webui_repository() -> None:
         path = Path(path)
         if not path.exists():
             path.write_text(content)
+
+    # 코랩 환경에서 확장 기능 설치가 안되던 버그 수정
+    # 레포지토리를 임시 디렉터리에 클론하고 os.rename() 으로 이동하는데
+    # 변경할 경로의 장치가 서로 일치하지 않으면 오류가 발생하기 때문에 이런 버그가 생겼던 것
+    # PR 로 고쳐야 하는건데 자동좌가 복사 중 중단되면 뒷처리가 귀찮다며 부정적인 시선으로 바라보는 중임
+    # https://github.com/AUTOMATIC1111/stable-diffusion-webui/pull/4684
+    #
+    # 일단 임시로 패치 파일을 만들어 적용하는 형태로 해결함
+    if IN_COLAB:
+        patch_url = 'https://gist.github.com/toriato/39f1b0cfcc0681212ca02ceeea254cf4/raw/0de836e50e32706c8530d3faadcdf3350dcaaba6/diff.patch'
+        execute(
+            f'curl -sSL {patch_url} | git apply --reject --whitespace=fix',
+            summary='코랩에서 확장 기능을 설치할 수 있도록 파일을 패치합니다',
+            cwd='repository',
+            shell=True
+        )
 
     # 고정 심볼릭 링크 만들기
     for src in ['extensions', 'models', 'outputs']:
@@ -637,7 +653,7 @@ def setup_webui() -> None:
             # 사용자 파일만 남겨두고 레포지토리 초기화하기
             # https://stackoverflow.com/a/12096327
             execute(
-                'git reset --hard && git pull',
+                'git reset --hard HEAD && git pull',
                 summary='레포지토리를 업데이트 합니다',
                 shell=True,
                 cwd='repository'
@@ -796,7 +812,7 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
                 execute(
                     [
                         'pip', 'install',
-                        'https://github.com/toriato/easy-stable-diffusion/raw/prebuilt-xformers/cu113/xformers-0.0.14.dev0-cp37-cp37m-linux_x86_64.whl'
+                        'https://github.com/toriato/easy-stable-diffusion/raw/prebuilt-xformers/cu113/xformers-0.0.14.dev0-cp38-cp38-linux_x86_64.whl'
                     ],
                     summary='xformers 패키지를 설치합니다'
                 )
