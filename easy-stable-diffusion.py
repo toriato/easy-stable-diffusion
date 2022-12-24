@@ -558,22 +558,6 @@ def patch_webui_repository() -> None:
         if not path.exists():
             path.write_text(content)
 
-    # 코랩 환경에서 확장 기능 설치가 안되던 버그 수정
-    # 레포지토리를 임시 디렉터리에 클론하고 os.rename() 으로 이동하는데
-    # 변경할 경로의 장치가 서로 일치하지 않으면 오류가 발생하기 때문에 이런 버그가 생겼던 것
-    # PR 로 고쳐야 하는건데 자동좌가 복사 중 중단되면 뒷처리가 귀찮다며 부정적인 시선으로 바라보는 중임
-    # https://github.com/AUTOMATIC1111/stable-diffusion-webui/pull/4684
-    #
-    # 일단 임시로 패치 파일을 만들어 적용하는 형태로 해결함
-    if IN_COLAB:
-        patch_url = 'https://gist.github.com/toriato/39f1b0cfcc0681212ca02ceeea254cf4/raw/0de836e50e32706c8530d3faadcdf3350dcaaba6/diff.patch'
-        execute(
-            f'curl -sSL {patch_url} | git apply --reject --whitespace=fix',
-            summary='코랩에서 확장 기능을 설치할 수 있도록 파일을 패치합니다',
-            cwd='repository',
-            shell=True
-        )
-
     # 고정 심볼릭 링크 만들기
     for src in ['extensions', 'models', 'outputs']:
         src = Path(src)
