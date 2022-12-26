@@ -787,7 +787,10 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
             if not has_python_package('xformers'):
                 log('xformers 패키지가 존재하지 않습니다, 미리 컴파일된 xformers 패키지를 가져옵니다')
                 execute(
-                    ['pip', 'install', '--prefer-binary', 'xformers'],
+                    [
+                        'pip', 'install',
+                        'https://github.com/toriato/easy-stable-diffusion/raw/prebuilt-xformers/wheels/cu116/xformers-0.0.15%2Be163309.d20221226-cp38-cp38-linux_x86_64.whl'
+                    ],
                     summary='xformers 패키지를 설치합니다',
                     throw=False
                 )
