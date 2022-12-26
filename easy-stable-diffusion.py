@@ -31,8 +31,7 @@ USE_GOOGLE_DRIVE = True  #@param {type:"boolean"}
 OPTIONS['USE_GOOGLE_DRIVE'] = USE_GOOGLE_DRIVE
 
 #@markdown ##### <font color="orange">***xformers 를 사용할지?***</font>
-#@markdown - <font color="green">장점</font>: 성능 10% 향상
-#@markdown - <font color="red">단점</font>: 미리 빌드한 패키지가 지원하지 않는 환경에선 빌드해 사용해야함 (매우 느림)
+#@markdown - <font color="green">장점</font>: 이미지 생성 속도 개선 가능성 있음
 #@markdown - <font color="red">단점</font>: 출력한 그림의 질이 조금 떨어질 수 있음
 USE_XFORMERS = True  #@param {type:"boolean"}
 OPTIONS['USE_XFORMERS'] = USE_XFORMERS
@@ -782,23 +781,16 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
         if OPTIONS['USE_XFORMERS']:
             log('xformers 를 사용합니다')
 
-            if has_python_package('xformers'):
-                args.append('--xformers')
-
-            elif IN_COLAB:
+            if not has_python_package('xformers'):
                 log('xformers 패키지가 존재하지 않습니다, 미리 컴파일된 xformers 패키지를 가져옵니다')
                 execute(
-                    [
-                        'pip', 'install',
-                        'https://huggingface.co/Bingsu/my_checkpoints/resolve/main/xformers-0.0.15.dev0%2Baffe4da.d20221211-cp38-cp38-linux_x86_64.whl'
-                    ],
-                    summary='xformers 패키지를 설치합니다'
+                    ['pip', 'install', '--prerfer-binary', 'xformers'],
+                    summary='xformers 패키지를 설치합니다',
+                    throw=False
                 )
-                args.append('--xformers')
 
-            else:
-                # TODO: 패키지 빌드
-                log('xformers 패키지가 존재하지 않습니다, --xformers 인자를 사용하지 않습니다')
+            if has_python_package('xformers'):
+                args.append('--xformers')
 
         # gradio
         if OPTIONS['USE_GRADIO']:
