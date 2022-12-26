@@ -34,11 +34,11 @@ pushd xformers
   git pull
   git submodule update --init --recursive
 
-
   # install python dependencies
   pip install \
     --upgrade \
-    --extra-index-url "$PIP_TORCH_INDEX" \
+    --extra-index-url "${PIP_TORCH_INDEX}" \
+    "${PIP_TORCH_PACKAGE}" \
     ninja wheel \
     -r requirements.txt
 
