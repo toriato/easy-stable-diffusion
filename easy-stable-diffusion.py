@@ -518,9 +518,12 @@ def download(url: str, target: str):
 
 
 def has_checkpoint() -> bool:
-    for p in Path('models', 'Stable-diffusion').glob('**/*.ckpt'):
-        # aria2 로 받다만 파일은 무시하기
-        if Path(str(p) + '.aria2').exists():
+    for p in Path('models', 'Stable-diffusion').glob('**/*'):
+        if p.suffix != '.ckpt' and p.suffix != '.safetensors':
+            continue
+
+        # aria2 로 받다만 파일이면 무시하기
+        if p.with_suffix(p.suffix + '.aria2c').exists():
             continue
 
         return True
