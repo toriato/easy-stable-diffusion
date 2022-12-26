@@ -37,12 +37,6 @@ OPTIONS['USE_GOOGLE_DRIVE'] = USE_GOOGLE_DRIVE
 USE_XFORMERS = True  #@param {type:"boolean"}
 OPTIONS['USE_XFORMERS'] = USE_XFORMERS
 
-#@markdown ##### <font color="orange">***deepbooru 를 사용할지?***</font>
-#@markdown IMG2IMG 이미지를 프롬프트로 사용할 있게 단부루 태그로 변환(예측)하는 기능
-#@markdown - <font color="red">단점</font>: 처음 실행할 때 추가 패키지를 받기 때문에 시간이 조금 더 걸림
-USE_DEEPBOORU = True  #@param {type:"boolean"}
-OPTIONS['USE_DEEPBOORU'] = USE_DEEPBOORU
-
 #@markdown ##### <font color="orange">***Gradio 터널을 사용할지?***</font>
 #@markdown - <font color="green">장점</font>: 따로 설정할 필요가 없어 편리함
 #@markdown - <font color="red">**단점**</font>: 접속이 느리고 끊키거나 버튼이 안 눌리는 등 오류 빈도가 높음
@@ -805,11 +799,6 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
             else:
                 # TODO: 패키지 빌드
                 log('xformers 패키지가 존재하지 않습니다, --xformers 인자를 사용하지 않습니다')
-
-        # deepdanbooru
-        if OPTIONS['USE_DEEPBOORU']:
-            log('deepbooru 를 사용합니다')
-            args.append('--deepdanbooru')
 
         # gradio
         if OPTIONS['USE_GRADIO']:
