@@ -787,7 +787,7 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
             if not has_python_package('xformers'):
                 log('xformers 패키지가 존재하지 않습니다, 미리 컴파일된 xformers 패키지를 가져옵니다')
                 execute(
-                    ['pip', 'install', '--prerfer-binary', 'xformers'],
+                    ['pip', 'install', '--prefer-binary', 'xformers'],
                     summary='xformers 패키지를 설치합니다',
                     throw=False
                 )
@@ -905,11 +905,11 @@ try:
 
         for file in [
             {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animefull-final-pruned.ckpt',
-                'target': 'models/Stable-diffusion/animefull-final-pruned.ckpt'
+                'url': 'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp32.safetensors',
+                'target': 'models/Stable-diffusion/Anything-V3.0-pruned-fp32.safetensors'
             },
             {
-                'url': 'https://pub-2fdef7a2969f43289c42ac5ae3412fd4.r2.dev/animevae.pt',
+                'url': 'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.vae.pt',
                 'target': 'models/VAE/animevae.pt'
             }
         ]:
