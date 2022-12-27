@@ -865,17 +865,21 @@ try:
     IN_COLAB = has_python_package(
         'google') and has_python_package('google.colab')
 
+    cwd = Path.cwd()
+
     # 구글 드라이브 마운팅 시도
-    if IN_COLAB and OPTIONS['USE_GOOGLE_DRIVE']:
-        log('구글 드라이브 마운트를 시도합니다')
+    if IN_COLAB:
+        cwd = Path('/content')
 
-        from google.colab import drive
-        drive.mount('/content/drive')
+        if OPTIONS['USE_GOOGLE_DRIVE']:
+            log('구글 드라이브 마운트를 시도합니다')
 
-        # 구글 드라이브 기준
-        chdir(Path('/content/drive/MyDrive', OPTIONS['WORKSPACE']))
-    else:
-        chdir(Path(Path.cwd(), OPTIONS['WORKSPACE']))
+            from google.colab import drive
+            drive.mount(cwd / 'drive')
+
+            cwd = cwd / 'MyDrive'
+
+    chdir(cwd / OPTIONS['WORKSPACE'])
 
     # 코랩 환경 설정
     if IN_COLAB:
