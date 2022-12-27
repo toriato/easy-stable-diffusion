@@ -1,3 +1,5 @@
-.vscode
-.venv
-SD
+.vscode/
+.venv/
+SD/
+xformers/
+/*.whl
