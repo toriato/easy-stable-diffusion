@@ -428,7 +428,7 @@ def chdir(cwd: Path) -> None:
     LOG_FILE = log_path.open('a')
 
     #  덮어쓸 설정 파일 가져오기
-    override_path = Path(cwd, 'override.json')
+    override_path = cwd.joinpath('override.json')
     if override_path.exists():
         log('설정 파일이 존재합니다, 기존 설정을 덮어씁니다')
 
@@ -436,7 +436,7 @@ def chdir(cwd: Path) -> None:
             override_options = json.loads(file.read())
             for key, value in override_options.items():
                 if key not in OPTIONS:
-                    log(f'{key} 키은 존재하는 설정 키가 아닙니다', styles={'color': 'red'})
+                    log(f'{key} 키는 존재하지 않는 설정입니다', styles={'color': 'red'})
                     continue
 
                 if type(value) != type(OPTIONS[key]):
@@ -877,7 +877,7 @@ try:
             from google.colab import drive
             drive.mount(str(cwd/'drive'))
 
-            cwd = cwd/'MyDrive'
+            cwd = cwd/'drive'/'MyDrive'
 
     chdir(cwd/OPTIONS['WORKSPACE'])
 
