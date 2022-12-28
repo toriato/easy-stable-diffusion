@@ -875,11 +875,11 @@ try:
             log('구글 드라이브 마운트를 시도합니다')
 
             from google.colab import drive
-            drive.mount(str(cwd/'drive'))
+            drive.mount(str(cwd.joinpath('drive')))
 
-            cwd = cwd/'drive'/'MyDrive'
+            cwd = cwd.joinpath('drive', 'MyDrive')
 
-    chdir(cwd/OPTIONS['WORKSPACE'])
+    chdir(cwd.joinpath(OPTIONS['WORKSPACE']))
 
     # 코랩 환경 설정
     if IN_COLAB:
