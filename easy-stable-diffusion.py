@@ -789,7 +789,7 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
                 execute(
                     [
                         'pip', 'install',
-                        'https://github.com/toriato/easy-stable-diffusion/raw/main/wheels/cu116/xformers-0.0.15%2Be163309.d20221226-cp38-cp38-linux_x86_64.whl'
+                        'https://github.com/toriato/easy-stable-diffusion/raw/main/prebuilt-xformers/wheels/cu116/xformers-0.0.15%2Be163309.d20221226-cp38-cp38-linux_x86_64.whl'
                     ],
                     summary='xformers 패키지를 설치합니다',
                     throw=False
