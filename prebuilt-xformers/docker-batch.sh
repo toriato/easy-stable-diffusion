@@ -31,12 +31,11 @@ for cuda_version in "${cuda_versions[@]}"; do
   for python_version in "${python_versions[@]}"; do
     echo "build xformers with ${cuda_version} and python${python_version}"
 
-    TRACE="${TRACE-0}" \
     PYTHON_VERSION="${python_version}" \
     PIP_TORCH_INDEX="https://download.pytorch.org/whl/${cuda_version}" \
     PIP_TORCH_PACKAGE="torch==1.12.1+${cuda_version}" \
     DOCKER_IMAGE="${cuda_images["$cuda_version"]}" \
-      ./docker.sh
+      "$(dirname "$0")/docker.sh"
     
     mv xformers/dist/*.whl "${dist_dir}/"
   done

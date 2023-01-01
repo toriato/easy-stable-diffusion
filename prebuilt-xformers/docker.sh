@@ -17,6 +17,7 @@ docker run \
   -e FORCE_CUDA=1 \
   -e XFORMERS_DISABLE_FLASH_ATTN=1 \
   -e DEBIAN_FRONTEND=noninteractive \
+  -v "$(dirname "$0")/build.sh:/build.sh:ro" \
   -v "$(pwd):/workspace" -w /workspace \
-  --entrypoint /workspace/build.sh \
+  --entrypoint /build.sh \
   "${DOCKER_IMAGE:-"docker.io/nvidia/cuda:11.6.0-devel-ubuntu18.04"}"
