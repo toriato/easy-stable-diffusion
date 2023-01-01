@@ -300,7 +300,7 @@ def log_trace() -> None:
 
         # 기존 오류 메세지 업데이트
         LOG_WIDGET.blocks[parent_index]['msg'] = '\n'.join([
-            '오류가 발생했습니다, 아래 주소를 복사해 보고해주세요',
+            '오류가 발생했습니다, 아래 주소를 <a href="https://discord.gg/6wQeA2QXgM">디스코드 서버</a>에 보고해주세요',
             f'<a target="_blank" href="{url}">{url}</a>',
         ])
 
