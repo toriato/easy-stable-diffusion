@@ -721,13 +721,11 @@ def parse_webui_output(line: str) -> bool:
         return
 
     # 외부 주소 출력되면 성공적으로 실행한 것으로 판단
-    matches = re.search(
-        'https?://[0-9a-f-]+\.(gradio\.app|([a-z]{2}\.)?ngrok\.io)', line)
-    if matches:
-        url = matches[0]
+    if line.startswith('Running on public URL:'):
+        url = re.search(r':\s{0,}(https?://.+)', line)[1]
 
         # gradio 는 웹 서버가 켜진 이후 바로 나오기 때문에 사용자에게 바로 보여줘도 상관 없음
-        if 'gradio.app' in url:
+        if 'gradio' in url:
             if LOG_WIDGET:
                 log(
                     '\n'.join([
@@ -742,7 +740,7 @@ def parse_webui_output(line: str) -> bool:
 
         # ngork 는 우선 터널이 시작되고 이후에 웹 서버가 켜지기 때문에
         # 미리 주소를 저장해두고 이후에 로컬호스트 주소가 나온 뒤에 사용자에게 알려야함
-        if 'ngrok.io' in matches[0]:
+        if 'ngrok.io' in url:
             NGROK_URL = url
 
         return
