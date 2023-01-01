@@ -7,6 +7,7 @@ shopt -s nullglob
 [[ "${TRACE-0}" == "1" ]] && set -o xtrace
  
 docker run \
+  --rm \
   -e TRACE="${TRACE-0}" \
   -e PYTHON_VERSION="${PYTHON_VERSION:-"3.8"}" \
   -e PIP_TORCH_INDEX="${PIP_TORCH_INDEX:-"https://download.pytorch.org/whl/cu116"}" \
