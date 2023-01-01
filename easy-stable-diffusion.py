@@ -721,8 +721,8 @@ def parse_webui_output(line: str) -> bool:
         return
 
     # 외부 주소 출력되면 성공적으로 실행한 것으로 판단
-    if line.startswith('Running on public URL:'):
-        url = re.search(r':\s{0,}(https?://.+)', line)[1]
+    if line.startswith('ngrok connected to') or line.startswith('Running on public URL:'):
+        url = re.search(r'https?://.+', line)[0]
 
         # gradio 는 웹 서버가 켜진 이후 바로 나오기 때문에 사용자에게 바로 보여줘도 상관 없음
         if 'gradio' in url:
