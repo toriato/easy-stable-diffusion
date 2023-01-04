@@ -510,10 +510,10 @@ def execute(
 # ==============================
 
 
-def chdir(cwd: Path) -> None:
+def chdir(cwd: os.PathLike) -> None:
     global LOG_FILE
 
-    cwd = cwd.absolute()
+    cwd = Path(cwd).absolute()
 
     # 작업 경로 변경
     old_cwd = Path.cwd().absolute()
