@@ -15,6 +15,7 @@ app: GradioApp
 # https://github.com/gradio-app/gradio/blob/58b1a074ba342fe01445290d680a70c9304a9de1/gradio/routes.py#L249-L274
 original_endpoint: Callable
 
+
 def endpoint(path: str):
     original_error: ValueError
 
@@ -50,7 +51,7 @@ def hook(_, app_instance: FastAPI):
     for route in app.router.routes:
         if not isinstance(route, APIRoute):
             continue
-            
+
         # Gradio 에서 내부 파일에 접근하는 경로의 패턴
         # https://github.com/gradio-app/gradio/blob/58b1a074ba342fe01445290d680a70c9304a9de1/gradio/routes.py#L248
         if route.path != '/file={path:path}':
@@ -59,7 +60,8 @@ def hook(_, app_instance: FastAPI):
         if route.dependant.call != endpoint:
             original_endpoint = route.dependant.call
             route.dependant.call = endpoint
-        
+
         break
+
 
 on_app_started(hook)
