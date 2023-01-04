@@ -568,6 +568,9 @@ def has_python_package(pkg: str, check_loader=True) -> bool:
 # 파일 다운로드
 # ==============================
 def download(url: str, target: str, **kwargs):
+    # 파일을 받을 디렉터리 만들기
+    Path(target).parent.mkdir(0o777, True, True)
+
     if find_executable('aria2c'):
         execute(
             [
