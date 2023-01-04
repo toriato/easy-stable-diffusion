@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 import tempfile
 import re
@@ -7,7 +8,7 @@ import json
 import requests
 import torch
 
-from typing import Dict, Union, Callable, Tuple, List, Set
+from typing import Dict, Union, Callable, Tuple, List
 from subprocess import Popen, PIPE, STDOUT
 from distutils.spawn import find_executable
 from importlib.util import find_spec
@@ -18,6 +19,10 @@ from datetime import datetime
 OPTIONS = {}
 
 # fmt: off
+#####################################################
+# 코랩 노트북에선 #@param 문법으로 사용자로부터 설정 값을 가져올 수 있음
+# 다른 환경일 땐 override.json 파일 등을 사용해야함
+#####################################################
 #@title
 
 #@markdown ### <font color="orange">***작업 디렉터리 경로***</font>
@@ -79,6 +84,11 @@ OPTIONS['REPO_COMMIT'] = REPO_COMMIT
 EXTRA_ARGS = '' #@param {type:"string"}
 OPTIONS['EXTRA_ARGS'] = shlex.split(EXTRA_ARGS)
 
+#####################################################
+# 사용자 설정 값 끝
+#####################################################
+# fmt: on
+
 # 작업 디렉터리 <-> 레포지토리 심볼릭 중 제외할 경로
 SYMLINK_BLACKLIST = (
     # 구동에 불필요하면 파일 및 디렉터리
@@ -96,8 +106,6 @@ SYMLINK_BLACKLIST = (
     'outputs'
 )
 
-# fmt: on
-
 # 임시 디렉터리
 TEMP_DIR = tempfile.mkdtemp()
 
@@ -109,6 +117,17 @@ LOG_WIDGET = None
 
 # 로그 HTML 위젯 스타일
 LOG_WIDGET_STYLES = {
+    'wrapper': {
+        'overflow-x': 'auto',
+        'max-width': '100%',
+        'padding': '1em',
+        'background-color': 'black',
+        'white-space': 'pre',
+        'font-family': 'monospace',
+        'font-size': '1em',
+        'line-height': '1.1em',
+        'color': 'white'
+    },
     'dialog': {
         'display': 'block',
         'margin-top': '.5em',
@@ -135,8 +154,104 @@ LOG_WIDGET_STYLES['dialog_error'] = {
     'background-color': 'red',
 }
 
-# 현재 코랩 환경에서 구동 중인지?
-IN_COLAB = False
+
+def setup_colab():
+    # 터널링 서비스가 아예 존재하지 않다면 오류 반환하기
+    assert OPTIONS['USE_GRADIO'] or OPTIONS['NGROK_API_TOKEN'] != '', '터널링 서비스를 하나 이상 선택해주세요'
+
+    # 코랩 환경인데 글카가 왜 없어...?
+    assert torch.cuda.is_available(), 'GPU 가 없습니다, 런타임 유형이 잘못됐거나 GPU 할당량이 초과된 것 같습니다'
+
+    # 빠른 다운로드를 위해 aria2 패키지 설치
+    if not find_executable('aria2c'):
+        execute(
+            ['apt', 'install', 'aria2'],
+            summary='빠른 다운로드를 위해 aria2 패키지를 설치합니다',
+            throw=False
+        )
+
+    OPTIONS['EXTRA_ARGS'] += [
+        # 메모리가 낮아 모델을 VRAM 위로 올려 사용해야함
+        '--lowram',
+
+        # --listen 또는 --share 인자를 사용하면 확장 기능 탭이 막혀버림
+        # 어처피 Gradio 비밀번호는 자동으로 생성되는데
+        # 일부러 제거하고 외부 접근 공개한 바보 책임이니 인자 넣어둠
+        '--enable-insecure-extension-access'
+    ]
+
+    # 코랩 환경에서 이유는 알 수 없지만 /usr 디렉터리 내에서 읽기/쓰기 속도가 다른 곳보다 월등히 빠름
+    # 아마 /content 에 큰 용량을 박아두는 사용하는 사람들이 많아서 그런듯...?
+    src = Path('/usr/local/repository')
+    dst = Path('repository').absolute()
+    delete(dst)
+    dst.symlink_to(src, True)
+
+    # huggingface 모델 캐시 심볼릭 만들기
+    src = Path('cache', 'huggingface').absolute()
+    dst = Path('/root/.cache/huggingface')
+    delete(dst)
+    src.mkdir(0o777, True, True)
+    dst.symlink_to(src, True)
+
+
+def setup_environment():
+    global LOG_WIDGET
+
+    # 노트북 환경이라면 로그 표시를 위한 HTML 요소 만들기
+    if 'ipykernel' in sys.modules:
+        try:
+            from IPython.display import display
+            from ipywidgets import widgets
+
+            LOG_WIDGET = widgets.HTML()
+            LOG_WIDGET.blocks = []
+
+            display(LOG_WIDGET)
+        except:
+            pass
+
+    cwd = Path.cwd()
+
+    # google.colab 패키지가 있다면 코랩 환경으로 인식하기
+    if has_python_package('google') and has_python_package('google.colab'):
+        setup_colab()
+
+        # 코랩 노트북의 경우 작업 디렉터리로 항상 /content 디렉터리를 사용함
+        cwd = Path('/content')
+
+        # 구글 드라이브 마운트하기
+        if OPTIONS['USE_GOOGLE_DRIVE']:
+            from google.colab import drive
+            drive.mount(str(cwd.joinpath('drive')))
+
+            # 마운트한 디렉터리 속 MyDrive 디렉터리부터 쓰기 가능함
+            cwd = cwd.joinpath('drive', 'MyDrive')
+
+    chdir(cwd.joinpath(OPTIONS['WORKSPACE']))
+
+    # 현재 환경 출력
+    import platform
+    log(platform.platform())
+    log(f'Python {platform.python_version()}')
+    log(str(Path.cwd()))
+
+    # 체크포인트 모델이 존재하지 않는다면 기본 모델 받아오기
+    if not has_checkpoint():
+        for file in [
+            {
+                'url': 'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp32.safetensors',
+                'target': 'models/Stable-diffusion/Anything-V3.0-pruned-fp32.safetensors',
+                'summary': '기본 체크포인트 모델 파일을 받아옵니다'
+            },
+            {
+                'url': 'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.vae.pt',
+                'target': 'models/VAE/animevae.pt',
+                'summary': '기본 VAE 모델 파일을 받아옵니다'
+            }
+        ]:
+            download(**file)
+
 
 # ==============================
 # 로그
@@ -155,19 +270,7 @@ def format_list(value):
 
 
 def render_log() -> None:
-    styles = {
-        'overflow-x': 'auto',
-        'max-width': '700px',
-        'padding': '1em',
-        'background-color': 'black',
-        'white-space': 'pre',
-        'font-family': 'monospace',
-        'font-size': '1em',
-        'line-height': '1.1em',
-        'color': 'white'
-    }
-
-    html = f'<div style="{format_styles(styles)}">'
+    html = f'''<div style="{format_styles(LOG_WIDGET_STYLES['wrapper'])}">'''
 
     for block in LOG_WIDGET.blocks:
         styles = {
@@ -198,7 +301,10 @@ def log(
 
     parent=False,
     parent_index: int = None,
-    child_styles={},
+    child_styles={
+        'padding-left': '1em',
+        'color': 'gray'
+    },
     max_childs=0,
 
     print_to_file=True,
@@ -214,12 +320,11 @@ def log(
         msg += '\n'
 
     # 파일에 기록하기
-    if print_to_file:
-        if LOG_FILE:
-            if parent_index and msg.endswith('\n'):
-                LOG_FILE.write('\t')
-            LOG_FILE.write(msg)
-            LOG_FILE.flush()
+    if print_to_file and LOG_FILE:
+        if parent_index and msg.endswith('\n'):
+            LOG_FILE.write('\t')
+        LOG_FILE.write(msg)
+        LOG_FILE.flush()
 
     # 로그 위젯에 기록하기
     if print_to_widget and LOG_WIDGET:
@@ -235,17 +340,12 @@ def log(
             render_log()
             return len(LOG_WIDGET.blocks) - 1
 
-        # 로그 위젯이 존재하지 않는다면 그냥 출력하기
-        if not LOG_WIDGET:
-            print('\t' + msg, end='')
-            return
-
         # 부모 로그가 존재한다면 추가하기
         LOG_WIDGET.blocks[parent_index]['childs'].append(msg)
         render_log()
         return
 
-    print(msg, end='')
+    print('\t' if parent_index else '' + msg, end='')
     return
 
 
@@ -427,11 +527,9 @@ def chdir(cwd: Path) -> None:
 
     LOG_FILE = log_path.open('a')
 
-    #  덮어쓸 설정 파일 가져오기
+    # 덮어쓸 설정 파일 가져오기
     override_path = cwd.joinpath('override.json')
     if override_path.exists():
-        log('설정 파일이 존재합니다, 기존 설정을 덮어씁니다')
-
         with override_path.open('r') as file:
             override_options = json.loads(file.read())
             for key, value in override_options.items():
@@ -464,11 +562,7 @@ def has_python_package(pkg: str, check_loader=True) -> bool:
 # ==============================
 # 파일 다운로드
 # ==============================
-def download(url: str, target: str):
-    if IN_COLAB and not find_executable('aria2c'):
-        execute(['apt', 'install', 'aria2'],
-                summary='빠른 다운로드를 위해 aria2 패키지를 설치합니다')
-
+def download(url: str, target: str, **kwargs):
     if find_executable('aria2c'):
         execute(
             [
@@ -486,7 +580,7 @@ def download(url: str, target: str):
                 '--out', target,
                 url
             ],
-            hide_summary=True
+            **kwargs
         )
 
     elif find_executable('curl'):
@@ -497,10 +591,13 @@ def download(url: str, target: str):
                 '--output', target,
                 url
             ],
-            hide_summary=True
+            **kwargs
         )
 
     else:
+        if 'summary' in kwargs.keys():
+            log(kwargs.pop('summary'), **kwargs)
+
         with requests.get(url, stream=True) as res:
             res.raise_for_status()
 
@@ -556,8 +653,9 @@ def patch_webui_repository() -> None:
 
     # Gradio 에서 앱이 위치한 경로와 다른 장치에 있는 내부 파일 접근시 발생하던 ValueError 를 해결하는 스크립트
     download(
-        'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/fix-gradio-route.py',
-        'repository/scripts/fix-gradio-route.py'
+        'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/fix_gradio_route.py',
+        'repository/scripts/fix_gradio_route.py',
+        summary='Gradio 경로와 관련된 버그 픽스 스크립트를 받아옵니다'
     )
 
     # 고정 심볼릭 링크 만들기
@@ -753,7 +851,6 @@ def parse_webui_output(line: str) -> bool:
 
 
 def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
-    global running_subprocess
     global GRADIO_PASSWORD_GENERATED
 
     # 기본 환경 변수 만들기
@@ -773,23 +870,9 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
             '--gradio-img2img-tool', 'color-sketch',
         ]
 
-        if IN_COLAB:
-            args += [
-                # 메모리가 낮아 모델을 VRAM 위로 올려 사용해야함
-                '--lowram',
-
-                # --listen 또는 --share 인자를 사용하면 확장 기능 탭이 막혀버림
-                # 어처피 Gradio 비밀번호는 자동으로 생성되는데
-                # 일부러 제거하고 외부 접근 공개한 바보 책임이니 인자 넣어둠
-                '--enable-insecure-extension-access'
-            ]
-
         # xformers
         if OPTIONS['USE_XFORMERS']:
-            log('xformers 를 사용합니다')
-
             if not has_python_package('xformers'):
-                log('xformers 패키지가 존재하지 않습니다, 미리 컴파일된 xformers 패키지를 가져옵니다')
                 execute(
                     [
                         'pip', 'install',
@@ -804,7 +887,6 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
 
         # gradio
         if OPTIONS['USE_GRADIO']:
-            log('Gradio 터널을 사용합니다')
             args.append('--share')
 
         # gradio 인증
@@ -824,15 +906,10 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
 
         # ngrok
         if OPTIONS['NGROK_API_TOKEN'] != '':
-            log('ngrok 터널을 사용합니다')
             args += [
                 '--ngrok', OPTIONS['NGROK_API_TOKEN'],
                 '--ngrok-region', 'jp'
             ]
-
-            if has_python_package('pyngrok') is None:
-                log('ngrok 사용에 필요한 패키지가 존재하지 않습니다, 설치를 시작합니다')
-                execute(['pip', 'install', 'pyngrok'])
 
         # 추가 인자
         args += OPTIONS['EXTRA_ARGS']
@@ -845,91 +922,9 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
     )
 
 
-# ==============================
-# 자 드게제~
-# ==============================
 try:
-    # 인터페이스 출력
-    try:
-        from IPython.display import display
-        from ipywidgets import widgets
-
-        LOG_WIDGET = widgets.HTML()
-        LOG_WIDGET.blocks = []
-
-        display(LOG_WIDGET)
-    except:
-        pass
-
-    import platform
-    log(platform.platform())
-    log(f'Python {platform.python_version()}')
-    log('')
-
-    IN_COLAB = has_python_package(
-        'google') and has_python_package('google.colab')
-
-    cwd = Path.cwd()
-
-    # 구글 드라이브 마운팅 시도
-    if IN_COLAB:
-        cwd = Path('/content')
-
-        if OPTIONS['USE_GOOGLE_DRIVE']:
-            log('구글 드라이브 마운트를 시도합니다')
-
-            from google.colab import drive
-            drive.mount(str(cwd.joinpath('drive')))
-
-            cwd = cwd.joinpath('drive', 'MyDrive')
-
-    chdir(cwd.joinpath(OPTIONS['WORKSPACE']))
-
-    # 코랩 환경 설정
-    if IN_COLAB:
-        log('코랩을 사용하고 있습니다')
-
-        # 터널링 서비스가 아예 존재하지 않다면 오류 반환하기
-        assert OPTIONS['USE_GRADIO'] or OPTIONS['NGROK_API_TOKEN'] != '', '터널링 서비스를 하나 이상 선택해주세요'
-
-        # 코랩 환경인데 글카가 왜 없어...?
-        if '--skip-torch-cuda-test' not in OPTIONS['EXTRA_ARGS']:
-            assert torch.cuda.is_available(), 'GPU 가 없습니다, 런타임 유형이 잘못됐거나 GPU 할당량이 초과된 것 같습니다'
-
-        # 코랩 환경에서 이유는 알 수 없지만 /usr 디렉터리 내에서 읽기/쓰기 속도가 다른 곳보다 월등히 빠름
-        # 아마 /content 에 큰 용량을 박아두는 사용하는 사람들이 많아서 그런듯...?
-        src = Path('/usr/local/repository')
-        dst = Path('repository').absolute()
-        delete(dst)
-        dst.symlink_to(src, True)
-
-        # huggingface 모델 캐시 심볼릭 만들기
-        src = Path('cache', 'huggingface').absolute()
-        dst = Path('/root/.cache/huggingface')
-        delete(dst)
-        src.mkdir(0o777, True, True)
-        dst.symlink_to(src, True)
-
-    # 체크포인트가 선택 존재한다면 해당 체크포인트 받기
-    if not has_checkpoint():
-        log('체크포인트가 존재하지 않습니다, 자동으로 추천 체크포인트를 받아옵니다')
-
-        for file in [
-            {
-                'url': 'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp32.safetensors',
-                'target': 'models/Stable-diffusion/Anything-V3.0-pruned-fp32.safetensors'
-            },
-            {
-                'url': 'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.vae.pt',
-                'target': 'models/VAE/animevae.pt'
-            }
-        ]:
-            download(**file)
-
-    # WebUI 가져오기
+    setup_environment()
     setup_webui()
-
-    # WebUI 실행
     start_webui()
 
 # ^c 종료 무시하기
