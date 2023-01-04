@@ -554,6 +554,12 @@ def patch_webui_repository() -> None:
         if not path.exists():
             path.write_text(content)
 
+    # Gradio 에서 앱이 위치한 경로와 다른 장치에 있는 내부 파일 접근시 발생하던 ValueError 를 해결하는 스크립트
+    download(
+        'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/fix-gradio-route.py',
+        'repository/scripts/fix-gradio-route.py'
+    )
+
     # 고정 심볼릭 링크 만들기
     for src in ['extensions', 'models', 'outputs']:
         src = Path(src)
