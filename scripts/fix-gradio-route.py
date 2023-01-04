@@ -1,4 +1,3 @@
-from os import stat
 from pathlib import Path
 from typing import Callable
 
@@ -27,14 +26,12 @@ def endpoint(path: str):
         original_error = e
 
     # `Path.resolve()` 사용으로 인해 `app.cwd` 내에 있는 심볼릭 링크의 경우 ValueError 를 반환할 수 있음
-    # 서로 다른 장치에 있는 경우 `Path.absolute()` 를 대신 사용해 이를 해결함
     # https://github.com/gradio-app/gradio/blob/58b1a074ba342fe01445290d680a70c9304a9de1/gradio/routes.py#L263-L270
-    if stat(app.cwd).st_dev != stat(path).st_dev:
-        p = Path(path)
-        if Path(app.cwd).absolute() in p.absolute().parents:
-            return FileResponse(
-                p.resolve(), headers={"Accept-Ranges": "bytes"}
-            )
+    p = Path(path)
+    if Path(app.cwd).absolute() in p.absolute().parents:
+        return FileResponse(
+            p.resolve(), headers={"Accept-Ranges": "bytes"}
+        )
 
     # 접근할 수 있는 경로가 아니라면 오류 그대로 반환하기
     raise original_error
