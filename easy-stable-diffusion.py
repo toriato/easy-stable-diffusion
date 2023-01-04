@@ -211,12 +211,8 @@ def setup_environment():
         except:
             pass
 
-    cwd = Path.cwd()
-
     # google.colab 패키지가 있다면 코랩 환경으로 인식하기
     if has_python_package('google') and has_python_package('google.colab'):
-        setup_colab()
-
         # 코랩 노트북의 경우 작업 디렉터리로 항상 /content 디렉터리를 사용함
         cwd = Path('/content')
 
@@ -228,7 +224,10 @@ def setup_environment():
             # 마운트한 디렉터리 속 MyDrive 디렉터리부터 쓰기 가능함
             cwd = cwd.joinpath('drive', 'MyDrive')
 
-    chdir(cwd.joinpath(OPTIONS['WORKSPACE']))
+        chdir(cwd.joinpath(OPTIONS['WORKSPACE']))
+        setup_colab()
+    else:
+        chdir(OPTIONS['WORKSPACE'])
 
     # 현재 환경 출력
     import platform
@@ -460,7 +459,7 @@ def execute(
         # 프로세스 출력 버퍼에 추가하기
         running_subprocess.output += line
 
-        # 파서 처리
+        # 파서 함수 실행하기
         if callable(parser):
             try:
                 if parser(line):
@@ -468,6 +467,7 @@ def execute(
             except:
                 log_trace()
 
+        # 프로세스 출력 로그하기
         log(
             line,
             newline=False,
@@ -483,15 +483,20 @@ def execute(
     # 로그 블록 업데이트
     if LOG_WIDGET:
         if returncode == 0:
+            # 성공적으로 프로세스가 종료됐을 때
             if hide_summary:
+                # 현재 로그 블록 숨기기 (제거하기)
                 del LOG_WIDGET.blocks[running_subprocess.parent_index]
             else:
+                # 현재 로그 텍스트 초록색으로 변경하고 프로세스 출력 숨기기
                 LOG_WIDGET.blocks[running_subprocess.parent_index]['styles']['color'] = 'green'
                 LOG_WIDGET.blocks[running_subprocess.parent_index]['max_childs'] = None
         else:
+            # 현재 로그 텍스트 빨간색으로 변경하고 프로세스 출력 모두 표시하기
             LOG_WIDGET.blocks[running_subprocess.parent_index]['styles']['color'] = 'red'
             LOG_WIDGET.blocks[running_subprocess.parent_index]['max_childs'] = 0
 
+        # 로그 블록 렌더링
         render_log()
 
     # 오류 코드를 반환했다면
