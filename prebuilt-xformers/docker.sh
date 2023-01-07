@@ -13,7 +13,7 @@ docker run \
   -e PIP_TORCH_INDEX="${PIP_TORCH_INDEX:-"https://download.pytorch.org/whl/cu116"}" \
   -e PIP_TORCH_PACKAGE="${PIP_TORCH_PACKAGE:-"torch"}" \
   -e TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST:-"6.0;6.1;6.2;7.0;7.2;7.5;8.0;8.6"}" \
-  -e NVCC_FLAGS="${NVCC_FLAGS:-"--use_fast_math -DXFORMERS_MEM_EFF_ATTENTION_DISABLE_BACKWARD"}" \
+  -e NVCC_FLAGS="${NVCC_FLAGS:-"--use_fast_math"}" \
   -e MAX_JOBS="${MAX_JOBS:-$(($(nproc) - 2))}" \
   -e FORCE_CUDA=1 \
   -e XFORMERS_DISABLE_FLASH_ATTN=1 \
