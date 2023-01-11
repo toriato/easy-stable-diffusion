@@ -18,17 +18,11 @@ from datetime import datetime
 
 OPTIONS = {}
 
-# fmt: off
-#####################################################
-# 코랩 노트북에선 #@param 문법으로 사용자로부터 설정 값을 가져올 수 있음
-# 다른 환경일 땐 override.json 파일 등을 사용해야함
-#####################################################
-#@title
 
 #@markdown ### <font color="orange">***작업 디렉터리 경로***</font>
 #@markdown 임베딩, 모델, 결과와 설정 파일 등이 영구적으로 보관될 디렉터리 경로
-WORKSPACE = 'SD' #@param {type:"string"}
-OPTIONS['WORKSPACE'] = WORKSPACE
+영구_경로 = 'SD' #@param {type:"string"}
+OPTIONS['WORKSPACE'] = 영구_경로
 
 #@markdown ##### <font color="orange">***구글 드라이브와 동기화할지?***</font>
 #@markdown <font color="red">**주의**</font>: 동기화 전 남은 용량이 충분한지 확인 필수 (5GB 이상)
@@ -52,7 +46,7 @@ OPTIONS['USE_GRADIO'] = USE_GRADIO
 #@markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
 #@markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> 인증 과정을 사용하지 않음
 #@markdown <br>`GRADIO_PASSWORD` 입력 란을 <font color="red">비워두면</font> 자동으로 비밀번호를 생성함
-GRADIO_USERNAME = 'gradio' #@param {type:"string"}
+GRADIO_USERNAME = '' #@param {type:"string"}
 GRADIO_PASSWORD = '' #@param {type:"string"}
 GRADIO_PASSWORD_GENERATED = False
 OPTIONS['GRADIO_USERNAME'] = GRADIO_USERNAME
@@ -72,6 +66,14 @@ OPTIONS['NGROK_API_TOKEN'] = NGROK_API_TOKEN
 REPO_URL = 'https://github.com/AUTOMATIC1111/stable-diffusion-webui.git' #@param {type:"string"}
 OPTIONS['REPO_URL'] = REPO_URL
 
+#@markdown ##### <font color="orange">***WebUI 레포지토리 분기***</font>
+#@markdown 레포지토리 분기목록 [ [클릭](https://github.com/AUTOMATIC1111/stable-diffusion-webui/branches) ]
+#@markdown - 추천
+#@markdown <br><font color="green">1.</font> : master = 기본 webui 저장소
+#@markdown <br><font color="green">2.</font> : disable_initialization = 모델 속도 업그레이드 저장소
+REPO_URL_TREE = 'master' #@param {type:"string"}
+OPTIONS['REPO_URL_TREE'] = REPO_URL_TREE
+
 #@markdown ##### <font color="orange">***WebUI 레포지토리 커밋 해시***</font>
 #@markdown 업데이트가 실시간으로 올라올 때 최신 버전에서 오류가 발생할 때 [레포지토리 커밋 목록](https://github.com/AUTOMATIC1111/stable-diffusion-webui/commits/master)에서
 #@markdown <br>과거 커밋 해시 값[(영문과 숫자로된 난수 값; 예시 이미지)](https://vmm.pw/MzMy)을 아래에 붙여넣은 뒤 실행하면 과거 버전을 사용할 수 있음
@@ -84,10 +86,28 @@ OPTIONS['REPO_COMMIT'] = REPO_COMMIT
 EXTRA_ARGS = '' #@param {type:"string"}
 OPTIONS['EXTRA_ARGS'] = shlex.split(EXTRA_ARGS)
 
+#@markdown ##### <font color="orange">***모델 및 VAE 다운 설정***</font>
+
+DOWNLOADS = True #@param {type:"boolean"}
+
+
+#@markdown ##### <font color="orange">***모델다운 링크***</font>
+#@markdown 추천모델 다운 허깅 링크 [ [ 링크 ](https://huggingface.co/Kaeya/aichan_blend/tree/main) ]
+MODEl_URL = 'https://huggingface.co/Kaeya/aichan_blend/resolve/main/Anything3.0%2BF222-SD1.4-pruned.safetensors' #@param {type:"string"}
+OPTIONS['MODEl_URL'] = MODEl_URL
+MODEl_NAME = 'Anything3.0%2BF222-SD1.4-pruned.safetensors' #@param {type:"string"}
+OPTIONS['MODEl_NAME'] = MODEl_NAME
+
+#@markdown ##### <font color="orange">***VAE 다운링크***</font>
+#@markdown 추천VAE 다운 허깅 링크 [ [ 링크 ](https://huggingface.co/Kaeya/aichan_blend/tree/main/vae) ]
+VAE_URL = 'https://huggingface.co/Kaeya/aichan_blend/resolve/main/vae/Anything-V3.0.vae.safetensors' #@param {type:"string"}
+OPTIONS['VAE_URL'] = VAE_URL
+VAE_NAME = 'Anything-V3.0.vae.safetensors' #@param {type:"string"}
+OPTIONS['VAE_NAME'] = VAE_NAME
+
 #####################################################
 # 사용자 설정 값 끝
 #####################################################
-# fmt: on
 
 # 작업 디렉터리 <-> 레포지토리 심볼릭 중 제외할 경로
 SYMLINK_BLACKLIST = (
@@ -154,7 +174,6 @@ LOG_WIDGET_STYLES['dialog_error'] = {
     'background-color': 'red',
 }
 
-
 def setup_colab():
     # 터널링 서비스가 아예 존재하지 않다면 오류 반환하기
     assert OPTIONS['USE_GRADIO'] or OPTIONS['NGROK_API_TOKEN'] != '', '터널링 서비스를 하나 이상 선택해주세요'
@@ -193,6 +212,7 @@ def setup_colab():
     delete(dst)
     src.mkdir(0o777, True, True)
     dst.symlink_to(src, True)
+
 
 
 def setup_environment():
@@ -237,19 +257,20 @@ def setup_environment():
 
     # 체크포인트 모델이 존재하지 않는다면 기본 모델 받아오기
     if not has_checkpoint():
-        for file in [
-            {
-                'url': 'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp32.safetensors',
-                'target': 'models/Stable-diffusion/Anything-V3.0-pruned-fp32.safetensors',
-                'summary': '기본 체크포인트 모델 파일을 받아옵니다'
-            },
-            {
-                'url': 'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.vae.pt',
-                'target': 'models/VAE/animevae.pt',
-                'summary': '기본 VAE 모델 파일을 받아옵니다'
-            }
-        ]:
-            download(**file)
+        if DOWNLOADS:
+            for file in [
+                {
+                    'url': OPTIONS['MODEl_URL'],
+                    'target': f'models/Stable-diffusion/{OPTIONS["MODEl_NAME"]}',
+                    'summary': '체크포인트 모델 파일을 받아옵니다'
+                },
+                {
+                    'url': OPTIONS['VAE_URL'],
+                    'target': f'models/VAE/{OPTIONS["VAE_NAME"]}',
+                    'summary': 'VAE 모델 파일을 받아옵니다'
+                }
+            ]:
+                download(**file)
 
 
 # ==============================
@@ -510,10 +531,10 @@ def execute(
 # ==============================
 
 
-def chdir(cwd: os.PathLike) -> None:
+def chdir(cwd: Path) -> None:
     global LOG_FILE
 
-    cwd = Path(cwd).absolute()
+    cwd = cwd.absolute()
 
     # 작업 경로 변경
     old_cwd = Path.cwd().absolute()
@@ -568,9 +589,6 @@ def has_python_package(pkg: str, check_loader=True) -> bool:
 # 파일 다운로드
 # ==============================
 def download(url: str, target: str, **kwargs):
-    # 파일을 받을 디렉터리 만들기
-    Path(target).parent.mkdir(0o777, True, True)
-
     if find_executable('aria2c'):
         execute(
             [
@@ -764,10 +782,9 @@ def setup_webui() -> None:
 
         shutil.rmtree(path, ignore_errors=True)
         execute(
-            ['git', 'clone', OPTIONS['REPO_URL'], str(path)],
+            ['git', 'clone','-b', OPTIONS['REPO_URL_TREE'], '--single-branch', OPTIONS['REPO_URL'], str(path)],
             summary='레포지토리를 가져옵니다'
         )
-
     # 특정 커밋이 지정됐다면 체크아웃하기
     if OPTIONS['REPO_COMMIT'] != '':
         execute(
@@ -884,7 +901,7 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
                 execute(
                     [
                         'pip', 'install',
-                        'https://github.com/toriato/easy-stable-diffusion/raw/main/prebuilt-xformers/wheels/cu116/xformers-0.0.15%2Be163309.d20221226-cp38-cp38-linux_x86_64.whl'
+                        'https://github.com/toriato/easy-stable-diffusion/releases/download/xformers-e163309/xformers-0.0.15+e163309.cu116.d20221226-cp38-cp38-linux_x86_64.whl'
                     ],
                     summary='xformers 패키지를 설치합니다',
                     throw=False
