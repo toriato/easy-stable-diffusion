@@ -17,12 +17,18 @@ from io import FileIO
 from datetime import datetime
 
 OPTIONS = {}
-
+# fmt: off
+#####################################################
+# 코랩 노트북에선 #@param 문법으로 사용자로부터 설정 값을 가져올 수 있음
+# 다른 환경일 땐 override.json 파일 등을 사용해야함
+#####################################################
+#@title
 
 #@markdown ### <font color="orange">***작업 디렉터리 경로***</font>
 #@markdown 임베딩, 모델, 결과와 설정 파일 등이 영구적으로 보관될 디렉터리 경로
-영구_경로 = 'SD' #@param {type:"string"}
-OPTIONS['WORKSPACE'] = 영구_경로
+#@markdown [easy-stable-diffusion](https://colab.research.google.com/drive/1nBaePtwcW_ds7OQdFebcxB91n_aORQY5) 와 다른 레포입니다.
+WORKSPACE = 'WEBUI' #@param {type:"string"}
+OPTIONS['WORKSPACE'] = WORKSPACE
 
 #@markdown ##### <font color="orange">***구글 드라이브와 동기화할지?***</font>
 #@markdown <font color="red">**주의**</font>: 동기화 전 남은 용량이 충분한지 확인 필수 (5GB 이상)
@@ -46,7 +52,7 @@ OPTIONS['USE_GRADIO'] = USE_GRADIO
 #@markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
 #@markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> 인증 과정을 사용하지 않음
 #@markdown <br>`GRADIO_PASSWORD` 입력 란을 <font color="red">비워두면</font> 자동으로 비밀번호를 생성함
-GRADIO_USERNAME = '' #@param {type:"string"}
+GRADIO_USERNAME = 'gradio' #@param {type:"string"}
 GRADIO_PASSWORD = '' #@param {type:"string"}
 GRADIO_PASSWORD_GENERATED = False
 OPTIONS['GRADIO_USERNAME'] = GRADIO_USERNAME
@@ -108,6 +114,7 @@ OPTIONS['VAE_NAME'] = VAE_NAME
 #####################################################
 # 사용자 설정 값 끝
 #####################################################
+# fmt: on
 
 # 작업 디렉터리 <-> 레포지토리 심볼릭 중 제외할 경로
 SYMLINK_BLACKLIST = (
