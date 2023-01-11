@@ -262,23 +262,38 @@ def setup_environment():
     log(f'Python {platform.python_version()}')
     log(str(Path.cwd()))
 
+    # 체크포인트 모델다운 설정하기
+
+    if DOWNLOADS:
+        for file in [
+            {
+                'url': OPTIONS['MODEl_URL'],
+                'target': f'models/Stable-diffusion/{OPTIONS["MODEl_NAME"]}',
+                'summary': '체크포인트 모델 파일을 받아옵니다'
+            },
+            {
+                'url': OPTIONS['VAE_URL'],
+                'target': f'models/VAE/{OPTIONS["VAE_NAME"]}',
+                'summary': 'VAE 모델 파일을 받아옵니다'
+            }
+        ]:
+            download(**file)
+
     # 체크포인트 모델이 존재하지 않는다면 기본 모델 받아오기
     if not has_checkpoint():
-        if DOWNLOADS:
-            for file in [
-                {
-                    'url': OPTIONS['MODEl_URL'],
-                    'target': f'models/Stable-diffusion/{OPTIONS["MODEl_NAME"]}',
-                    'summary': '체크포인트 모델 파일을 받아옵니다'
-                },
-                {
-                    'url': OPTIONS['VAE_URL'],
-                    'target': f'models/VAE/{OPTIONS["VAE_NAME"]}',
-                    'summary': 'VAE 모델 파일을 받아옵니다'
-                }
-            ]:
-                download(**file)
-
+        for file in [
+            {
+                'url': "https://huggingface.co/Kaeya/aichan_blend/resolve/main/Anything3.0%2BF222-SD1.4-pruned.safetensors",
+                'target': f'models/Stable-diffusion/Anything3.0%2BF222-SD1.4-pruned.safetensors',
+                'summary': '체크포인트 모델 파일을 받아옵니다'
+            },
+            {
+                'url': "https://huggingface.co/Kaeya/aichan_blend/resolve/main/vae/Anything-V3.0.vae.safetensors",
+                'target': f'models/VAE/Anything-V3.0.vae.safetensors',
+                'summary': 'VAE 모델 파일을 받아옵니다'
+            }
+        ]:
+            download(**file)
 
 # ==============================
 # 로그
