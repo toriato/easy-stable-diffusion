@@ -198,14 +198,6 @@ def setup_colab():
     # 코랩 환경인데 글카가 왜 없어...?
     assert torch.cuda.is_available(), 'GPU 가 없습니다, 런타임 유형이 잘못됐거나 GPU 할당량이 초과된 것 같습니다'
 
-    # 빠른 다운로드를 위해 aria2 패키지 설치
-    if not find_executable('aria2c'):
-        execute(
-            ['apt', 'install', 'aria2'],
-            summary='빠른 다운로드를 위해 aria2 패키지를 설치합니다',
-            throw=False
-        )
-
     OPTIONS['EXTRA_ARGS'] += [
         # 메모리가 낮아 모델을 VRAM 위로 올려 사용해야함
         '--lowram',
@@ -606,6 +598,14 @@ def has_python_package(pkg: str, check_loader=True) -> bool:
 def download(url: str, target: str, **kwargs):
     # 파일을 받을 디렉터리 만들기
     Path(target).parent.mkdir(0o777, True, True)
+
+    # 빠른 다운로드를 위해 aria2 패키지 설치 시도하기
+    if find_executable('apt') and not find_executable('aria2c'):
+        execute(
+            ['apt', 'install', 'aria2'],
+            summary='빠른 다운로드를 위해 aria2 패키지를 설치합니다',
+            throw=False
+        )
 
     if find_executable('aria2c'):
         execute(
