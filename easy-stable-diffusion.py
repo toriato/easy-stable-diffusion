@@ -30,6 +30,10 @@ OPTIONS = {}
 WORKSPACE = 'SD' #@param {type:"string"}
 OPTIONS['WORKSPACE'] = WORKSPACE
 
+#@markdown ##### <font color="orange">***자동으로 코랩 런타임을 종료할지?***</font>
+DISCONNECT_RUNTIME = True  #@param {type:"boolean"}
+OPTIONS['DISCONNECT_RUNTIME'] = DISCONNECT_RUNTIME
+
 #@markdown ##### <font color="orange">***구글 드라이브와 동기화할지?***</font>
 #@markdown <font color="red">**주의**</font>: 동기화 전 남은 용량이 충분한지 확인 필수 (5GB 이상)
 USE_GOOGLE_DRIVE = True  #@param {type:"boolean"}
@@ -155,6 +159,38 @@ LOG_WIDGET_STYLES['dialog_error'] = {
 }
 
 
+def hook_runtime_disconnect():
+    try:
+        # google.colab 패키지가 없으면 ImportError 를 raise 하므로
+        # 코랩 런타임 환경 밖에서 이 코드는 동작하지 않음
+        from google.colab import runtime
+
+        # asyncio 는 여러 겹으로 사용할 수 없게끔 설계됐기 때문에
+        # 주피터 노트북 등 이미 루프가 돌고 있는 곳에선 사용할 수 없음
+        # 이는 nest-asyncio 패키지를 통해 어느정도 우회하여 사용할 수 있음
+        # https://pypi.org/project/nest-asyncio/
+        if not has_python_package('nest_asyncio'):
+            execute(
+                ['pip', 'install', 'nest-asyncio'],
+                summary='자동 런타임 종료시 사용할 비동기 환경을 준비합니다',
+                throw=False
+            )
+
+        import nest_asyncio
+        nest_asyncio.apply()
+
+        import asyncio
+
+        async def unassign():
+            runtime.unassign()
+
+        # 평범한 환경에선 비동기로 동작하여 바로 실행되나
+        # 코랩 런타임에선 순차적으로 실행되기 때문에 현재 셀 종료 후 즉시 실행됨
+        asyncio.create_task(unassign())
+    except ImportError:
+        pass
+
+
 def setup_colab():
     # 터널링 서비스가 아예 존재하지 않다면 오류 반환하기
     assert OPTIONS['USE_GRADIO'] or OPTIONS['NGROK_API_TOKEN'] != '', '터널링 서비스를 하나 이상 선택해주세요'
@@ -206,9 +242,9 @@ def setup_environment():
 
             LOG_WIDGET = widgets.HTML()
             LOG_WIDGET.blocks = []
-
             display(LOG_WIDGET)
-        except:
+
+        except ImportError:
             pass
 
     # google.colab 패키지가 있다면 코랩 환경으로 인식하기
@@ -228,12 +264,6 @@ def setup_environment():
         setup_colab()
     else:
         chdir(OPTIONS['WORKSPACE'])
-
-    # 현재 환경 출력
-    import platform
-    log(platform.platform())
-    log(f'Python {platform.python_version()}')
-    log(str(Path.cwd()))
 
     # 체크포인트 모델이 존재하지 않는다면 기본 모델 받아오기
     if not has_checkpoint():
@@ -531,6 +561,12 @@ def chdir(cwd: os.PathLike) -> None:
         Path(old_cwd, LOG_FILE.name).rename(log_path)
 
     LOG_FILE = log_path.open('a')
+
+    # 현재 환경 출력
+    import platform
+    log(platform.platform())
+    log(f'Python {platform.python_version()}')
+    log(str(Path.cwd()))
 
     # 덮어쓸 설정 파일 가져오기
     override_path = cwd.joinpath('override.json')
@@ -932,6 +968,12 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
 
 try:
     setup_environment()
+
+    # 3단 이상(?) 레벨에서 실행하면 nested 된 asyncio 이 문제를 일으킴
+    # 런타임을 종료해도 코랩 페이지에선 런타임이 실행 중(Busy)인 것으로 표시되므로 여기서 실행함
+    if DISCONNECT_RUNTIME:
+        hook_runtime_disconnect()
+
     setup_webui()
     start_webui()
 
