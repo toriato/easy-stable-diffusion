@@ -35,7 +35,7 @@ parser.add_argument("--MODEl_NAME",type=str, help=".", default=None)
 parser.add_argument("--VAE_URL",type=str, help=".", default=None)
 parser.add_argument("--VAE_NAME",type=str, help=".", default=None)
 cmd_opts = parser.parse_args()
-
+#--WORKSPACE  --USE_GOOGLE_DRIVE  --DARK_THEME  --USE_XFORMERS  --USE_GRADIO  --GRADIO_USERNAME  --GRADIO_PASSWORD  --NGROK_API_TOKEN  --REPO_URL  --REPO_COMMIT  --EXTRA_ARGS  --DOWNLOADS  --MODEl_URL  --MODEl_NAME  --VAE_URL  --VAE_NAME
 OPTIONS = {}
 
 WORKSPACE = cmd_opts.WORKSPACE
