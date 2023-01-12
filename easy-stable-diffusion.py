@@ -35,6 +35,11 @@ OPTIONS['WORKSPACE'] = WORKSPACE
 USE_GOOGLE_DRIVE = True  #@param {type:"boolean"}
 OPTIONS['USE_GOOGLE_DRIVE'] = USE_GOOGLE_DRIVE
 
+#@markdown ##### <font color="orange">***다크 테마를 설정할지?***</font>
+#@markdown 흰색 테마를 싫어하시는 분들께 추천합니다.
+DARK_THEME = False  #@param {type:"boolean"}
+OPTIONS['DARK_THEME'] = DARK_THEME
+
 #@markdown ##### <font color="orange">***xformers 를 사용할지?***</font>
 #@markdown - <font color="green">장점</font>: 이미지 생성 속도 개선 가능성 있음
 #@markdown - <font color="red">단점</font>: 출력한 그림의 질이 조금 떨어질 수 있음
@@ -52,7 +57,7 @@ OPTIONS['USE_GRADIO'] = USE_GRADIO
 #@markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
 #@markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> 인증 과정을 사용하지 않음
 #@markdown <br>`GRADIO_PASSWORD` 입력 란을 <font color="red">비워두면</font> 자동으로 비밀번호를 생성함
-GRADIO_USERNAME = 'gradio' #@param {type:"string"}
+GRADIO_USERNAME = '' #@param {type:"string"}
 GRADIO_PASSWORD = '' #@param {type:"string"}
 GRADIO_PASSWORD_GENERATED = False
 OPTIONS['GRADIO_USERNAME'] = GRADIO_USERNAME
@@ -94,7 +99,7 @@ OPTIONS['EXTRA_ARGS'] = shlex.split(EXTRA_ARGS)
 
 #@markdown ##### <font color="orange">***모델 및 VAE 다운 설정***</font>
 
-DOWNLOADS = True #@param {type:"boolean"}
+DOWNLOADS = False #@param {type:"boolean"}
 
 
 #@markdown ##### <font color="orange">***모델다운 링크***</font>
@@ -917,6 +922,12 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
             '--gradio-img2img-tool', 'color-sketch',
         ]
 
+
+        if OPTIONS['DARK_THEME']:
+             args += [ 
+                 '--theme', 'dark'
+            ]
+
         # xformers
         if OPTIONS['USE_XFORMERS']:
             if not has_python_package('xformers'):
@@ -935,6 +946,7 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
         # gradio
         if OPTIONS['USE_GRADIO']:
             args.append('--share')
+
 
         # gradio 인증
         if OPTIONS['GRADIO_USERNAME'] != '':
