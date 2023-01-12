@@ -7,7 +7,7 @@ import shlex
 import json
 import requests
 import torch
-
+import argparse
 from typing import Dict, Union, Callable, Tuple, List
 from subprocess import Popen, PIPE, STDOUT
 from distutils.spawn import find_executable
@@ -16,104 +16,76 @@ from pathlib import Path
 from io import FileIO
 from datetime import datetime
 
-OPTIONS = {}
-# fmt: off
-#####################################################
-# 코랩 노트북에선 #@param 문법으로 사용자로부터 설정 값을 가져올 수 있음
-# 다른 환경일 땐 override.json 파일 등을 사용해야함
-#####################################################
-#@title
 
-#@markdown ### <font color="orange">***작업 디렉터리 경로***</font>
-#@markdown 임베딩, 모델, 결과와 설정 파일 등이 영구적으로 보관될 디렉터리 경로
-#@markdown [easy-stable-diffusion](https://colab.research.google.com/drive/1nBaePtwcW_ds7OQdFebcxB91n_aORQY5) 와 다른 레포입니다.
-WORKSPACE = 'WEBUI' #@param {type:"string"}
+parser = argparse.ArgumentParser()
+parser.add_argument("--WORKSPACE",type=str, help=".", default=None)
+parser.add_argument("--USE_GOOGLE_DRIVE",type=str, help=".", default=None)
+parser.add_argument("--DARK_THEME",type=str, help=".", default=None)
+parser.add_argument("--USE_XFORMERS",type=str, help=".", default=None)
+parser.add_argument("--USE_GRADIO",type=str, help=".", default=None)
+parser.add_argument("--GRADIO_USERNAME",type=str, help=".", default=None)
+parser.add_argument("--GRADIO_PASSWORD",type=str, help=".", default=None)
+parser.add_argument("--NGROK_API_TOKEN",type=str, help=".", default=None)
+parser.add_argument("--REPO_URL",type=str, help=".", default=None)
+parser.add_argument("--REPO_COMMIT",type=str, help=".", default=None)
+parser.add_argument("--EXTRA_ARGS",type=str, help=".", default=None)
+parser.add_argument("--DOWNLOADS",type=str, help=".", default=None)
+parser.add_argument("--MODEl_URL",type=str, help=".", default=None)
+parser.add_argument("--MODEl_NAME",type=str, help=".", default=None)
+parser.add_argument("--VAE_URL",type=str, help=".", default=None)
+parser.add_argument("--VAE_NAME",type=str, help=".", default=None)
+cmd_opts = parser.parse_args()
+
+OPTIONS = {}
+
+WORKSPACE = cmd_opts.WORKSPACE
 OPTIONS['WORKSPACE'] = WORKSPACE
 
-#@markdown ##### <font color="orange">***구글 드라이브와 동기화할지?***</font>
-#@markdown <font color="red">**주의**</font>: 동기화 전 남은 용량이 충분한지 확인 필수 (5GB 이상)
-USE_GOOGLE_DRIVE = True  #@param {type:"boolean"}
+USE_GOOGLE_DRIVE = cmd_opts.USE_GOOGLE_DRIVE
 OPTIONS['USE_GOOGLE_DRIVE'] = USE_GOOGLE_DRIVE
 
-#@markdown ##### <font color="orange">***다크 테마를 설정할지?***</font>
-#@markdown 흰색 테마를 싫어하시는 분들께 추천합니다.
-DARK_THEME = False  #@param {type:"boolean"}
+DARK_THEME = cmd_opts.DARK_THEME
 OPTIONS['DARK_THEME'] = DARK_THEME
 
-#@markdown ##### <font color="orange">***xformers 를 사용할지?***</font>
-#@markdown - <font color="green">장점</font>: 이미지 생성 속도 개선 가능성 있음
-#@markdown - <font color="red">단점</font>: 출력한 그림의 질이 조금 떨어질 수 있음
-USE_XFORMERS = True  #@param {type:"boolean"}
+USE_XFORMERS = cmd_opts.USE_XFORMERS
 OPTIONS['USE_XFORMERS'] = USE_XFORMERS
 
-#@markdown ##### <font color="orange">***Gradio 터널을 사용할지?***</font>
-#@markdown - <font color="green">장점</font>: 따로 설정할 필요가 없어 편리함
-#@markdown - <font color="red">**단점**</font>: 접속이 느리고 끊키거나 버튼이 안 눌리는 등 오류 빈도가 높음
-USE_GRADIO = True #@param {type:"boolean"}
+USE_GRADIO = cmd_opts.USE_GRADIO
 OPTIONS['USE_GRADIO'] = USE_GRADIO
 
-#@markdown ##### <font color="orange">***Gradio 인증 정보***</font>
-#@markdown Gradio 접속 시 사용할 사용자 아이디와 비밀번호
-#@markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
-#@markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> 인증 과정을 사용하지 않음
-#@markdown <br>`GRADIO_PASSWORD` 입력 란을 <font color="red">비워두면</font> 자동으로 비밀번호를 생성함
-GRADIO_USERNAME = '' #@param {type:"string"}
-GRADIO_PASSWORD = '' #@param {type:"string"}
+GRADIO_USERNAME = cmd_opts.GRADIO_USERNAME
+GRADIO_PASSWORD = cmd_opts.GRADIO_PASSWORD
 GRADIO_PASSWORD_GENERATED = False
 OPTIONS['GRADIO_USERNAME'] = GRADIO_USERNAME
 OPTIONS['GRADIO_PASSWORD'] = GRADIO_PASSWORD
 
-#@markdown ##### <font color="orange">***ngrok API 키***</font>
-#@markdown ngrok 터널에 사용할 API 토큰
-#@markdown <br>[설정하는 방법은 여기를 클릭해 확인](https://arca.live/b/aiart/60683088), [API 토큰은 여기를 눌러 계정을 만든 뒤 얻을 수 있음](https://dashboard.ngrok.com/get-started/your-authtoken)
-#@markdown <br>입력 란을 <font color="red">비워두면</font> ngrok 터널을 비활성화함
-#@markdown - <font color="green">장점</font>: 접속이 빠른 편이고 타임아웃이 거의 발생하지 않음
-#@markdown - <font color="red">**단점**</font>: 계정을 만들고 API 토큰을 직접 입력해줘야함
-NGROK_API_TOKEN = '' #@param {type:"string"}
 NGROK_URL = None
 OPTIONS['NGROK_API_TOKEN'] = NGROK_API_TOKEN
 
-#@markdown ##### <font color="orange">***WebUI 레포지토리 주소***</font>
-REPO_URL = 'https://github.com/AUTOMATIC1111/stable-diffusion-webui.git' #@param {type:"string"}
+REPO_URL = cmd_opts.REPO_URL
 OPTIONS['REPO_URL'] = REPO_URL
 
-#@markdown ##### <font color="orange">***WebUI 레포지토리 분기***</font>
-#@markdown 레포지토리 분기목록 [ [클릭](https://github.com/AUTOMATIC1111/stable-diffusion-webui/branches) ]
-#@markdown - 추천
-#@markdown <br><font color="green">1.</font> : master = 기본 webui 저장소
-#@markdown <br><font color="green">2.</font> : disable_initialization = 모델 속도 업그레이드 저장소
-REPO_URL_TREE = 'master' #@param {type:"string"}
+REPO_URL_TREE = cmd_opts.REPO_URL_TREE
 OPTIONS['REPO_URL_TREE'] = REPO_URL_TREE
 
-#@markdown ##### <font color="orange">***WebUI 레포지토리 커밋 해시***</font>
-#@markdown 업데이트가 실시간으로 올라올 때 최신 버전에서 오류가 발생할 때 [레포지토리 커밋 목록](https://github.com/AUTOMATIC1111/stable-diffusion-webui/commits/master)에서
-#@markdown <br>과거 커밋 해시 값[(영문과 숫자로된 난수 값; 예시 이미지)](https://vmm.pw/MzMy)을 아래에 붙여넣은 뒤 실행하면 과거 버전을 사용할 수 있음
-#@markdown <br>입력 란을 <font color="red">비워두면</font> 가장 최신 커밋을 가져옴
-REPO_COMMIT = '' #@param {type:"string"}
+REPO_COMMIT = cmd_opts.REPO_COMMIT
 OPTIONS['REPO_COMMIT'] = REPO_COMMIT
 
-#@markdown ##### <font color="orange">***WebUI 추가 인자***</font>
-#@markdown [사용할 수 있는 인자 목록](https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/shared.py#L23)
-EXTRA_ARGS = '' #@param {type:"string"}
+EXTRA_ARGS = cmd_opts.EXTRA_ARGS
 OPTIONS['EXTRA_ARGS'] = shlex.split(EXTRA_ARGS)
 
-#@markdown ##### <font color="orange">***모델 및 VAE 다운 설정***</font>
-
-DOWNLOADS = False #@param {type:"boolean"}
 
 
-#@markdown ##### <font color="orange">***모델다운 링크***</font>
-#@markdown 추천모델 다운 허깅 링크 [ [ 링크 ](https://huggingface.co/Kaeya/aichan_blend/tree/main) ]
-MODEl_URL = 'https://huggingface.co/Kaeya/aichan_blend/resolve/main/Anything3.0%2BF222-SD1.4-pruned.safetensors' #@param {type:"string"}
+DOWNLOADS = cmd_opts.DOWNLOADS
+
+MODEl_URL = cmd_opts.MODEl_URL
 OPTIONS['MODEl_URL'] = MODEl_URL
-MODEl_NAME = 'Anything3.0%2BF222-SD1.4-pruned.safetensors' #@param {type:"string"}
+MODEl_NAME = cmd_opts.MODEl_NAME
 OPTIONS['MODEl_NAME'] = MODEl_NAME
 
-#@markdown ##### <font color="orange">***VAE 다운링크***</font>
-#@markdown 추천VAE 다운 허깅 링크 [ [ 링크 ](https://huggingface.co/Kaeya/aichan_blend/tree/main/vae) ]
-VAE_URL = 'https://huggingface.co/Kaeya/aichan_blend/resolve/main/vae/Anything-V3.0.vae.safetensors' #@param {type:"string"}
+VAE_URL = cmd_opts.VAE_URL
 OPTIONS['VAE_URL'] = VAE_URL
-VAE_NAME = 'Anything-V3.0.vae.safetensors' #@param {type:"string"}
+VAE_NAME = cmd_opts.VAE_NAME
 OPTIONS['VAE_NAME'] = VAE_NAME
 
 #####################################################
