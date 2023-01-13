@@ -179,6 +179,24 @@ files = {
             },
         },
 
+        'Dreamlike': {
+            'photoreal': {
+                'v2.0': {
+                    'safetensors': ModelFile('https://huggingface.co/dreamlike-art/dreamlike-photoreal-2.0/resolve/main/dreamlike-photoreal-2.0.safetensors'),
+                    'ckpt': ModelFile('https://huggingface.co/dreamlike-art/dreamlike-photoreal-2.0/resolve/main/dreamlike-photoreal-2.0.ckpt')
+                },
+                'v1.0': {
+                    'ckpt': ModelFile('https://huggingface.co/dreamlike-art/dreamlike-photoreal-1.0/resolve/main/dreamlike-photoreal-1.0.ckpt')
+                },
+            },
+            'diffusion': {
+                'v1.0': {
+                    'safetensors': ModelFile('https://huggingface.co/dreamlike-art/dreamlike-diffusion-1.0/resolve/main/dreamlike-diffusion-1.0.safetensors'),
+                    'ckpt': ModelFile('https://huggingface.co/dreamlike-art/dreamlike-diffusion-1.0/resolve/main/dreamlike-diffusion-1.0.ckpt')
+                },
+            }
+        },
+
         'Waifu Diffusion': {
             'v1.4': {
                 'anime_e1': {
@@ -237,42 +255,26 @@ files = {
             'AbyssOrangeMix': {
                 '2': {
                     'hard': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_hard.safetensors',
-                            'AbyssOrangeMix2_hard.safetensors'),
+                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_hard.safetensors'),
                     },
                     'nsfw': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_nsfw.safetensors',
-                            'AbyssOrangeMix2_nsfw.safetensors'),
+                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_nsfw.safetensors'),
                     },
                     'sfw': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_sfw.safetensors',
-                            'AbyssOrangeMix2_sfw.safetensors'),
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_sfw.ckpt',
-                            'AbyssOrangeMix2_sfw.ckpt')
+                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_sfw.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_sfw.ckpt')
                     }
                 },
                 '1': {
                     'half': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix/AbyssOrangeMix_half.safetensors',
-                            'AbyssOrangeMix_half.safetensors'),
+                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix/AbyssOrangeMix_half.safetensors'),
                     },
                     'night': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix/AbyssOrangeMix_Night.safetensors',
-                            'AbyssOrangeMix_night.safetensors'),
+                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix/AbyssOrangeMix_Night.safetensors'),
                     },
                     'base': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix/AbyssOrangeMix.safetensors',
-                            'AbyssOrangeMix_base.safetensors'),
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix/AbyssOrangeMix_base.ckpt',
-                            'AbyssOrangeMix_base.ckpt'),
+                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix/AbyssOrangeMix.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix/AbyssOrangeMix_base.ckpt'),
                     },
                 }
             }
@@ -280,27 +282,20 @@ files = {
 
         'Anything': {
             'v4.5': {
-                'ckpt': ModelFile(
-                    'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.5-pruned.ckpt'),
+                'ckpt': ModelFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.5-pruned.ckpt'),
             },
             'v4.0': {
                 'pruned': {
                     'fp16': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp16.safetensors'),
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp16.ckpt'),
+                        'safetensors': ModelFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp16.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp16.ckpt'),
                     },
                     'fp32': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp32.safetensors'),
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp32.ckpt'),
+                        'safetensors': ModelFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp32.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp32.ckpt'),
                     },
-                    'safetensors': ModelFile(
-                        'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned.safetensors'),
-                    'ckpt': ModelFile(
-                        'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned.ckpt'),
+                    'safetensors': ModelFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned.safetensors'),
+                    'ckpt': ModelFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned.ckpt'),
                 }
             },
             'v3.0': {
@@ -351,72 +346,52 @@ files = {
             'Dragon (RPG themes)': {
                 'pruned': {
                     'fp16': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon-pruned-fp16.safetensors'),
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon-pruned-fp16.ckpt'),
+                        'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon-pruned-fp16.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon-pruned-fp16.ckpt'),
                     }
                 },
-                'safetensors': ModelFile(
-                    'https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon.safetensors'),
-                'ckpt': ModelFile(
-                    'https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon.ckpt'),
+                'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon.safetensors'),
+                'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon.ckpt'),
             },
             'x5.8 (Sci-Fi + Anime)': {
                 'pruned': {
                     'fp16': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8-pruned-fp16.safetensors'),
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8-pruned-fp16.ckpt'),
+                        'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8-pruned-fp16.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8-pruned-fp16.ckpt'),
                     }
                 },
-                'safetensors': ModelFile(
-                    'https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8.safetensors'),
-                'ckpt': ModelFile(
-                    'https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8.ckpt'),
+                'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8.safetensors'),
+                'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8.ckpt'),
             },
             'x5.3 (Photorealism)': {
                 'pruned': {
                     'fp16': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3-pruned-fp16.safetensors'),
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3-pruned-fp16.ckpt'),
+                        'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3-pruned-fp16.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3-pruned-fp16.ckpt'),
                     }
                 },
-                'safetensors': ModelFile(
-                    'https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3.safetensors'),
-                'ckpt': ModelFile(
-                    'https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3.ckpt'),
+                'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3.safetensors'),
+                'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3.ckpt'),
             },
             'x3.4 (Photorealism)': {
                 'pruned': {
                     'fp16': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4-pruned-fp16.safetensors'),
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4-pruned-fp16.ckpt'),
+                        'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4-pruned-fp16.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4-pruned-fp16.ckpt'),
                     }
                 },
-                'safetensors': ModelFile(
-                    'https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4.safetensors'),
-                'ckpt': ModelFile(
-                    'https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4.ckpt'),
+                'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4.safetensors'),
+                'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4.ckpt'),
             },
             'x2.2 (Anime)': {
                 'pruned': {
                     'fp16': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release/resolve/main/Protogen_V2.2-pruned-fp16.safetensors'),
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release/resolve/main/Protogen_V2.2-pruned-fp16.ckpt'),
+                        'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release/resolve/main/Protogen_V2.2-pruned-fp16.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release/resolve/main/Protogen_V2.2-pruned-fp16.ckpt'),
                     }
                 },
-                'safetensors': ModelFile(
-                    'https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release/resolve/main/Protogen_V2.2.safetensors'),
-                'ckpt': ModelFile(
-                    'https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release/resolve/main/Protogen_V2.2.ckpt'),
+                'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release/resolve/main/Protogen_V2.2.safetensors'),
+                'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release/resolve/main/Protogen_V2.2.ckpt'),
             },
         },
 
@@ -424,37 +399,30 @@ files = {
             '7th_anime': {
                 'v2.5': {
                     'B': {
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2.5_B.ckpt'),
+                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2.5_B.ckpt'),
                     },
                 },
                 'v2.0': {
                     'A': {
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2_A.ckpt'),
+                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2_A.ckpt'),
                     },
                     'B': {
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2_B.ckpt'),
+                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2_B.ckpt'),
                     },
                     'C': {
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2_C.ckpt'),
+                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2_C.ckpt'),
                     },
                 },
             },
             'abyss_7th_layer': {
                 'v1.1': {
-                    'ckpt': ModelFile(
-                        'https://huggingface.co/syaimu/7th_Layer/resolve/main/Abyss_7th_anime_v1.1.ckpt'),
+                    'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/Abyss_7th_anime_v1.1.ckpt'),
                 },
                 'v1.0': {
                     'G1': {
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/syaimu/7th_Layer/resolve/main/abyss_7th_layerG1.ckpt'),
+                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/abyss_7th_layerG1.ckpt'),
                     },
-                    'ckpt': ModelFile(
-                        'https://huggingface.co/syaimu/7th_Layer/resolve/main/abyss_7th_layer.ckpt'),
+                    'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/abyss_7th_layer.ckpt'),
                 }
             }
         }
@@ -482,16 +450,14 @@ files = {
         },
 
         'Anything': {
-            'v4.0': VaeFile(
-                'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0.vae.pt'),
+            'v4.0': VaeFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0.vae.pt'),
             'v3.0': VaeFile(
                 'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.vae.pt',
                 'anything-v3.0.vae.pt'),
         },
 
         'NovelAI': {
-            'animevae.pt': VaeFile(
-                'https://huggingface.co/gozogo123/anime-vae/resolve/main/animevae.pt')
+            'animevae.pt': VaeFile('https://huggingface.co/gozogo123/anime-vae/resolve/main/animevae.pt')
         }
     }
 }
