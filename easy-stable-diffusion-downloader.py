@@ -60,7 +60,7 @@ class File:
             '--max-concurrent-downloads', '16',
             '--max-connection-per-server', '16',
             '--split', '16',
-            '--out', str(self.path.name),
+            '--dir' if self.path.is_dir() else '--out', str(self.path.name),
             *self.extra_args,
             self.url
         ))
@@ -87,7 +87,7 @@ class File:
 
 
 class ModelFile(File):
-    def __init__(self, url: str, path: PathLike, **kwargs) -> None:
+    def __init__(self, url: str, path: PathLike = sd_model_dir, **kwargs) -> None:
         if type(path) == str:
             path = sd_model_dir.joinpath(path)
 
@@ -95,7 +95,7 @@ class ModelFile(File):
 
 
 class VaeFile(File):
-    def __init__(self, url: str, path: PathLike, **kwargs) -> None:
+    def __init__(self, url: str, path: PathLike = vae_dir, **kwargs) -> None:
         if type(path) == str:
             path = vae_dir.joinpath(path)
 
@@ -278,33 +278,26 @@ files = {
         'Anything': {
             'v4.5': {
                 'ckpt': ModelFile(
-                    'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.5-pruned.ckpt',
-                    'anything-v4.5-pruned.ckpt'),
+                    'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.5-pruned.ckpt'),
             },
             'v4.0': {
                 'pruned': {
                     'fp16': {
                         'safetensors': ModelFile(
-                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp16.safetensors',
-                            'anything-v4.0-pruned-fp16.safetensors'),
+                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp16.safetensors'),
                         'ckpt': ModelFile(
-                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp16.ckpt',
-                            'anything-v4.0-pruned-fp16.ckpt'),
+                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp16.ckpt'),
                     },
                     'fp32': {
                         'safetensors': ModelFile(
-                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp32.safetensors',
-                            'anything-v4.0-pruned-fp32.safetensors'),
+                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp32.safetensors'),
                         'ckpt': ModelFile(
-                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp32.ckpt',
-                            'anything-v4.0-pruned-fp32.ckpt'),
+                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp32.ckpt'),
                     },
                     'safetensors': ModelFile(
-                        'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned.safetensors',
-                        'anything-v4.0-pruned.safetensors'),
+                        'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned.safetensors'),
                     'ckpt': ModelFile(
-                        'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned.ckpt',
-                        'anything-v4.0-pruned.ckpt'),
+                        'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned.ckpt'),
                 }
             },
             'v3.0': {
@@ -348,7 +341,80 @@ files = {
                 'ckpt': ModelFile(
                     'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.ckpt',
                     'anything-v3-0.ckpt'),
-            }
+            },
+        },
+
+        'Protogen': {
+            'Dragon (RPG themes)': {
+                'pruned': {
+                    'fp16': {
+                        'safetensors': ModelFile(
+                            'https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon-pruned-fp16.safetensors'),
+                        'ckpt': ModelFile(
+                            'https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon-pruned-fp16.ckpt'),
+                    }
+                },
+                'safetensors': ModelFile(
+                    'https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon.safetensors'),
+                'ckpt': ModelFile(
+                    'https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon.ckpt'),
+            },
+            'x5.8 (Sci-Fi + Anime)': {
+                'pruned': {
+                    'fp16': {
+                        'safetensors': ModelFile(
+                            'https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8-pruned-fp16.safetensors'),
+                        'ckpt': ModelFile(
+                            'https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8-pruned-fp16.ckpt'),
+                    }
+                },
+                'safetensors': ModelFile(
+                    'https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8.safetensors'),
+                'ckpt': ModelFile(
+                    'https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8.ckpt'),
+            },
+            'x5.3 (Photorealism)': {
+                'pruned': {
+                    'fp16': {
+                        'safetensors': ModelFile(
+                            'https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3-pruned-fp16.safetensors'),
+                        'ckpt': ModelFile(
+                            'https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3-pruned-fp16.ckpt'),
+                    }
+                },
+                'safetensors': ModelFile(
+                    'https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3.safetensors'),
+                'ckpt': ModelFile(
+                    'https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3.ckpt'),
+            },
+            'x3.4 (Photorealism)': {
+                'pruned': {
+                    'fp16': {
+                        'safetensors': ModelFile(
+                            'https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4-pruned-fp16.safetensors'),
+                        'ckpt': ModelFile(
+                            'https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4-pruned-fp16.ckpt'),
+                    }
+                },
+                'safetensors': ModelFile(
+                    'https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4.safetensors'),
+                'ckpt': ModelFile(
+                    'https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4.ckpt'),
+            },
+            'x2.2 (Anime)': {
+                'pruned': {
+                    'fp16': {
+                        'safetensors': ModelFile(
+                            'https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release/resolve/main/Protogen_V2.2-pruned-fp16.safetensors'),
+                        'ckpt': ModelFile(
+                            'https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release/resolve/main/Protogen_V2.2-pruned-fp16.ckpt'),
+                    }
+                },
+                'safetensors': ModelFile(
+                    'https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release/resolve/main/Protogen_V2.2.safetensors'),
+                'ckpt': ModelFile(
+                    'https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release/resolve/main/Protogen_V2.2.ckpt'),
+            },
         },
     },
     'VAEs': {
@@ -375,8 +441,7 @@ files = {
 
         'Anything': {
             'v4.0': VaeFile(
-                'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0.vae.pt',
-                'anything-v4.0.vae.pt'),
+                'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0.vae.pt'),
             'v3.0': VaeFile(
                 'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.vae.pt',
                 'anything-v3.0.vae.pt'),
@@ -384,8 +449,7 @@ files = {
 
         'NovelAI': {
             'animevae.pt': VaeFile(
-                'https://huggingface.co/gozogo123/anime-vae/resolve/main/animevae.pt',
-                'novelai-animevae.pt')
+                'https://huggingface.co/gozogo123/anime-vae/resolve/main/animevae.pt')
         }
     }
 }
