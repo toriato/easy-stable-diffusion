@@ -276,6 +276,37 @@ files = {
         },
 
         'Anything': {
+            'v4.5': {
+                'ckpt': ModelFile(
+                    'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.5-pruned.ckpt',
+                    'anything-v4.5-pruned.ckpt'),
+            },
+            'v4.0': {
+                'pruned': {
+                    'fp16': {
+                        'safetensors': ModelFile(
+                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp16.safetensors',
+                            'anything-v4.0-pruned-fp16.safetensors'),
+                        'ckpt': ModelFile(
+                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp16.ckpt',
+                            'anything-v4.0-pruned-fp16.ckpt'),
+                    },
+                    'fp32': {
+                        'safetensors': ModelFile(
+                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp32.safetensors',
+                            'anything-v4.0-pruned-fp32.safetensors'),
+                        'ckpt': ModelFile(
+                            'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp32.ckpt',
+                            'anything-v4.0-pruned-fp32.ckpt'),
+                    },
+                    'safetensors': ModelFile(
+                        'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned.safetensors',
+                        'anything-v4.0-pruned.safetensors'),
+                    'ckpt': ModelFile(
+                        'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned.ckpt',
+                        'anything-v4.0-pruned.ckpt'),
+                }
+            },
             'v3.0': {
                 'better-vae': {
                     'fp32': {
@@ -340,6 +371,15 @@ files = {
                     'https://huggingface.co/stabilityai/sd-vae-ft-ema-original/resolve/main/vae-ft-ema-560000-ema-pruned.ckpt',
                     'stable-diffusion-vae-ft-ema-560000-ema-pruned.ckpt'),
             }
+        },
+
+        'Anything': {
+            'v4.0': VaeFile(
+                'https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0.vae.pt',
+                'anything-v4.0.vae.pt'),
+            'v3.0': VaeFile(
+                'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.vae.pt',
+                'anything-v3.0.vae.pt'),
         },
 
         'NovelAI': {
