@@ -105,6 +105,9 @@ class VaeFile(File):
 # 모델 목록
 files = {
     'Stable-Diffusion Checkpoints': {
+        # 현재 목록의 키 값 정렬해서 보여주기
+        '$sort': True,
+
         'Stable Diffusion': {
             'v2.1': {
                 '768-v': {
@@ -416,6 +419,45 @@ files = {
                     'https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release/resolve/main/Protogen_V2.2.ckpt'),
             },
         },
+
+        '7th_Layer': {
+            '7th_anime': {
+                'v2.5': {
+                    'B': {
+                        'ckpt': ModelFile(
+                            'https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2.5_B.ckpt'),
+                    },
+                },
+                'v2.0': {
+                    'A': {
+                        'ckpt': ModelFile(
+                            'https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2_A.ckpt'),
+                    },
+                    'B': {
+                        'ckpt': ModelFile(
+                            'https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2_B.ckpt'),
+                    },
+                    'C': {
+                        'ckpt': ModelFile(
+                            'https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2_C.ckpt'),
+                    },
+                },
+            },
+            'abyss_7th_layer': {
+                'v1.1': {
+                    'ckpt': ModelFile(
+                        'https://huggingface.co/syaimu/7th_Layer/resolve/main/Abyss_7th_anime_v1.1.ckpt'),
+                },
+                'v1.0': {
+                    'G1': {
+                        'ckpt': ModelFile(
+                            'https://huggingface.co/syaimu/7th_Layer/resolve/main/abyss_7th_layerG1.ckpt'),
+                    },
+                    'ckpt': ModelFile(
+                        'https://huggingface.co/syaimu/7th_Layer/resolve/main/abyss_7th_layer.ckpt'),
+                }
+            }
+        }
     },
     'VAEs': {
         'Stable Diffusion': {
@@ -513,8 +555,13 @@ def on_dropdown_change(event):
 
 
 def create_dropdown(entries: Dict) -> widgets.Dropdown:
+    if '$sort' in entries and entries['$sort'] == True:
+        entries = {k: entries[k] for k in sorted(entries)}
+        del entries['$sort']
+
     options = list(entries.keys())
     value = options[0]
+
     dropdown = widgets.Dropdown(
         options=options,
         value=value)
