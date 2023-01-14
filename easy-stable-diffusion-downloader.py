@@ -251,6 +251,32 @@ files = {
             },
         },
 
+        'TrinArt': {
+            'derrida_characters': {
+                'v2': {
+                    'final': {
+                        'ckpt': ModelFile(
+                            'https://huggingface.co/naclbit/trinart_derrida_characters_v2_stable_diffusion/resolve/main/derrida_final.ckpt',
+                            'trinart_characters_v2_final.ckpt')
+                    },
+                },
+                'v1 (19.2m)': {
+                    'ckpt': ModelFile('https://huggingface.co/naclbit/trinart_characters_19.2m_stable_diffusion_v1/resolve/main/trinart_characters_it4_v1.ckpt')
+                },
+            },
+            'v2': {
+                '115000': {
+                    'ckpt': ModelFile('https://huggingface.co/naclbit/trinart_stable_diffusion_v2/resolve/main/trinart2_step115000.ckpt'),
+                },
+                '95000': {
+                    'ckpt': ModelFile('https://huggingface.co/naclbit/trinart_stable_diffusion_v2/resolve/main/trinart2_step95000.ckpt'),
+                },
+                '60000': {
+                    'ckpt': ModelFile('https://huggingface.co/naclbit/trinart_stable_diffusion_v2/resolve/main/trinart2_step60000.ckpt'),
+                },
+            },
+        },
+
         'OrangeMixs': {
             'AbyssOrangeMix': {
                 '2': {
@@ -487,6 +513,12 @@ files = {
                     'ckpt': VaeFile('https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/vae/kl-f8-anime.ckpt'),
                 },
             },
+        },
+
+        'TrinArt': {
+            'autoencoder_fix_kl-f8-trinart_characters': {
+                'ckpt': ModelFile('https://huggingface.co/naclbit/trinart_derrida_characters_v2_stable_diffusion/resolve/main/autoencoder_fix_kl-f8-trinart_characters.ckpt')
+            }
         },
 
         'Anything': {
