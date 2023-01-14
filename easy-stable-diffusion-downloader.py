@@ -41,11 +41,28 @@ display(
 # 파일 경로
 workspace_dir = Path('drive', 'MyDrive', WORKSPACE)
 sd_model_dir = workspace_dir.joinpath('models', 'Stable-diffusion')
+sd_embedding_dir = workspace_dir.joinpath('embeddings')
 vae_dir = workspace_dir.joinpath('models', 'VAE')
+
+# 구글 드라이브 마운팅
+with output:
+    drive.mount('drive')
+
+sd_model_dir.mkdir(0o777, True, True)
+sd_embedding_dir.mkdir(0o777, True, True)
+vae_dir.mkdir(0o777, True, True)
 
 
 class File:
-    def __init__(self, url: str, path: PathLike, *extra_args: List[str]) -> None:
+    prefix: Path
+
+    def __init__(self, url: str, path: PathLike = None, *extra_args: List[str]) -> None:
+        if self.prefix:
+            if not path:
+                path = self.prefix
+            elif type(path) == str:
+                path = self.prefix.joinpath(path)
+
         self.url = url
         self.path = Path(path)
         self.extra_args = extra_args
@@ -87,19 +104,15 @@ class File:
 
 
 class ModelFile(File):
-    def __init__(self, url: str, path: PathLike = sd_model_dir, **kwargs) -> None:
-        if type(path) == str:
-            path = sd_model_dir.joinpath(path)
+    prefix = sd_model_dir
 
-        super().__init__(url, path, **kwargs)
+
+class EmbeddingFile(File):
+    prefix = sd_embedding_dir
 
 
 class VaeFile(File):
-    def __init__(self, url: str, path: PathLike = vae_dir, **kwargs) -> None:
-        if type(path) == str:
-            path = vae_dir.joinpath(path)
-
-        super().__init__(url, path, **kwargs)
+    prefix = vae_dir
 
 
 # 모델 목록
@@ -480,6 +493,7 @@ files = {
             }
         }
     },
+
     'VAEs': {
         '$sort': True,
 
@@ -534,12 +548,17 @@ files = {
         'NovelAI': {
             'animevae.pt': VaeFile('https://huggingface.co/gozogo123/anime-vae/resolve/main/animevae.pt')
         }
+    },
+
+    'Textual Inversion (embeddings)': {
+        '$sort': True,
+
+        'bad_prompt (negative embedding)': {
+            'Version 2': EmbeddingFile('https://huggingface.co/datasets/Nerfgun3/bad_prompt/resolve/main/bad_prompt_version2.pt'),
+            'Version 1': EmbeddingFile('https://huggingface.co/datasets/Nerfgun3/bad_prompt/resolve/main/bad_prompt.pt'),
+        },
     }
 }
-
-with output:
-    # 구글 드라이브 마운팅
-    drive.mount('drive')
 
 
 def global_disable(disabled: bool):
