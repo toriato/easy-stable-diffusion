@@ -281,10 +281,10 @@ files = {
         },
 
         'Anything': {
-            'v4.5': {
+            'v4.5 (unofficial merge)': {
                 'ckpt': ModelFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.5-pruned.ckpt'),
             },
-            'v4.0': {
+            'v4.0 (unofficial merge)': {
                 'pruned': {
                     'fp16': {
                         'safetensors': ModelFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned-fp16.safetensors'),
@@ -461,10 +461,13 @@ files = {
         },
 
         'Anything': {
-            'v4.0': VaeFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0.vae.pt'),
-            'v3.0': VaeFile(
-                'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.vae.pt',
-                'anything-v3.0.vae.pt'),
+            # 전부 유출된 노벨AI 의 VAE 와 동일한 파일임
+            'v4.0 (same as animevae.pt; unofficial merge)': {
+                'animevae.pt': VaeFile('https://huggingface.co/gozogo123/anime-vae/resolve/main/animevae.pt'),
+            },
+            'v3.0 (same as animevae.pt)': {
+                'animevae.pt': VaeFile('https://huggingface.co/gozogo123/anime-vae/resolve/main/animevae.pt'),
+            },
         },
 
         'NovelAI': {
