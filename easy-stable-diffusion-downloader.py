@@ -449,6 +449,17 @@ files = {
             }
         },
 
+        'Waifu Diffusion': {
+            'v1.4': {
+                'kl-f8-anime2 (pruned)': {
+                    'ckpt': VaeFile('https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/vae/kl-f8-anime2.ckpt'),
+                },
+                'kl-f8-anime (finetuned)': {
+                    'ckpt': VaeFile('https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/vae/kl-f8-anime.ckpt'),
+                },
+            },
+        },
+
         'Anything': {
             'v4.0': VaeFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0.vae.pt'),
             'v3.0': VaeFile(
