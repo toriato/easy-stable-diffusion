@@ -277,7 +277,33 @@ files = {
                         'ckpt': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix/AbyssOrangeMix_base.ckpt'),
                     },
                 }
-            }
+            },
+            'EerieOrangeMix': {
+                '2': {
+                    'half': {
+                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/EerieOrangeMix/EerieOrangeMix2_half.safetensors'),
+                    },
+                    'night': {
+                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/EerieOrangeMix/EerieOrangeMix2_night.safetensors'),
+                    },
+                    'base': {
+                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/EerieOrangeMix/EerieOrangeMix2.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/EerieOrangeMix/EerieOrangeMix2_base.ckpt'),
+                    }
+                },
+                '1': {
+                    'half': {
+                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/EerieOrangeMix/EerieOrangeMix_half.safetensors'),
+                    },
+                    'night': {
+                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/EerieOrangeMix/EerieOrangeMix_night.safetensors'),
+                    },
+                    'base': {
+                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/EerieOrangeMix/EerieOrangeMix.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/EerieOrangeMix/EerieOrangeMix_base.ckpt'),
+                    }
+                },
+            },
         },
 
         'Anything': {
@@ -429,6 +455,8 @@ files = {
         }
     },
     'VAEs': {
+        '$sort': True,
+
         'Stable Diffusion': {
             'vae-ft-mse-840000': {
                 'pruned': {
