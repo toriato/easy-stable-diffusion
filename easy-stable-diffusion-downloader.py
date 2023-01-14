@@ -282,6 +282,7 @@ files = {
 
         'Anything': {
             'v4.5 (unofficial merge)': {
+                'safetensors': ModelFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.5-pruned.safetensors'),
                 'ckpt': ModelFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.5-pruned.ckpt'),
             },
             'v4.0 (unofficial merge)': {
