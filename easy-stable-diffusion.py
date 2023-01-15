@@ -47,7 +47,7 @@ OPTIONS['USE_XFORMERS'] = USE_XFORMERS
 
 #@markdown ##### <font color="orange">***Gradio 터널을 사용할지?***</font>
 #@markdown - <font color="green">장점</font>: 따로 설정할 필요가 없어 편리함
-#@markdown - <font color="red">**단점**</font>: 접속이 느리고 끊키거나 버튼이 안 눌리는 등 오류 빈도가 높음
+#@markdown - <font color="red">**단점**</font>: 접속이 느리고 끊기거나 버튼이 안 눌리는 등 오류 빈도가 높음
 USE_GRADIO = True #@param {type:"boolean"}
 OPTIONS['USE_GRADIO'] = USE_GRADIO
 
