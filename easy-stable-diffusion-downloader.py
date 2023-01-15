@@ -293,15 +293,28 @@ files = {
         'OrangeMixs': {
             'AbyssOrangeMix': {
                 '2': {
-                    'hard': {
-                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_hard.safetensors'),
+                    'first-party': {
+                        'hard': {
+                            'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_hard.safetensors'),
+                        },
+                        'nsfw': {
+                            'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_nsfw.safetensors'),
+                        },
+                        'sfw': {
+                            'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_sfw.safetensors'),
+                            'ckpt': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_sfw.ckpt')
+                        }
                     },
-                    'nsfw': {
-                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_nsfw.safetensors'),
-                    },
-                    'sfw': {
-                        'safetensors': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_sfw.safetensors'),
-                        'ckpt': ModelFile('https://huggingface.co/WarriorMama777/OrangeMixs/resolve/main/Models/AbyssOrangeMix2/AbyssOrangeMix2_sfw.ckpt')
+                    'nonema-pruned': {
+                        'hard': {
+                            'safetensors': ModelFile('https://huggingface.co/Kaeya/aichan_blend/resolve/main/AbyssOrangeMix2_sfw-pruned.safetensors'),
+                        },
+                        'nsfw': {
+                            'safetensors': ModelFile('https://huggingface.co/Kaeya/aichan_blend/resolve/main/AbyssOrangeMix2_nsfw-pruned.safetensors'),
+                        },
+                        'sfw': {
+                            'safetensors': ModelFile('https://huggingface.co/Kaeya/aichan_blend/resolve/main/AbyssOrangeMix2_hard-pruned.safetensors'),
+                        }
                     }
                 },
                 '1': {
