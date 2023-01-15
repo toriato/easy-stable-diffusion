@@ -199,9 +199,6 @@ def setup_colab():
     assert torch.cuda.is_available(), 'GPU 가 없습니다, 런타임 유형이 잘못됐거나 GPU 할당량이 초과된 것 같습니다'
 
     OPTIONS['EXTRA_ARGS'] += [
-        # 메모리가 낮아 모델을 VRAM 위로 올려 사용해야함
-        '--lowram',
-
         # --listen 또는 --share 인자를 사용하면 확장 기능 탭이 막혀버림
         # 어처피 Gradio 비밀번호는 자동으로 생성되는데
         # 일부러 제거하고 외부 접근 공개한 바보 책임이니 인자 넣어둠
