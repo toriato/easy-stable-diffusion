@@ -684,7 +684,7 @@ def patch_webui_repository() -> None:
         'ui-config.json': json.dumps({
             'txt2img/Prompt/value': 'best quality, masterpiece',
             'txt2img/Negative prompt/value': 'lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry',
-            'txt2img/Sampling Steps/value': 28,
+            'txt2img/Sampling steps/value': 28,
             'txt2img/Width/value': 512,
             'txt2img/Height/value': 768,
             'txt2img/CFG Scale/value': 12
