@@ -1,8 +1,10 @@
 import shlex
+import time
 
 from os import PathLike
-from typing import Union, List, Dict
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import Union, List, Dict
 from IPython.display import display
 from ipywidgets import widgets
 from google.colab import drive, runtime
@@ -69,38 +71,40 @@ class File:
 
     def download(self) -> None:
         output.clear_output()
-        args = shlex.join((
-            '--continue',
-            '--always-resume',
-            '--summary-interval', '3',
-            '--console-log-level', 'error',
-            '--max-concurrent-downloads', '16',
-            '--max-connection-per-server', '16',
-            '--split', '16',
-            '--dir' if self.path.is_dir() else '--out', str(self.path.name),
-            *self.extra_args,
-            self.url
-        ))
 
-        with output:
-            # aria2 로 파일 받아오기
-            # fmt: off
-            !which aria2c || apt install -y aria2
-            output.clear_output()
+        with TemporaryDirectory() as tempdir:
+            args = shlex.join((
+                '--continue',
+                '--always-resume',
+                '--summary-interval', '3',
+                '--console-log-level', 'error',
+                '--max-concurrent-downloads', '16',
+                '--max-connection-per-server', '16',
+                '--split', '16',
+                '--dir', tempdir,
+                *self.extra_args,
+                self.url
+            ))
 
-            print('aria2 를 사용해 파일을 받아옵니다.')
-            !aria2c {args}
-            output.clear_output()
+            with output:
+                # aria2 로 파일 받아오기
+                # fmt: off
+                !which aria2c || apt install -y aria2
+                output.clear_output()
 
-            print('파일을 성공적으로 받았습니다, 드라이브로 이동합니다.')
-            print('이 작업은 파일의 크기에 따라 5분 이상 걸릴 수도 있으니 잠시만 기다려주세요.')
-            if DISCONNECT_RUNTIME:
-                print('작업이 완료되면 런타임을 자동으로 해제하니 다른 작업을 진행하셔도 좋습니다.')
+                print('aria2 를 사용해 파일을 받아옵니다.')
+                !aria2c {args}
+                output.clear_output()
 
-            !rsync --remove-source-files -aP "{str(self.path.name)}" "{str(self.path)}"
+                print('파일을 성공적으로 받았습니다, 드라이브로 이동합니다.')
+                print('이 작업은 파일의 크기에 따라 5분 이상 걸릴 수도 있으니 잠시만 기다려주세요.')
+                if DISCONNECT_RUNTIME:
+                    print('작업이 완료되면 런타임을 자동으로 해제하니 다른 작업을 진행하셔도 좋습니다.')
 
-            # fmt: on
-            print('파일을 성공적으로 옮겼습니다, 이제 런타임을 해제해도 좋습니다.')
+                !rsync -aP "{tempdir}/$(ls -AU {tempdir} | head -1)" "{str(self.path)}"
+
+                # fmt: on
+                print('파일을 성공적으로 옮겼습니다, 이제 런타임을 해제해도 좋습니다.')
 
 
 class ModelFile(File):
@@ -593,6 +597,8 @@ def on_download(_):
         pass
 
     if DISCONNECT_RUNTIME:
+        # 런타임을 바로 종료해버리면 마지막 출력이 잘림
+        time.sleep(1)
         runtime.unassign()
 
     global_disable(False)
