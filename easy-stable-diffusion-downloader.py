@@ -216,15 +216,24 @@ files = {
 
         'Waifu Diffusion': {
             'v1.4': {
-                'anime_e1': {
-                    'ckpt': [
-                        ModelFile(
-                            'https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/wd-1-4-anime_e1.ckpt',
-                            'waifu-diffusion-v1-4-anime-e1.ckpt'),
-                        ModelFile(
-                            'https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/wd-1-4-anime_e1.yaml',
-                            'waifu-diffusion-v1-4-anime-e1.yaml'),
-                    ]
+                'anime': {
+                    'e2': {
+                        'ckpt': [
+                            ModelFile(
+                                'https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/wd-1-4-anime_e2.ckpt'),
+                            ModelFile(
+                                'https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/wd-1-4-anime_e1.yaml',
+                                'wd-1-4-anime_e2.ckpt'),
+                        ]
+                    },
+                    'e1': {
+                        'ckpt': [
+                            ModelFile(
+                                'https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/wd-1-4-anime_e1.ckpt'),
+                            ModelFile(
+                                'https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/wd-1-4-anime_e1.yaml'),
+                        ]
+                    },
                 },
                 'booru-step-14000-unofficial': {
                     'safetensors': ModelFile(
