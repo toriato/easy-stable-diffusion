@@ -223,7 +223,7 @@ files = {
                                 'https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/wd-1-4-anime_e2.ckpt'),
                             ModelFile(
                                 'https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/wd-1-4-anime_e1.yaml',
-                                'wd-1-4-anime_e2.ckpt'),
+                                'wd-1-4-anime_e2.yaml'),
                         ]
                     },
                     'e1': {
