@@ -120,6 +120,8 @@ class VaeFile(File):
 
 
 # 모델 목록
+CONFIG_V2_V = 'https://raw.githubusercontent.com/Stability-AI/stablediffusion/main/configs/stable-diffusion/v2-inference-v.yaml'
+
 files = {
     'Stable-Diffusion Checkpoints': {
         # 현재 목록의 키 값 정렬해서 보여주기
@@ -129,20 +131,36 @@ files = {
             'v2.1': {
                 '768-v': {
                     'ema-pruned': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/stabilityai/stable-diffusion-2-1/resolve/main/v2-1_768-ema-pruned.safetensors',
-                            'stable-diffusion-v2-1-786-v-ema-pruned.safetensors'),
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/stabilityai/stable-diffusion-2-1/resolve/main/v2-1_768-ema-pruned.ckpt',
-                            'stable-diffusion-v2-1-786-v-ema-pruned.ckpt'),
+                        'safetensors': [
+                            ModelFile(
+                                'https://huggingface.co/stabilityai/stable-diffusion-2-1/resolve/main/v2-1_768-ema-pruned.safetensors',
+                                'stable-diffusion-v2-1-786-v-ema-pruned.safetensors'),
+                            ModelFile(
+                                CONFIG_V2_V, 'stable-diffusion-v2-1-786-v-ema-pruned.yaml'),
+                        ],
+                        'ckpt': [
+                            ModelFile(
+                                'https://huggingface.co/stabilityai/stable-diffusion-2-1/resolve/main/v2-1_768-ema-pruned.ckpt',
+                                'stable-diffusion-v2-1-786-v-ema-pruned.ckpt'),
+                            ModelFile(
+                                CONFIG_V2_V, 'stable-diffusion-v2-1-786-v-ema-pruned.yaml'),
+                        ]
                     },
                     'nonema-pruned': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/stabilityai/stable-diffusion-2-1/resolve/main/v2-1_768-nonema-pruned.safetensors',
-                            'stable-diffusion-v2-1-786-v-nonema-pruned.safetensors'),
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/stabilityai/stable-diffusion-2-1/resolve/main/v2-1_768-nonema-pruned.ckpt',
-                            'stable-diffusion-v2-1-786-v-nonema-pruned.ckpt'),
+                        'safetensors': [
+                            ModelFile(
+                                'https://huggingface.co/stabilityai/stable-diffusion-2-1/resolve/main/v2-1_768-nonema-pruned.safetensors',
+                                'stable-diffusion-v2-1-786-v-nonema-pruned.safetensors'),
+                            ModelFile(
+                                CONFIG_V2_V, 'stable-diffusion-v2-1-786-v-ema-pruned.yaml'),
+                        ],
+                        'ckpt': [
+                            ModelFile(
+                                'https://huggingface.co/stabilityai/stable-diffusion-2-1/resolve/main/v2-1_768-nonema-pruned.ckpt',
+                                'stable-diffusion-v2-1-786-v-nonema-pruned.ckpt'),
+                            ModelFile(
+                                CONFIG_V2_V, 'stable-diffusion-v2-1-786-v-ema-pruned.yaml'),
+                        ],
                     }
                 },
                 '512-base': {
@@ -166,12 +184,20 @@ files = {
             },
             'v2.0': {
                 '768-v-ema': {
-                    'safetensors': ModelFile(
-                        'https://huggingface.co/stabilityai/stable-diffusion-2/resolve/main/768-v-ema.safetensors',
-                        'stable-diffusion-v2-0-786-v-ema.safetensors'),
-                    'ckpt': ModelFile(
-                        'https://huggingface.co/stabilityai/stable-diffusion-2/resolve/main/768-v-ema.ckpt',
-                        'stable-diffusion-v2-0-786-v-ema.ckpt'),
+                    'safetensors': [
+                        ModelFile(
+                            'https://huggingface.co/stabilityai/stable-diffusion-2/resolve/main/768-v-ema.safetensors',
+                            'stable-diffusion-v2-0-786-v-ema.safetensors'),
+                        ModelFile(
+                            CONFIG_V2_V, 'stable-diffusion-v2-1-786-v-ema-pruned.yaml'),
+                    ],
+                    'ckpt': [
+                        ModelFile(
+                            'https://huggingface.co/stabilityai/stable-diffusion-2/resolve/main/768-v-ema.ckpt',
+                            'stable-diffusion-v2-0-786-v-ema.ckpt'),
+                        ModelFile(
+                            CONFIG_V2_V, 'stable-diffusion-v2-1-786-v-ema-pruned.yaml'),
+                    ],
                 },
                 '512-base-ema': {
                     'safetensors': ModelFile(
@@ -236,43 +262,29 @@ files = {
                     },
                 },
                 'booru-step-14000-unofficial': {
-                    'safetensors': ModelFile(
-                        'https://huggingface.co/waifu-diffusion/unofficial-releases/resolve/main/wd14-booru-step-14000-unofficial.safetensors',
-                        'waifu-diffusion-v1-4-booru-step-14000.ckpt'),
+                    'safetensors': ModelFile('https://huggingface.co/waifu-diffusion/unofficial-releases/resolve/main/wd14-booru-step-14000-unofficial.safetensors'),
                 },
             },
             'v1.3.5': {
                 '80000-fp32': {
-                    'ckpt': ModelFile(
-                        'https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/models/wd-1-3-5_80000-fp32.ckpt',
-                        'waifu-diffusion-v1-4-80000-fp32.ckpt'),
+                    'ckpt': ModelFile('https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/models/wd-1-3-5_80000-fp32.ckpt'),
                 },
                 'penultimate-ucg-cont': {
-                    'ckpt': ModelFile(
-                        'https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/models/wd-1-3-penultimate-ucg-cont.ckpt',
-                        'waifu-diffusion-v1-3-5-penultimate-ucg-cont.ckpt'),
+                    'ckpt': ModelFile('https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/models/wd-1-3-penultimate-ucg-cont.ckpt'),
                 }
             },
             'v1.3': {
                 'fp16': {
-                    'ckpt': ModelFile(
-                        'https://huggingface.co/hakurei/waifu-diffusion-v1-3/resolve/main/wd-v1-3-float16.ckpt',
-                        'waifu-diffusion-v1-3-float16.ckpt')
+                    'ckpt': ModelFile('https://huggingface.co/hakurei/waifu-diffusion-v1-3/resolve/main/wd-v1-3-float16.ckpt')
                 },
                 'fp32': {
-                    'ckpt': ModelFile(
-                        'https://huggingface.co/hakurei/waifu-diffusion-v1-3/resolve/main/wd-v1-3-float32.ckpt',
-                        'waifu-diffusion-v1-3-float32.ckpt')
+                    'ckpt': ModelFile('https://huggingface.co/hakurei/waifu-diffusion-v1-3/resolve/main/wd-v1-3-float32.ckpt')
                 },
                 'full': {
-                    'ckpt': ModelFile(
-                        'https://huggingface.co/hakurei/waifu-diffusion-v1-3/resolve/main/wd-v1-3-full.ckpt',
-                        'waifu-diffusion-v1-3-full.ckpt')
+                    'ckpt': ModelFile('https://huggingface.co/hakurei/waifu-diffusion-v1-3/resolve/main/wd-v1-3-full.ckpt')
                 },
                 'full-opt': {
-                    'ckpt': ModelFile(
-                        'https://huggingface.co/hakurei/waifu-diffusion-v1-3/resolve/main/wd-v1-3-full-opt.ckpt',
-                        'waifu-diffusion-v1-3-full-opt.ckpt')
+                    'ckpt': ModelFile('https://huggingface.co/hakurei/waifu-diffusion-v1-3/resolve/main/wd-v1-3-full-opt.ckpt')
                 },
             },
         },
@@ -380,44 +392,24 @@ files = {
             'v3.0': {
                 'better-vae': {
                     'fp32': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/Linaqruf/anything-v3-better-vae/resolve/main/any-v3-fp32-better-vae.safetensors',
-                            'anything-v3-0-fp32-better-vae.safetensors'),
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/Linaqruf/anything-v3-better-vae/resolve/main/any-v3-fp32-better-vae.ckpt',
-                            'anything-v3-0-fp32-better-vae.ckpt'),
+                        'safetensors': ModelFile('https://huggingface.co/Linaqruf/anything-v3-better-vae/resolve/main/any-v3-fp32-better-vae.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/Linaqruf/anything-v3-better-vae/resolve/main/any-v3-fp32-better-vae.ckpt'),
                     }
                 },
                 'pruned': {
                     'fp16': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp16.safetensors',
-                            'anything-v3-0-pruned-fp16.safetensors'),
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp16.ckpt',
-                            'anything-v3-0-pruned-fp16.ckpt'),
+                        'safetensors': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp16.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp16.ckpt'),
                     },
                     'fp32': {
-                        'safetensors': ModelFile(
-                            'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp32.safetensors',
-                            'anything-v3-0-pruned-fp32.safetensors'),
-                        'ckpt': ModelFile(
-                            'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp32.ckpt',
-                            'anything-v3-0-pruned-fp32.ckpt')
+                        'safetensors': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp32.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp32.ckpt')
                     },
-                    'safetensors': ModelFile(
-                        'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned.safetensors',
-                        'anything-v3-0-pruned.safetensors'),
-                    'ckpt': ModelFile(
-                        'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned.ckpt',
-                        'anything-v3-0-pruned.ckpt'),
+                    'safetensors': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned.safetensors'),
+                    'ckpt': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned.ckpt'),
                 },
-                'safetensors': ModelFile(
-                    'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.safetensors',
-                    'anything-v3-0.safetensors'),
-                'ckpt': ModelFile(
-                    'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.ckpt',
-                    'anything-v3-0.ckpt'),
+                'safetensors': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.safetensors'),
+                'ckpt': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.ckpt'),
             },
         },
 
