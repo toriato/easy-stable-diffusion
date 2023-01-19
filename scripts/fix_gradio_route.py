@@ -15,11 +15,11 @@ app: GradioApp
 original_endpoint: Callable
 
 
-def endpoint(path: str):
+def endpoint(path: str, *args, **kwargs):
     original_error: ValueError
 
     try:
-        return original_endpoint(path)
+        return original_endpoint(path, *args, **kwargs)
     except ValueError as e:
         # `path` 가 `app.cwd` 속에 있는 경로가 아닌 경우에 ValueError 를 반환함
         # https://github.com/gradio-app/gradio/blob/58b1a074ba342fe01445290d680a70c9304a9de1/gradio/routes.py#L272
