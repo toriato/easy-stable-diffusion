@@ -98,9 +98,8 @@ OPTIONS['EXTRA_ARGS'] = shlex.split(EXTRA_ARGS)
 #####################################################
 # fmt: on
 
-# 작업 디렉터리 <-> 레포지토리 심볼릭 중 제외할 경로
+# 심볼릭 링크 생성하지 않을 경로 목록
 SYMLINK_BLACKLIST = (
-    # 구동에 불필요하면 파일 및 디렉터리
     '.',
     'cache',
     'logs',
@@ -200,18 +199,9 @@ def setup_colab():
     # 터널링 서비스가 아예 존재하지 않다면 오류 반환하기
     assert OPTIONS['USE_GRADIO'] or OPTIONS['NGROK_API_TOKEN'] != '', '터널링 서비스를 하나 이상 선택해주세요'
 
-    # 코랩 환경에서 이유는 알 수 없지만 /usr 디렉터리 내에서 읽기/쓰기 속도가 다른 곳보다 월등히 빠름
-    # 아마 /content 에 큰 용량을 박아두는 사용하는 사람들이 많아서 그런듯...?
     src = Path('/content/repository')
     dst = Path('repository').absolute()
     delete(dst)
-    dst.symlink_to(src, True)
-
-    # huggingface 모델 캐시 심볼릭 만들기
-    src = Path('cache', 'huggingface').absolute()
-    dst = Path('/root/.cache/huggingface')
-    delete(dst)
-    src.mkdir(0o777, True, True)
     dst.symlink_to(src, True)
 
     if len(OPTIONS['ARGS']) < 1:
@@ -914,6 +904,7 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = None) -
             **os.environ,
             'PYTHONUNBUFFERED': '1',
             'REQS_FILE': 'requirements.txt',
+            'HF_HOME': Path('cache', 'huggingface').absolute()
         }
 
     # xformers 설치하기
