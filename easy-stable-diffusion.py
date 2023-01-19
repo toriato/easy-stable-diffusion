@@ -31,6 +31,7 @@ WORKSPACE = 'SD' #@param {type:"string"}
 OPTIONS['WORKSPACE'] = WORKSPACE
 
 #@markdown ##### <font color="orange">***자동으로 코랩 런타임을 종료할지?***</font>
+#@markdown <font color="red">**주의**</font>: 오류로 인하 셀이 종료되면 이 옵션은 무시됨
 DISCONNECT_RUNTIME = True  #@param {type:"boolean"}
 OPTIONS['DISCONNECT_RUNTIME'] = DISCONNECT_RUNTIME
 
@@ -83,8 +84,13 @@ OPTIONS['REPO_URL'] = REPO_URL
 REPO_COMMIT = '' #@param {type:"string"}
 OPTIONS['REPO_COMMIT'] = REPO_COMMIT
 
+#@markdown ##### <font color="orange">***WebUI 인자***</font>
+#@markdown <font color="red">**주의**</font>: 비어있지 않으면 실행에 필요한 인자가 자동으로 생성되지 않음
+#@markdown <br>[사용할 수 있는 인자 목록](https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/shared.py#L23)
+ARGS = '' #@param {type:"string"}
+OPTIONS['ARGS'] = shlex.split(ARGS)
+
 #@markdown ##### <font color="orange">***WebUI 추가 인자***</font>
-#@markdown [사용할 수 있는 인자 목록](https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/shared.py#L23)
 EXTRA_ARGS = '' #@param {type:"string"}
 OPTIONS['EXTRA_ARGS'] = shlex.split(EXTRA_ARGS)
 
@@ -195,16 +201,6 @@ def setup_colab():
     # 터널링 서비스가 아예 존재하지 않다면 오류 반환하기
     assert OPTIONS['USE_GRADIO'] or OPTIONS['NGROK_API_TOKEN'] != '', '터널링 서비스를 하나 이상 선택해주세요'
 
-    # 코랩 환경인데 글카가 왜 없어...?
-    assert torch.cuda.is_available(), 'GPU 가 없습니다, 런타임 유형이 잘못됐거나 GPU 할당량이 초과된 것 같습니다'
-
-    OPTIONS['EXTRA_ARGS'] += [
-        # --listen 또는 --share 인자를 사용하면 확장 기능 탭이 막혀버림
-        # 어처피 Gradio 비밀번호는 자동으로 생성되는데
-        # 일부러 제거하고 외부 접근 공개한 바보 책임이니 인자 넣어둠
-        '--enable-insecure-extension-access'
-    ]
-
     # 코랩 환경에서 이유는 알 수 없지만 /usr 디렉터리 내에서 읽기/쓰기 속도가 다른 곳보다 월등히 빠름
     # 아마 /content 에 큰 용량을 박아두는 사용하는 사람들이 많아서 그런듯...?
     src = Path('/usr/local/repository')
@@ -218,6 +214,23 @@ def setup_colab():
     delete(dst)
     src.mkdir(0o777, True, True)
     dst.symlink_to(src, True)
+
+    if len(OPTIONS['ARGS']) < 1:
+        # --listen 또는 --share 인자를 사용하면 확장 기능 탭이 막혀버림
+        # 어처피 Gradio 비밀번호는 자동으로 생성되는데
+        # 일부러 제거하고 외부 접근 공개한 바보 책임이니 인자 넣어둠
+        OPTIONS['ARGS'] += ['--enable-insecure-extension-access']
+
+        if not torch.cuda.is_available():
+            log(
+                'GPU 런타임이 아닙니다, 할당량이 초과 됐을 수도 있습니다',
+                styles={'color': 'red'}
+            )
+            OPTIONS['ARGS'] += [
+                '--skip-torch-cuda-test',
+                '--no-half',
+                '--opt-sub-quad-attention'
+            ]
 
 
 def setup_environment():
@@ -696,7 +709,7 @@ def patch_webui_repository() -> None:
     download(
         'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/fix_gradio_route.py',
         'repository/scripts/fix_gradio_route.py',
-        summary='Gradio 경로와 관련된 버그 픽스 스크립트를 받아옵니다'
+        summary='Gradio 경로 관련 버그 픽스 스크립트를 받아옵니다'
     )
 
     # 고정 심볼릭 링크 만들기
@@ -891,7 +904,7 @@ def parse_webui_output(line: str) -> bool:
         return
 
 
-def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
+def start_webui(args: List[str] = ARGS, env: Dict[str, str] = None) -> None:
     global GRADIO_PASSWORD_GENERATED
 
     # 기본 환경 변수 만들기
@@ -902,33 +915,27 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
             'REQS_FILE': 'requirements.txt',
         }
 
+    # xformers 설치하기
+    if OPTIONS['USE_XFORMERS']:
+        if not has_python_package('xformers'):
+            execute(
+                [
+                    'pip', 'install',
+                    'https://github.com/toriato/easy-stable-diffusion/releases/download/xformers-e163309/xformers-0.0.15+e163309.cu116.d20221226-cp38-cp38-linux_x86_64.whl'
+                ],
+                summary='xformers 패키지를 설치합니다',
+                throw=False
+            )
+
     # 기본 인자 만들기
-    if args is None:
-        # launch.py 실행할 땐 레포지토리 경로에서 실행해야하기 때문에
-        # 현재 작업 디렉터리를 절대 경로로 가져와 인자로 보내줄 필요가 있음
-        args = [
-            # TODO: 기븐으로 설정 해둬도 괜찮을까...?
-            '--gradio-img2img-tool', 'color-sketch',
-        ]
-
+    if len(args) < 1:
         # xformers
-        if OPTIONS['USE_XFORMERS']:
-            if not has_python_package('xformers'):
-                execute(
-                    [
-                        'pip', 'install',
-                        'https://github.com/toriato/easy-stable-diffusion/releases/download/xformers-e163309/xformers-0.0.15+e163309.cu116.d20221226-cp38-cp38-linux_x86_64.whl'
-                    ],
-                    summary='xformers 패키지를 설치합니다',
-                    throw=False
-                )
-
-            if has_python_package('xformers'):
-                args.append('--xformers')
+        if OPTIONS['USE_XFORMERS'] and has_python_package('xformers'):
+            args += ['--xformers']
 
         # gradio
         if OPTIONS['USE_GRADIO']:
-            args.append('--share')
+            args += ['--share']
 
         # gradio 인증
         if OPTIONS['GRADIO_USERNAME'] != '':
@@ -952,8 +959,8 @@ def start_webui(args: List[str] = None, env: Dict[str, str] = None) -> None:
                 '--ngrok-region', 'jp'
             ]
 
-        # 추가 인자
-        args += OPTIONS['EXTRA_ARGS']
+    # 추가 인자
+    args += OPTIONS['EXTRA_ARGS']
 
     execute(
         ['python', 'launch.py', *args],
