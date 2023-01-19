@@ -932,7 +932,7 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = None) -
     # 기본 인자 만들기
     if len(args) < 1:
         # xformers
-        if OPTIONS['USE_XFORMERS'] and has_python_package('xformers'):
+        if OPTIONS['USE_XFORMERS'] and torch.cuda.is_available() and has_python_package('xformers'):
             args += ['--xformers']
 
         # gradio
