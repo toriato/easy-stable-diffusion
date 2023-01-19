@@ -414,7 +414,7 @@ files = {
         },
 
         'Protogen': {
-            'Dragon (RPG themes)': {
+            'v5.9 Dragon (RPG themes)': {
                 'pruned': {
                     'fp16': {
                         'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon-pruned-fp16.safetensors'),
@@ -424,7 +424,7 @@ files = {
                 'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon.safetensors'),
                 'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon.ckpt'),
             },
-            'x5.8 (Sci-Fi + Anime)': {
+            'v5.8 (Sci-Fi + Anime)': {
                 'pruned': {
                     'fp16': {
                         'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8-pruned-fp16.safetensors'),
@@ -434,7 +434,7 @@ files = {
                 'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8.safetensors'),
                 'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8.ckpt'),
             },
-            'x5.3 (Photorealism)': {
+            'v5.3 (Photorealism)': {
                 'pruned': {
                     'fp16': {
                         'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3-pruned-fp16.safetensors'),
@@ -444,7 +444,7 @@ files = {
                 'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3.safetensors'),
                 'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.3_Official_Release/resolve/main/ProtoGen_X5.3.ckpt'),
             },
-            'x3.4 (Photorealism)': {
+            'v3.4 (Photorealism)': {
                 'pruned': {
                     'fp16': {
                         'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4-pruned-fp16.safetensors'),
@@ -454,7 +454,7 @@ files = {
                 'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4.safetensors'),
                 'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x3.4_Official_Release/resolve/main/ProtoGen_X3.4.ckpt'),
             },
-            'x2.2 (Anime)': {
+            'v2.2 (Anime)': {
                 'pruned': {
                     'fp16': {
                         'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_v2.2_Official_Release/resolve/main/Protogen_V2.2-pruned-fp16.safetensors'),
@@ -468,33 +468,48 @@ files = {
 
         '7th_Layer': {
             '7th_anime': {
-                'v2.5': {
+                'v3.0': {
+                    'A': {
+                        'safetensors': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v3/7th_anime_v3_A.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v3/7th_anime_v3_A.ckpt'),
+                    },
                     'B': {
-                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2.5_B.ckpt'),
+                        'safetensors': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v3/7th_anime_v3_B.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v3/7th_anime_v3_B.ckpt'),
+                    },
+                    'C': {
+                        'safetensors': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v3/7th_anime_v3_C.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v3/7th_anime_v3_C.ckpt'),
                     },
                 },
                 'v2.0': {
                     'A': {
-                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2_A.ckpt'),
+                        'safetensors': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2/7th_anime_v2_A.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2/7th_anime_v2_A.ckpt'),
                     },
                     'B': {
-                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2_B.ckpt'),
+                        'safetensors': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2/7th_anime_v2_B.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2/7th_anime_v2_B.ckpt'),
                     },
                     'C': {
-                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2_C.ckpt'),
+                        'safetensors': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2/7th_anime_v2_C.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2/7th_anime_v2_C.ckpt'),
                     },
+                    'G': {
+                        'safetensors': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2/7th_anime_v2_G.safetensors'),
+                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v2/7th_anime_v2_G.ckpt'),
+                    },
+                },
+                'v1.1': {
+                    'safetensors': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v1/7th_anime_v1.1.safetensors'),
+                    'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_anime_v1/7th_anime_v1.1.ckpt'),
                 },
             },
             'abyss_7th_layer': {
-                'v1.1': {
-                    'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/Abyss_7th_anime_v1.1.ckpt'),
+                'G1': {
+                    'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_layer/abyss_7th_layerG1.ckpt'),
                 },
-                'v1.0': {
-                    'G1': {
-                        'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/abyss_7th_layerG1.ckpt'),
-                    },
-                    'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/abyss_7th_layer.ckpt'),
-                }
+                'ckpt': ModelFile('https://huggingface.co/syaimu/7th_Layer/resolve/main/7th_layer/Abyss_7th_layer.ckpt')
             }
         }
     },
