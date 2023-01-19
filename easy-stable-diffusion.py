@@ -31,7 +31,6 @@ WORKSPACE = 'SD' #@param {type:"string"}
 OPTIONS['WORKSPACE'] = WORKSPACE
 
 #@markdown ##### <font color="orange">***자동으로 코랩 런타임을 종료할지?***</font>
-#@markdown <font color="red">**주의**</font>: 오류로 인하 셀이 종료되면 이 옵션은 무시됨
 DISCONNECT_RUNTIME = True  #@param {type:"boolean"}
 OPTIONS['DISCONNECT_RUNTIME'] = DISCONNECT_RUNTIME
 
