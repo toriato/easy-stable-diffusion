@@ -414,6 +414,21 @@ files = {
         },
 
         'Protogen': {
+            'v8.6 Infinity': {
+                'ckpt': ModelFile(
+                    'https://huggingface.co/darkstorm2150/Protogen_Infinity_Official_Release/resolve/main/model.ckpt',
+                    'ProtoGen_Infinity.ckpt')
+            },
+            'v8.0 Nova (Experimental)': {
+                'ckpt': ModelFile(
+                    'https://huggingface.co/darkstorm2150/Protogen_Nova_Official_Release/resolve/main/model.ckpt',
+                    'ProtoGen_Nova.ckpt')
+            },
+            'v7.4 Eclipse (Advanced)': {
+                'ckpt': ModelFile(
+                    'https://huggingface.co/darkstorm2150/Protogen_Eclipse_Official_Release/resolve/main/model.ckpt',
+                    'ProtoGen_Eclipse.ckpt')
+            },
             'v5.9 Dragon (RPG themes)': {
                 'pruned': {
                     'fp16': {
@@ -424,7 +439,7 @@ files = {
                 'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon.safetensors'),
                 'ckpt': ModelFile('https://huggingface.co/darkstorm2150/Protogen_Dragon_Official_Release/resolve/main/ProtoGen_Dragon.ckpt'),
             },
-            'v5.8 (Sci-Fi + Anime)': {
+            'v5.8 (Sci-Fi/Anime)': {
                 'pruned': {
                     'fp16': {
                         'safetensors': ModelFile('https://huggingface.co/darkstorm2150/Protogen_x5.8_Official_Release/resolve/main/ProtoGen_X5.8-pruned-fp16.safetensors'),
