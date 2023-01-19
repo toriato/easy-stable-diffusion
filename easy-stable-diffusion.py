@@ -203,7 +203,7 @@ def setup_colab():
 
     # 코랩 환경에서 이유는 알 수 없지만 /usr 디렉터리 내에서 읽기/쓰기 속도가 다른 곳보다 월등히 빠름
     # 아마 /content 에 큰 용량을 박아두는 사용하는 사람들이 많아서 그런듯...?
-    src = Path('/usr/local/repository')
+    src = Path('/content/repository')
     dst = Path('repository').absolute()
     delete(dst)
     dst.symlink_to(src, True)
@@ -219,14 +219,14 @@ def setup_colab():
         # --listen 또는 --share 인자를 사용하면 확장 기능 탭이 막혀버림
         # 어처피 Gradio 비밀번호는 자동으로 생성되는데
         # 일부러 제거하고 외부 접근 공개한 바보 책임이니 인자 넣어둠
-        OPTIONS['ARGS'] += ['--enable-insecure-extension-access']
+        OPTIONS['EXTRA_ARGS'] += ['--enable-insecure-extension-access']
 
         if not torch.cuda.is_available():
             log(
                 'GPU 런타임이 아닙니다, 할당량이 초과 됐을 수도 있습니다',
                 styles={'color': 'red'}
             )
-            OPTIONS['ARGS'] += [
+            OPTIONS['EXTRA_ARGS'] += [
                 '--skip-torch-cuda-test',
                 '--no-half',
                 '--opt-sub-quad-attention'
@@ -587,6 +587,8 @@ def chdir(cwd: os.PathLike) -> None:
 
                 OPTIONS[key] = value
 
+                log(f'override.json: {key} = {json.dumps(value)}')
+
 
 def delete(path: os.PathLike) -> None:
     path = Path(path)
@@ -904,7 +906,7 @@ def parse_webui_output(line: str) -> bool:
         return
 
 
-def start_webui(args: List[str] = ARGS, env: Dict[str, str] = None) -> None:
+def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = None) -> None:
     global GRADIO_PASSWORD_GENERATED
 
     # 기본 환경 변수 만들기
@@ -975,7 +977,7 @@ try:
 
     # 3단 이상(?) 레벨에서 실행하면 nested 된 asyncio 이 문제를 일으킴
     # 런타임을 종료해도 코랩 페이지에선 런타임이 실행 중(Busy)인 것으로 표시되므로 여기서 실행함
-    if DISCONNECT_RUNTIME:
+    if OPTIONS['DISCONNECT_RUNTIME']:
         hook_runtime_disconnect()
 
     setup_webui()
