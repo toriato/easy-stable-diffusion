@@ -260,14 +260,9 @@ def setup_environment():
     if not has_checkpoint():
         for file in [
             {
-                'url': 'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp32.safetensors',
-                'target': 'models/Stable-diffusion/Anything-V3.0-pruned-fp32.safetensors',
+                'url': 'https://huggingface.co/Linaqruf/anything-v3-better-vae/resolve/main/any-v3-fp32-better-vae.safetensors',
+                'target': 'models/Stable-diffusion/anything-v3-fp32-better-vae.safetensors',
                 'summary': '기본 체크포인트 모델 파일을 받아옵니다'
-            },
-            {
-                'url': 'https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.vae.pt',
-                'target': 'models/VAE/animevae.pt',
-                'summary': '기본 VAE 모델 파일을 받아옵니다'
             }
         ]:
             download(**file)
