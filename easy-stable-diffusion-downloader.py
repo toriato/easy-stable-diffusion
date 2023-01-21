@@ -315,6 +315,12 @@ files = {
             },
         },
 
+        'AniReal': {
+            'v1.0': {
+                'safetensors': ModelFile('https://huggingface.co/Hosioka/AniReal/resolve/main/AniReal.safetensors')
+            }
+        },
+
         'OrangeMixs': {
             'AbyssOrangeMix': {
                 '2': {
