@@ -244,13 +244,34 @@ files = {
             'v1.4': {
                 'anime': {
                     'e2': {
-                        'ckpt': [
-                            ModelFile(
-                                'https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/wd-1-4-anime_e2.ckpt'),
-                            ModelFile(
-                                'https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/wd-1-4-anime_e1.yaml',
-                                'wd-1-4-anime_e2.yaml'),
-                        ]
+                        'fp16': {
+                            'safetensors': [
+                                ModelFile(
+                                    'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp16.safetensors'),
+                                ModelFile(
+                                    'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp16.yaml')
+                            ],
+                            'ckpt': [
+                                ModelFile(
+                                    'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp16.ckpt'),
+                                ModelFile(
+                                    'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp16.yaml')
+                            ]
+                        },
+                        'fp32': {
+                            'safetensors': [
+                                ModelFile(
+                                    'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp32.safetensors'),
+                                ModelFile(
+                                    'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp32.yaml')
+                            ],
+                            'ckpt': [
+                                ModelFile(
+                                    'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp32.ckpt'),
+                                ModelFile(
+                                    'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp32.yaml')
+                            ]
+                        },
                     },
                     'e1': {
                         'ckpt': [
@@ -561,11 +582,13 @@ files = {
 
         'Waifu Diffusion': {
             'v1.4': {
-                'kl-f8-anime2 (pruned)': {
-                    'ckpt': VaeFile('https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/vae/kl-f8-anime2.ckpt'),
-                },
-                'kl-f8-anime (finetuned)': {
-                    'ckpt': VaeFile('https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/vae/kl-f8-anime.ckpt'),
+                'kl-f8-anime': {
+                    'e2': {
+                        'ckpt': VaeFile('https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/vae/kl-f8-anime2.ckpt'),
+                    },
+                    'e1': {
+                        'ckpt': VaeFile('https://huggingface.co/hakurei/waifu-diffusion-v1-4/resolve/main/vae/kl-f8-anime.ckpt'),
+                    }
                 },
             },
         },
