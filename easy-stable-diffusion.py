@@ -260,9 +260,19 @@ def setup_environment():
     if not has_checkpoint():
         for file in [
             {
-                'url': 'https://huggingface.co/Linaqruf/anything-v3-better-vae/resolve/main/any-v3-fp32-better-vae.safetensors',
-                'target': 'models/Stable-diffusion/anything-v3-fp32-better-vae.safetensors',
-                'summary': '기본 체크포인트 모델 파일을 받아옵니다'
+                'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp16.safetensors',
+                'target': 'models/Stable-diffusion/wd-1-4-epoch2-fp16.safetensors',
+                'summary': '기본 체크포인트 파일을 받아옵니다'
+            },
+            {
+                'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp16.yaml',
+                'target': 'models/Stable-diffusion/wd-1-4-epoch2-fp16.yaml',
+                'summary': '기본 체크포인트 설정 파일을 받아옵니다'
+            },
+            {
+                'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/VAE/kl-f8-anime2.ckpt',
+                'target': 'models/VAE/kl-f8-anime2.ckpt',
+                'summary': '기본 VAE 파일을 받아옵니다'
             }
         ]:
             download(**file)
