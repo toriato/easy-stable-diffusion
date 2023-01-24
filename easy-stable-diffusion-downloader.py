@@ -1,8 +1,9 @@
+import os
 import shlex
 import time
 
-from os import PathLike
 from pathlib import Path
+from urllib.parse import urlparse, unquote
 from tempfile import TemporaryDirectory
 from typing import Union, List, Dict
 from IPython.display import display
@@ -58,7 +59,7 @@ vae_dir.mkdir(0o777, True, True)
 class File:
     prefix: Path
 
-    def __init__(self, url: str, path: PathLike = None, *extra_args: List[str]) -> None:
+    def __init__(self, url: str, path: os.PathLike = None, *extra_args: List[str]) -> None:
         if self.prefix:
             if not path:
                 path = self.prefix
@@ -101,10 +102,17 @@ class File:
                 if DISCONNECT_RUNTIME:
                     print('작업이 완료되면 런타임을 자동으로 해제하니 다른 작업을 진행하셔도 좋습니다.')
 
-                !rsync -aP "{tempdir}/$(ls -AU {tempdir} | head -1)" "{str(self.path)}"
+                # 목적지 경로가 디렉터리가 아니라면 그대로 사용하기
+                filename = str(self.path) if not self.path.is_dir() else self.path.joinpath(
+                    # 아니라면 파일 원격 주소로부터 파일 이름 가져오기
+                    unquote(os.path.basename(urlparse(self.url).path))
+                )
+
+                print(f'경로: {filename}')
+
+                !rsync -aP "{tempdir}/$(ls -AU {tempdir} | head -1)" "{filename}"
 
                 # fmt: on
-                print('파일을 성공적으로 옮겼습니다, 이제 런타임을 해제해도 좋습니다.')
 
 
 class ModelFile(File):
@@ -625,6 +633,8 @@ def on_download(_):
         pass
 
     if DISCONNECT_RUNTIME:
+        print('파일을 성공적으로 옮겼습니다, 이제 런타임을 해제해도 좋습니다.')
+
         # 런타임을 바로 종료해버리면 마지막 출력이 잘림
         time.sleep(1)
         runtime.unassign()
