@@ -415,29 +415,7 @@ files = {
                     'safetensors': ModelFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned.safetensors'),
                     'ckpt': ModelFile('https://huggingface.co/andite/anything-v4.0/resolve/main/anything-v4.0-pruned.ckpt'),
                 }
-            },
-            'v3.0': {
-                'better-vae': {
-                    'fp32': {
-                        'safetensors': ModelFile('https://huggingface.co/Linaqruf/anything-v3-better-vae/resolve/main/any-v3-fp32-better-vae.safetensors'),
-                        'ckpt': ModelFile('https://huggingface.co/Linaqruf/anything-v3-better-vae/resolve/main/any-v3-fp32-better-vae.ckpt'),
-                    }
-                },
-                'pruned': {
-                    'fp16': {
-                        'safetensors': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp16.safetensors'),
-                        'ckpt': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp16.ckpt'),
-                    },
-                    'fp32': {
-                        'safetensors': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp32.safetensors'),
-                        'ckpt': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned-fp32.ckpt')
-                    },
-                    'safetensors': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned.safetensors'),
-                    'ckpt': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0-pruned.ckpt'),
-                },
-                'safetensors': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.safetensors'),
-                'ckpt': ModelFile('https://huggingface.co/Linaqruf/anything-v3.0/resolve/main/Anything-V3.0.ckpt'),
-            },
+            }
         },
 
         'Protogen': {
@@ -597,16 +575,6 @@ files = {
             'autoencoder_fix_kl-f8-trinart_characters': {
                 'ckpt': ModelFile('https://huggingface.co/naclbit/trinart_derrida_characters_v2_stable_diffusion/resolve/main/autoencoder_fix_kl-f8-trinart_characters.ckpt')
             }
-        },
-
-        'Anything': {
-            # 전부 유출된 노벨AI 의 VAE 와 동일한 파일임
-            'v4.0 (same as animevae.pt; unofficial merge)': {
-                'animevae.pt': VaeFile('https://huggingface.co/gozogo123/anime-vae/resolve/main/animevae.pt'),
-            },
-            'v3.0 (same as animevae.pt)': {
-                'animevae.pt': VaeFile('https://huggingface.co/gozogo123/anime-vae/resolve/main/animevae.pt'),
-            },
         },
 
         'NovelAI': {
