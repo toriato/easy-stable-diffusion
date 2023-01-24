@@ -162,6 +162,8 @@ LOG_WIDGET_STYLES['dialog_error'] = {
     'background-color': 'red',
 }
 
+PYTHON_BINARY = 'python'
+
 
 def hook_runtime_disconnect():
     try:
@@ -174,11 +176,7 @@ def hook_runtime_disconnect():
         # 이는 nest-asyncio 패키지를 통해 어느정도 우회하여 사용할 수 있음
         # https://pypi.org/project/nest-asyncio/
         if not has_python_package('nest_asyncio'):
-            execute(
-                ['pip', 'install', 'nest-asyncio'],
-                summary='자동 런타임 종료시 사용할 비동기 환경을 준비합니다',
-                throw=False
-            )
+            execute(['pip', 'install', 'nest-asyncio'])
 
         import nest_asyncio
         nest_asyncio.apply()
@@ -196,13 +194,21 @@ def hook_runtime_disconnect():
 
 
 def setup_colab():
-    # 터널링 서비스가 아예 존재하지 않다면 오류 반환하기
-    assert OPTIONS['USE_GRADIO'] or OPTIONS['NGROK_API_TOKEN'] != '', '터널링 서비스를 하나 이상 선택해주세요'
+    if not OPTIONS['USE_GRADIO'] and not OPTIONS['NGROK_API_TOKEN']:
+        log('선택된 터널링 서비스가 없습니다', styles={'color': 'red'})
 
     src = Path('/content/repository')
     dst = Path('repository').absolute()
     delete(dst)
     dst.symlink_to(src, True)
+
+    global PYTHON_BINARY
+    PYTHON_BINARY = 'python3.10'
+
+    if not find_executable(PYTHON_BINARY):
+        execute(['apt', 'install', 'python3.10'])
+        execute(
+            'curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10')
 
     if len(OPTIONS['ARGS']) < 1:
         # --listen 또는 --share 인자를 사용하면 확장 기능 탭이 막혀버림
@@ -213,8 +219,7 @@ def setup_colab():
         if not torch.cuda.is_available():
             log(
                 'GPU 런타임이 아닙니다, 할당량이 초과 됐을 수도 있습니다',
-                styles={'color': 'red'}
-            )
+                styles={'color': 'red'})
             OPTIONS['EXTRA_ARGS'] += [
                 '--skip-torch-cuda-test',
                 '--no-half',
@@ -399,8 +404,7 @@ def log_trace() -> None:
             msg=format_list(
                 map(
                     lambda v: f'{v[0]}#{v[1]}\n\t{v[2]}\n\t{v[3]}',
-                    traceback.extract_tb(ex_traceback)
-                )
+                    traceback.extract_tb(ex_traceback))
             )
         )
 
@@ -455,14 +459,16 @@ def execute(
     if running_subprocess and running_subprocess.poll() is None:
         raise Exception('이미 다른 하위 프로세스가 실행되고 있습니다')
 
+    if isinstance(args, str) and 'shell' not in kwargs:
+        kwargs['shell'] = True
+
     # 서브 프로세스 만들기
     running_subprocess = Popen(
         args,
         stdout=PIPE,
         stderr=STDOUT,
         encoding='utf-8',
-        **kwargs,
-    )
+        **kwargs)
     running_subprocess.output = ''
 
     # 로그에 시작한 프로세스 정보 출력하기
@@ -472,8 +478,7 @@ def execute(
     running_subprocess.parent_index = log(
         f'=> {summary}',
         styles={'color': 'yellow'},
-        max_childs=5,
-    )
+        max_childs=5)
 
     # 프로세스 출력 위젯에 리다이렉션하기
     while running_subprocess.poll() is None:
@@ -499,8 +504,7 @@ def execute(
             newline=False,
             parent_index=running_subprocess.parent_index,
             print_to_file=print_to_file,
-            print_to_widget=print_to_widget
-        )
+            print_to_widget=print_to_widget)
 
     # 변수 정리하기
     output = running_subprocess.output
@@ -593,25 +597,36 @@ def delete(path: os.PathLike) -> None:
         shutil.rmtree(path, ignore_errors=True)
 
 
-def has_python_package(pkg: str, check_loader=True) -> bool:
-    spec = find_spec(pkg)
-    return spec and (check_loader and spec.loader is not None)
+def has_python_package(pkg: str, executable: str = None) -> bool:
+    if not executable:
+        return find_spec(pkg) is not None
+
+    _, rc = execute(
+        [
+            executable, '-c',
+            f'''
+            import importlib
+            import sys
+            sys.exit(0 if importlib.find_loader({shlex.quote(pkg)}) else 0)        
+            '''
+        ],
+        throw=False)
+
+    return True if rc == 0 else False
 
 
 # ==============================
 # 파일 다운로드
 # ==============================
-def download(url: str, target: str, **kwargs):
+def download(url: str, target: str, ignore_aria2=False, **kwargs):
     # 파일을 받을 디렉터리 만들기
     Path(target).parent.mkdir(0o777, True, True)
 
     # 빠른 다운로드를 위해 aria2 패키지 설치 시도하기
-    if find_executable('apt') and not find_executable('aria2c'):
+    if not ignore_aria2 and not find_executable('aria2c') and find_executable('apt'):
         execute(
             ['apt', 'install', 'aria2'],
-            summary='빠른 다운로드를 위해 aria2 패키지를 설치합니다',
-            throw=False
-        )
+            throw=False)
 
     if find_executable('aria2c'):
         execute(
@@ -630,8 +645,7 @@ def download(url: str, target: str, **kwargs):
                 '--out', target,
                 url
             ],
-            **kwargs
-        )
+            **kwargs)
 
     elif find_executable('curl'):
         execute(
@@ -641,8 +655,7 @@ def download(url: str, target: str, **kwargs):
                 '--output', target,
                 url
             ],
-            **kwargs
-        )
+            **kwargs)
 
     else:
         if 'summary' in kwargs.keys():
@@ -657,8 +670,7 @@ def download(url: str, target: str, **kwargs):
                 import functools
                 res.raw.read = functools.partial(
                     res.raw.read,
-                    decode_content=True
-                )
+                    decode_content=True)
 
                 # TODO: 파일 길이가 적합한지?
                 shutil.copyfileobj(res.raw, file, length=16*1024*1024)
@@ -705,8 +717,7 @@ def patch_webui_repository() -> None:
     download(
         'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/fix_gradio_route.py',
         'repository/scripts/fix_gradio_route.py',
-        summary='Gradio 경로 관련 버그 픽스 스크립트를 받아옵니다'
-    )
+        ignore_aria2=True)
 
     # 고정 심볼릭 링크 만들기
     for src in ['extensions', 'models', 'outputs']:
@@ -789,9 +800,7 @@ def setup_webui() -> None:
             execute(
                 'git reset --hard HEAD && git pull',
                 summary='레포지토리를 업데이트 합니다',
-                shell=True,
-                cwd='repository'
-            )
+                cwd='repository')
 
             need_clone = False
 
@@ -807,16 +816,14 @@ def setup_webui() -> None:
         shutil.rmtree(path, ignore_errors=True)
         execute(
             ['git', 'clone', OPTIONS['REPO_URL'], str(path)],
-            summary='레포지토리를 가져옵니다'
-        )
+            summary='레포지토리를 가져옵니다')
 
     # 특정 커밋이 지정됐다면 체크아웃하기
     if OPTIONS['REPO_COMMIT'] != '':
         execute(
             ['git', 'checkout', OPTIONS['REPO_COMMIT']],
             summary=f"레포지토리를 {OPTIONS['REPO_COMMIT']} 커밋으로 되돌립니다",
-            cwd=path
-        )
+            cwd=path)
 
     patch_webui_repository()
 
@@ -830,9 +837,6 @@ def parse_webui_output(line: str) -> bool:
         LOG_WIDGET.blocks[running_subprocess.parent_index]['max_childs'] = 0
         render_log()
         return
-
-    if line == 'paramiko.ssh_exception.SSHException: Error reading SSH protocol banner[Errno 104] Connection reset by peer\n':
-        raise Exception('Gradio 연결 중 알 수 없는 오류가 발생했습니다, 다시 실행해주세요')
 
     # 내부에서 재시작할 때 ngrok 세션이 존재해도 다시 열려고 시도하는데
     # 사용 중인 토큰이 무료 플랜이면 한 세션만 열 수 있다며 뻑 나는 경우가 있음
@@ -852,8 +856,7 @@ def parse_webui_output(line: str) -> bool:
                     f"비밀번호: {OPTIONS['GRADIO_PASSWORD']}"
                 ]),
                 LOG_WIDGET_STYLES['dialog_success'],
-                print_to_file=False
-            )
+                print_to_file=False)
 
         # ngork
         if OPTIONS['NGROK_API_TOKEN'] != '':
@@ -867,8 +870,7 @@ def parse_webui_output(line: str) -> bool:
                         '성공적으로 ngrok 터널이 열렸습니다',
                         NGROK_URL if LOG_WIDGET is None else f'<a target="_blank" href="{NGROK_URL}">{NGROK_URL}</a>',
                     ]),
-                    LOG_WIDGET_STYLES['dialog_success']
-                )
+                    LOG_WIDGET_STYLES['dialog_success'])
             else:
                 log(f'성공적으로 ngrok 터널이 열렸습니다: {NGROK_URL}')
 
@@ -887,8 +889,7 @@ def parse_webui_output(line: str) -> bool:
                         '<a target="_blank" href="https://arca.live/b/aiart/60683088">Gradio 는 느리고 버그가 있으므로 ngrok 사용을 추천합니다</a>',
                         f'<a target="_blank" href="{url}">{url}</a>',
                     ]),
-                    LOG_WIDGET_STYLES['dialog_warning']
-                )
+                    LOG_WIDGET_STYLES['dialog_warning'])
             else:
                 log(f'성공적으로 Gradio 터널이 열렸습니다: {url}')
 
@@ -908,26 +909,13 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = None) -
         env = {
             **os.environ,
             'PYTHONUNBUFFERED': '1',
-            'REQS_FILE': 'requirements.txt',
             'HF_HOME': Path('cache', 'huggingface').absolute()
         }
-
-    # xformers 설치하기
-    if OPTIONS['USE_XFORMERS']:
-        if not has_python_package('xformers'):
-            execute(
-                [
-                    'pip', 'install',
-                    'https://github.com/toriato/easy-stable-diffusion/releases/download/xformers-e163309/xformers-0.0.15+e163309.cu116.d20221226-cp38-cp38-linux_x86_64.whl'
-                ],
-                summary='xformers 패키지를 설치합니다',
-                throw=False
-            )
 
     # 기본 인자 만들기
     if len(args) < 1:
         # xformers
-        if OPTIONS['USE_XFORMERS'] and torch.cuda.is_available() and has_python_package('xformers'):
+        if OPTIONS['USE_XFORMERS'] and torch.cuda.is_available():
             args += ['--xformers']
 
         # gradio
@@ -960,11 +948,10 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = None) -
     args += OPTIONS['EXTRA_ARGS']
 
     execute(
-        ['python', 'launch.py', *args],
+        [PYTHON_BINARY, 'launch.py', *args],
         parser=parse_webui_output,
         cwd='repository',
-        env=env
-    )
+        env=env)
 
 
 try:
