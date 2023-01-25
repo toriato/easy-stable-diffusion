@@ -721,8 +721,8 @@ def patch_webui_repository() -> None:
 
     # 모델 변경 전 임시 폴더로 옮기는 스크립트
     download(
-        'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/alternate_read_state_dict.py',
-        'repository/extensions/colab/scripts/alternate_read_state_dict.py',
+        'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/alternate_load_model_weights.py',
+        'repository/extensions/colab/scripts/alternate_load_model_weights.py',
         ignore_aria2=True)
 
     # 고정 심볼릭 링크 만들기
