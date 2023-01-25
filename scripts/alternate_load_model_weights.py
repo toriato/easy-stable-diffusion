@@ -27,6 +27,6 @@ def alternate_load_model_weights(model, checkpoint_info: sd_models.CheckpointInf
 
 
 if not sd_models.load_model_weights == alternate_load_model_weights:
-    print('Applying alternate read_state_dict.')
+    print('Applying alternate load_model_weights.')
     load_model_weights = sd_models.load_model_weights
     sd_models.load_model_weights = alternate_load_model_weights
