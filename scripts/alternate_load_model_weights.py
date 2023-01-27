@@ -8,7 +8,7 @@ from modules import sd_models
 load_model_weights: Callable
 
 
-def alternate_load_model_weights(model, checkpoint_info: sd_models.CheckpointInfo):
+def alternate_load_model_weights(model, checkpoint_info: sd_models.CheckpointInfo, *args, **kwargs):
     print('Copying model into temporary directory.')
 
     temp_dir = mkdtemp()
@@ -18,7 +18,7 @@ def alternate_load_model_weights(model, checkpoint_info: sd_models.CheckpointInf
     print(f'Successfully copied model to {copied_checkpoint_file}')
 
     try:
-        sd = load_model_weights(model, checkpoint_info)
+        sd = load_model_weights(model, checkpoint_info, *args, **kwargs)
     finally:
         print('Discarding temporary model file.')
         rmtree(temp_dir, True)
