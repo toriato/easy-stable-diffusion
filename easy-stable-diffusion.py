@@ -421,7 +421,7 @@ def alert(message: str):
         return
 
     display(
-        widgets.HTML(f'<script>alert({json.loads(message)})</script>')
+        widgets.HTML(f'<script>alert({json.dumps(message)})</script>')
     )
 
 
