@@ -98,22 +98,6 @@ OPTIONS['EXTRA_ARGS'] = shlex.split(EXTRA_ARGS)
 #####################################################
 # fmt: on
 
-# 심볼릭 링크 생성하지 않을 경로 목록
-SYMLINK_BLACKLIST = (
-    '.',
-    'cache',
-    'logs',
-    'override.json',
-
-    # 레포지토리 자체
-    'repository',
-
-    # 크거나 많은 파일이 담겨져 있기 때문에 수동으로 만듦
-    'extensions',
-    'models',
-    'outputs'
-)
-
 # 임시 디렉터리
 TEMP_DIR = tempfile.mkdtemp()
 
@@ -162,7 +146,7 @@ LOG_WIDGET_STYLES['dialog_error'] = {
     'background-color': 'red',
 }
 
-PYTHON_BINARY = 'python'
+PYTHON_EXECUTABLE = 'python3.10'
 
 
 def hook_runtime_disconnect():
@@ -194,18 +178,23 @@ def hook_runtime_disconnect():
 
 
 def setup_colab():
+    try:
+        from google.colab import drive
+    except ImportError:
+        return
+
+    # 구글 드라이브 마운트하기
+    if OPTIONS['USE_GOOGLE_DRIVE']:
+        drive.mount('drive')
+
+        OPTIONS['WORKSPACE'] = str(
+            Path('drive', 'MyDrive').joinpath(OPTIONS['WORKSPACE'])
+        )
+
     if not OPTIONS['USE_GRADIO'] and not OPTIONS['NGROK_API_TOKEN']:
-        log('선택된 터널링 서비스가 없습니다', styles={'color': 'red'})
+        alert('선택된 터널링 서비스가 없습니다!')
 
-    src = Path('/content/repository')
-    dst = Path('repository').absolute()
-    delete(dst)
-    dst.symlink_to(src, True)
-
-    global PYTHON_BINARY
-    PYTHON_BINARY = 'python3.10'
-
-    if not find_executable(PYTHON_BINARY):
+    if not find_executable(PYTHON_EXECUTABLE):
         execute(['apt', 'install', 'python3.10'])
         execute(
             'curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10')
@@ -217,9 +206,8 @@ def setup_colab():
         OPTIONS['EXTRA_ARGS'] += ['--enable-insecure-extension-access']
 
         if not torch.cuda.is_available():
-            log(
-                'GPU 런타임이 아닙니다, 할당량이 초과 됐을 수도 있습니다',
-                styles={'color': 'red'})
+            alert('GPU 런타임이 아닙니다, 할당량이 초과 됐을 수도 있습니다!')
+
             OPTIONS['EXTRA_ARGS'] += [
                 '--skip-torch-cuda-test',
                 '--no-half',
@@ -245,38 +233,26 @@ def setup_environment():
 
     # google.colab 패키지가 있다면 코랩 환경으로 인식하기
     if has_python_package('google') and has_python_package('google.colab'):
-        # 코랩 노트북의 경우 작업 디렉터리로 항상 /content 디렉터리를 사용함
-        cwd = Path('/content')
-
-        # 구글 드라이브 마운트하기
-        if OPTIONS['USE_GOOGLE_DRIVE']:
-            from google.colab import drive
-            drive.mount(str(cwd.joinpath('drive')))
-
-            # 마운트한 디렉터리 속 MyDrive 디렉터리부터 쓰기 가능함
-            cwd = cwd.joinpath('drive', 'MyDrive')
-
-        chdir(cwd.joinpath(OPTIONS['WORKSPACE']))
         setup_colab()
-    else:
-        chdir(OPTIONS['WORKSPACE'])
+
+    update_workspace()
 
     # 체크포인트 모델이 존재하지 않는다면 기본 모델 받아오기
     if not has_checkpoint():
         for file in [
             {
                 'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp16.safetensors',
-                'target': 'models/Stable-diffusion/wd-1-4-epoch2-fp16.safetensors',
+                'target': os.path.join(OPTIONS['WORKSPACE'], 'models/Stable-diffusion/wd-1-4-epoch2-fp16.safetensors'),
                 'summary': '기본 체크포인트 파일을 받아옵니다'
             },
             {
                 'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp16.yaml',
-                'target': 'models/Stable-diffusion/wd-1-4-epoch2-fp16.yaml',
+                'target': os.path.join(OPTIONS['WORKSPACE'], 'models/Stable-diffusion/wd-1-4-epoch2-fp16.yaml'),
                 'summary': '기본 체크포인트 설정 파일을 받아옵니다'
             },
             {
                 'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/VAE/kl-f8-anime2.ckpt',
-                'target': 'models/VAE/kl-f8-anime2.ckpt',
+                'target': os.path.join(OPTIONS['WORKSPACE'], 'models/VAE/kl-f8-anime2.ckpt'),
                 'summary': '기본 VAE 파일을 받아옵니다'
             }
         ]:
@@ -436,6 +412,19 @@ def log_trace() -> None:
         render_log()
 
 
+def alert(message: str):
+    try:
+        from IPython.display import display
+        from ipywidgets import widgets
+    except ImportError:
+        log(message)
+        return
+
+    display(
+        widgets.HTML(f'<script>alert({json.loads(message)})</script>')
+    )
+
+
 # ==============================
 # 서브 프로세스
 # ==============================
@@ -540,25 +529,17 @@ def execute(
 # ==============================
 
 
-def chdir(cwd: os.PathLike) -> None:
+def update_workspace() -> None:
     global LOG_FILE
 
-    cwd = Path(cwd).absolute()
+    workspace = Path(OPTIONS['WORKSPACE'])
 
-    # 작업 경로 변경
-    old_cwd = Path.cwd().absolute()
-    cwd.mkdir(0o777, True, True)
-    os.chdir(cwd)
-
-    # 기존 로그 파일 옮기기
-    os.makedirs('logs', exist_ok=True)
-
-    log_path = Path('logs', datetime.strftime(
-        datetime.now(), '%Y-%m-%d_%H-%M-%S.log'))
-
-    if LOG_FILE:
-        LOG_FILE.close()
-        Path(old_cwd, LOG_FILE.name).rename(log_path)
+    # 로그 만들기
+    log_dir = workspace.joinpath('logs')
+    log_dir.mkdir(0o777, True, True)
+    log_path = log_dir.joinpath(
+        datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S.log')
+    )
 
     LOG_FILE = log_path.open('a')
 
@@ -569,7 +550,7 @@ def chdir(cwd: os.PathLike) -> None:
     log(str(Path.cwd()))
 
     # 덮어쓸 설정 파일 가져오기
-    override_path = cwd.joinpath('override.json')
+    override_path = workspace.joinpath('override.json')
     if override_path.exists():
         with override_path.open('r') as file:
             override_options = json.loads(file.read())
@@ -607,7 +588,7 @@ def has_python_package(pkg: str, executable: str = None) -> bool:
             f'''
             import importlib
             import sys
-            sys.exit(0 if importlib.find_loader({shlex.quote(pkg)}) else 0)        
+            sys.exit(0 if importlib.find_loader({shlex.quote(pkg)}) else 0)
             '''
         ],
         throw=False)
@@ -677,7 +658,8 @@ def download(url: str, target: str, ignore_aria2=False, **kwargs):
 
 
 def has_checkpoint() -> bool:
-    for p in Path('models', 'Stable-diffusion').glob('**/*'):
+    workspace = Path(OPTIONS['WORKSPACE'])
+    for p in workspace.joinpath('models', 'Stable-diffusion').glob('**/*'):
         if p.suffix != '.ckpt' and p.suffix != '.safetensors':
             continue
 
@@ -693,26 +675,6 @@ def has_checkpoint() -> bool:
 # WebUI 레포지토리 및 종속 패키지 설치
 # ==============================
 def patch_webui_repository() -> None:
-
-    # 기본 파일 만들기
-    for path, content in {
-        'config.json': json.dumps({
-            'CLIP_stop_at_last_layers': 2
-        }),
-        'ui-config.json': json.dumps({
-            'txt2img/Prompt/value': 'best quality, masterpiece',
-            'txt2img/Negative prompt/value': 'lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry',
-            'txt2img/Sampling steps/value': 28,
-            'txt2img/Width/value': 512,
-            'txt2img/Height/value': 768,
-            'txt2img/CFG Scale/value': 12
-        }),
-        'styles.csv': ''
-    }.items():
-        path = Path(path)
-        if not path.exists():
-            path.write_text(content)
-
     # Gradio 에서 앱이 위치한 경로와 다른 장치에 있는 내부 파일 접근시 발생하던 ValueError 를 해결하는 스크립트
     download(
         'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/fix_gradio_route.py',
@@ -724,73 +686,6 @@ def patch_webui_repository() -> None:
         'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/alternate_load_model_weights.py',
         'repository/scripts/alternate_load_model_weights.py',
         ignore_aria2=True)
-
-    # 고정 심볼릭 링크 만들기
-    for src in ['extensions', 'models', 'outputs']:
-        src = Path(src)
-        dst = Path('repository', src)
-
-        # 목표가 심볼릭 링크라면 실제 주소 가져오기
-        if src.is_symlink():
-            src = os.readlink(src)
-
-        if not src.exists():
-            src.mkdir(0o777, True, True)
-
-        # 기존 파일/심볼릭 링크 또는 디렉터리 제거하기
-        delete(dst)
-
-        dst.symlink_to(src.absolute(), src.is_dir())
-
-    # 가변 심볼릭 링크 만들기
-    for root, dirs, files in os.walk('.'):
-        # 디렉터리 필터링하기
-        for dir in dirs[:]:
-            src = Path(root, dir)
-            dst = Path('repository', src)
-
-            # 디렉터리가 블랙리스트에 포함됐는지 확인하기
-            for blacklist in SYMLINK_BLACKLIST:
-                if str(src).startswith(blacklist):
-                    break
-
-            else:
-                # 목표 디렉터리가 존재한다면 하위에서 만드므로 넘어가기
-                if not dst.is_symlink() and dst.is_dir():
-                    continue
-
-                # 이미 존재하면 심볼릭 링크를 만들 수 없으므로 기존 파일 제거하기
-                delete(dst)
-
-                dst.symlink_to(src.absolute(), True)
-
-            # os.walk 에서 처리하지 않도록 삭제
-            # TODO: List.remove = 존나 느림, 파이썬 병신~ (https://stackoverflow.com/a/34238688)
-            dirs.remove(dir)
-
-        for src in files:
-            src = Path(root, src)
-            dst = Path('repository', src)
-
-            # 파일이 블랙리스트에 포함됐는지 확인하기
-            for blacklist in SYMLINK_BLACKLIST:
-                if str(src).startswith(blacklist):
-                    break
-
-            else:
-                # 목표가 심볼릭 링크라면 실제 주소 가져오기
-                if src.is_symlink():
-                    src = os.readlink(src)
-
-                    # 심볼릭 링크가 잘못된 경로를 가르키고 있었다면 무시하기
-                    if not src.exists():
-                        continue
-
-                # 기존 파일/심볼릭 링크 또는 디렉터리 제거하기
-                delete(dst)
-
-                # 심볼릭 링크 만들기
-                dst.symlink_to(src.absolute())
 
 
 def setup_webui() -> None:
@@ -814,11 +709,6 @@ def setup_webui() -> None:
             log('레포지토리가 잘못됐습니다, 디렉터리를 제거합니다')
 
     if need_clone:
-        # 실제 레포지토리 경로 가져오기
-        # 코랩 환경에선 레포지토리 경로를 심볼릭 링크하기 때문에 경로를 가져와야함
-        if path.is_symlink():
-            path = os.readlink(path)
-
         shutil.rmtree(path, ignore_errors=True)
         execute(
             ['git', 'clone', OPTIONS['REPO_URL'], str(path)],
@@ -915,7 +805,7 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = None) -
         env = {
             **os.environ,
             'PYTHONUNBUFFERED': '1',
-            'HF_HOME': Path('cache', 'huggingface').absolute()
+            'HF_HOME': os.path.join(OPTIONS['WORKSPACE'], 'cache', 'huggingface')
         }
 
     # 기본 인자 만들기
@@ -950,11 +840,17 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = None) -
                 '--ngrok-region', 'jp'
             ]
 
+        if OPTIONS['WORKSPACE']:
+            args += [
+                '--data-dir',
+                str(Path(OPTIONS['WORKSPACE']).resolve())
+            ]
+
     # 추가 인자
     args += OPTIONS['EXTRA_ARGS']
 
     execute(
-        [PYTHON_BINARY, 'launch.py', *args],
+        [PYTHON_EXECUTABLE, '-m', 'launch', *args],
         parser=parse_webui_output,
         cwd='repository',
         env=env)
