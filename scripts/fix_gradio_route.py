@@ -1,14 +1,13 @@
 from pathlib import Path
 from typing import Callable
 
+from modules import shared
 from modules.script_callbacks import on_app_started
 
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from fastapi.responses import FileResponse
 from gradio.routes import App as GradioApp
-
-app: GradioApp
 
 # 이 값이 담고 있는 함수는 다음과 같음:
 # https://github.com/gradio-app/gradio/blob/58b1a074ba342fe01445290d680a70c9304a9de1/gradio/routes.py#L249-L274
@@ -27,23 +26,19 @@ async def endpoint(path: str, *args, **kwargs):
 
     # `Path.resolve()` 사용으로 인해 `app.cwd` 내에 있는 심볼릭 링크의 경우 ValueError 를 반환할 수 있음
     # https://github.com/gradio-app/gradio/blob/58b1a074ba342fe01445290d680a70c9304a9de1/gradio/routes.py#L263-L270
-    p = Path(path)
-    if Path(app.cwd).absolute() in p.absolute().parents:
-        return FileResponse(
-            p.resolve(), headers={"Accept-Ranges": "bytes"}
-        )
+    parents = Path(path).absolute().parents
 
-    # 접근할 수 있는 경로가 아니라면 오류 그대로 반환하기
-    raise original_error
+    if Path(shared.data_path).absolute() not in parents:
+        raise original_error
+
+    return FileResponse(path, headers={'Accept-Ranges': 'bytes'})
 
 
-def hook(_, app_instance: FastAPI):
-    global app, original_endpoint
+def hook(_, app: FastAPI):
+    global original_endpoint
 
-    if not isinstance(app_instance, GradioApp):
+    if not isinstance(app, GradioApp):
         raise ValueError()
-
-    app = app_instance
 
     for route in app.router.routes:
         if not isinstance(route, APIRoute):
