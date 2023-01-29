@@ -18,7 +18,7 @@ class Log:
     """
     로거 또는 하위 로그 내용을 구성하는 클래스입니다
     """
-    context: ClassVar[Optional['Log']] = None
+    context: ClassVar[List['Log']] = []
 
     def __init__(
         self,
@@ -86,18 +86,22 @@ class Log:
         self.error = wrap_context(self, Log.error)
 
     def __enter__(self) -> 'Log':
-        Log.context = self
+        Log.context.insert(0, self)
         return self
 
     def __exit__(self, *args) -> None:
-        Log.context = None
+        Log.context.pop(0)
+
+    @staticmethod
+    def current_context() -> Optional['Log']:
+        return Log.context[0] if len(Log.context) else None
 
     @staticmethod
     def print(
         message: str,
         style: Dict[str, str] = {}
     ) -> 'Log':
-        log = Log.context
+        log = Log.current_context()
         assert log, '컨텍스에 상위 로거가 없으면 기록할 수 없습니다'
 
         # if log.file:

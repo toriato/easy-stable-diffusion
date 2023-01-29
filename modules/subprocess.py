@@ -26,7 +26,10 @@ def call(*args, **kwargs) -> int:
         **kwargs
     })
 
-    log = Log(Log.context, json.dumps(p.args))
+    log = Log(
+        Log.current_context(),
+        json.dumps(p.args)
+    )
 
     while p.poll() is None:
         assert p.stdout
