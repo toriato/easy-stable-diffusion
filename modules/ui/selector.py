@@ -103,6 +103,7 @@ class Selector:
 
         self.refresh_button = widgets.Button(
             description='🔄',
+            disabled=True,
             layout={'width': 'auto'})
 
         self.lock_group += [self.dropdown, self.refresh_button]
@@ -136,11 +137,15 @@ class Selector:
             names='value'  # type: ignore
         )
 
-        self.refresh_button.on_click(
-            wrap_widget_locks(
-                on_click_refresh_button,
-                self.lock_group
-            ))
+        if refresher:
+            self.refresh_button.disabled = False
+            self.refresh_button.on_click(
+                wrap_widget_locks(
+                    on_click_refresh_button,
+                    self.lock_group
+                ))
+
+            on_click_refresh_button(None)
 
     def create_ui(self) -> widgets.Box:
         """
