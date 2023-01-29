@@ -50,24 +50,31 @@ class SelectorWidget(SelectorOption):
             self.widget.layout.display = 'none'  # type: ignore
 
 
-class SelectorDownloader(SelectorWidget):
+class SelectorText(SelectorWidget):
+    widget: widgets.Text
+
     def __init__(
         self,
-        name='< 인터넷 주소로부터 파일 다운로드 >',
-        default_url='https://...',
-        extractor: Optional[Callable[['SelectorOption'], Any]] = None,
+        name='< 직접 입력 >',
+        default_text='',
+        extractor: Optional[Callable[['SelectorText'], str]] = None,
     ) -> None:
         super().__init__(
             name,
             widgets.Text(
-                value=default_url,
+                value=default_text,
                 layout={'width': 'auto'}
-            ),
-            extractor
+            )
         )
 
-    def extract(self):
-        raise NotImplementedError()
+        self.extractor = extractor
+
+    def extract(self) -> str:
+        if self.extractor:
+            return self.extractor(self)
+
+        assert isinstance(self.widget.value, str)
+        return self.widget.value
 
 
 class Selector:
