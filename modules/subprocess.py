@@ -1,4 +1,3 @@
-import json
 import shutil
 import shlex
 import subprocess
@@ -26,10 +25,14 @@ def call(*args, **kwargs) -> int:
         **kwargs
     })
 
-    log = Log(
-        Log.current_context(),
-        json.dumps(p.args)
-    )
+    # 사용자에게 받은 명령어 및 인자 조합을 문자열로 변환합니다
+    # TODO: 모든 subprocess._CMD 자료형을 지원하는지 검증 필요
+    if isinstance(p.args, str):
+        raw_cmd = p.args
+    else:
+        raw_cmd = shlex.join(p.args)  # type: ignore
+
+    log = Log(Log.current_context(), raw_cmd)
 
     while p.poll() is None:
         assert p.stdout
