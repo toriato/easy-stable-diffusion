@@ -26,11 +26,7 @@ def call(*args, **kwargs) -> int:
         **kwargs
     })
 
-    print_func = Log(
-        json.dumps(p.args),
-        parent=Log.context,
-        child_style={'color': 'gray'}
-    ).print if Log.context else print
+    log = Log(Log.context, json.dumps(p.args))
 
     while p.poll() is None:
         assert p.stdout
@@ -38,7 +34,7 @@ def call(*args, **kwargs) -> int:
         if not line:
             continue
 
-        print_func(line)
+        log.print(line, style={'color': 'gray'})
 
     rc = p.poll()
     assert rc is not None
