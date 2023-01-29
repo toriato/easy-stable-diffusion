@@ -7,7 +7,16 @@ from modules import shared
 from modules.ui import Selector, SelectorOption, SelectorText
 
 
-prepend_options = []
+prepend_options = [
+    SelectorText(
+        '< 로컬 파일 시스템 >',
+        'SD',
+        lambda option: os.path.join(
+            shared.APP_DIR,
+            str(option.widget.value)
+        )
+    )
+]
 
 if shared.IN_COLAB:
     prepend_options.append(
@@ -21,17 +30,7 @@ if shared.IN_COLAB:
         )
     )
 
-workspace = Selector((
-    *prepend_options,
-    SelectorText(
-        '< 로컬 파일 시스템 >',
-        'SD',
-        lambda option: os.path.join(
-            shared.APP_DIR,
-            str(option.widget.value)
-        )
-    )
-))
+workspace = Selector(prepend_options)
 
 
 def workspace_lookup_generator(
