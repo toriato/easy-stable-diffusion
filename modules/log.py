@@ -39,7 +39,6 @@ class Log:
         :param only_last_lines: 표시할 마지막 줄의 개수
         """
         self.parent = parent
-        self.root_parent = None
         self.widget = None
         self.summary = summary
         self.style = None
@@ -62,12 +61,16 @@ class Log:
 
         # 최상위 로거라면
         else:
+            self.root_parent = self
+
             # 이미 사용자가 위젯을 만들었다면 표시할 필요 없음
             self.widget = widgets.HTML()
 
             # 위젯이 있는 최상위 로그에선 widgets.HTML 의 스타일로 사용함
             self.style = {
                 **style,
+                'width': '100%',
+                'max-width': '200px',
                 'padding': '.5em',
                 'background-color': 'black',
                 'line-height': '1.1',
