@@ -43,7 +43,12 @@ def call(*args, **kwargs) -> int:
     assert rc is not None
 
     if rc != 0:
+        log.style = {'color': 'red'}
+        log.root_parent.render()
         raise subprocess.CalledProcessError(rc, p.args)
+
+    log.style = {'color': 'green'}
+    log.root_parent.render()
 
     return rc
 
