@@ -1,0 +1,2 @@
+
+PYTHON_EXECUTABLE = 'python3.10'
