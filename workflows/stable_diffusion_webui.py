@@ -16,7 +16,7 @@ def main():
 
             with output:
                 from google.colab import drive
-                drive.mount(shared.GDRIVE_MOUNT_DIR)
+                drive.mount(str(shared.GDRIVE_MOUNT_DIR))
                 output.clear_output()
 
         except ImportError:
