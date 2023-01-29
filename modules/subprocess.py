@@ -84,9 +84,3 @@ def call_python(
         shell=True,
         *args, **kwargs
     )
-
-
-with Log(Path('test.log')) as log:
-    call_python(['-m', 'pip', 'install', '-r',
-                'requirements_colab.txt'], log=log)
-    print(len(log.childs))
