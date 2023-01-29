@@ -45,6 +45,7 @@ class Log:
         self.childs: List['Log'] = []
         self.child_style = {
             'padding-left': '.5em',
+            'white-space': 'pre-wrap',
             **child_style
         }
 
@@ -69,11 +70,10 @@ class Log:
             # 위젯이 있는 최상위 로그에선 widgets.HTML 의 스타일로 사용함
             self.style = {
                 **style,
-                'width': '100%',
-                'max-width': '200px',
                 'padding': '.5em',
                 'background-color': 'black',
                 'line-height': '1.1',
+                'font-family': "'D2Coding', monospace",
                 'color': 'white'
             }
 
@@ -142,15 +142,15 @@ class Log:
         html = ''
 
         if self.summary:
-            html += f'<span style="{style(self.style)}">{self.summary}</span>'
+            html += f'<div style="{style(self.style)}">{self.summary}</div>'
 
         if self.childs:
-            html += f'<pre style="{style(self.child_style)}">'
+            html += f'<div style="{style(self.child_style)}">'
             html += ''.join([
                 child.render()
                 for child in self.childs[-self.only_last_lines:]
             ])
-            html += '</pre>'
+            html += '</div>'
 
         if self.widget:
             html = f'<div style="{style(self.style)}">{html}</div>'
