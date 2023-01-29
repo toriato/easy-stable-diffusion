@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Callable
+from typing import Any, List, Dict, Optional, Callable
 from ipywidgets import widgets
 
 InputContext = Dict[str, 'Input']
@@ -43,3 +43,15 @@ class Input:
             return self.widget.value if self.widget else None  # type: ignore
 
         return self.extractor(self, context)
+
+
+class InputSet(List[Input]):
+    def __init__(
+        self,
+        *args: Input,
+        layout: Dict[str, str] = {}
+    ) -> None:
+        super().__init__()
+
+        self += args
+        self.layout = layout

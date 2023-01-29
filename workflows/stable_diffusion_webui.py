@@ -2,10 +2,18 @@ from pathlib import Path
 from ipywidgets import widgets
 from IPython.display import display
 
+from modules import shared
+from modules.shared import workspace, workspace_lookup_generator
 from modules.alert import alert
 from modules.log import Log
-from modules.ui import Selector, SelectorDownloader, FormSet, Input
-from modules.shared import workspace, workspace_lookup_generator
+from modules.ui import Selector, SelectorDownloader, Input, InputSet
+
+try:
+    from google.colab import drive
+    drive.mount(shared.GDRIVE_MOUNT_DIR)
+
+except ImportError:
+    pass
 
 log = Log(
     Path('temp.log'),
@@ -46,7 +54,7 @@ try:
     )
 
     formsets = [
-        FormSet(
+        InputSet(
             Input(
                 'workspace',
                 workspace.create_ui(),
@@ -56,7 +64,7 @@ try:
                 '''
             )
         ),
-        FormSet(
+        InputSet(
             Input(
                 '--ckpt',
                 ckpt.create_ui(),

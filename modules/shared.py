@@ -7,7 +7,10 @@ from modules.ui import Selector, SelectorOption
 
 PYTHON_EXECUTABLE = 'python3.10'
 
-REPO_DIR = Path(__file__).parent.joinpath('repository')
+APP_DIR = Path(__file__).parent
+GDRIVE_MOUNT_DIR = APP_DIR.joinpath('drive')
+GDRIVE_DIR = GDRIVE_MOUNT_DIR.joinpath('MyDrive')
+REPO_DIR = APP_DIR.joinpath('repository')
 
 workspace = Selector(
     options=[
