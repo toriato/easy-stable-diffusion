@@ -17,7 +17,7 @@ class Log:
         path_or_text: Union[Path, str],
         parent: Optional['Log'] = None,
         widget: Optional[object] = None,
-        style: Optional[Dict[str, str]] = None,
+        style: Dict[str, str] = {},
         child_style: Dict[str, str] = {},
         only_last_lines: Optional[int] = None
     ) -> None:
@@ -71,8 +71,9 @@ class Log:
             self.text = path_or_text
 
         # 위젯이 있는 최상위 로그에선 widgets.HTML 의 스타일로 사용함
-        if not style and self.widget:
+        if self.widget:
             self.style = {
+                **style,
                 'padding': '.5em',
                 'background-color': 'black',
                 'line-height': '1.1',
