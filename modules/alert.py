@@ -18,9 +18,6 @@ def alert(text: str, unassign=False) -> None:
     except ImportError:
         pass
 
-    if Log.context:
-        Log.context.info(text)
-
     if unassign:
         try:
             from google.colab import runtime
