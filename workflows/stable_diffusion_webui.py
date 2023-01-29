@@ -1,27 +1,31 @@
-from pathlib import Path
 from ipywidgets import widgets
 from IPython.display import display
 
 from modules import shared
-from modules.shared import workspace, workspace_lookup_generator
+from modules.workspace import workspace, workspace_lookup_generator
 from modules.alert import alert
 from modules.log import Log
-from modules.ui import Selector, SelectorDownloader, Input, InputSet
+from modules.ui import Selector, SelectorText, Input, InputSet
 
-try:
-    from google.colab import drive
-    drive.mount(shared.GDRIVE_MOUNT_DIR)
+if shared.IN_COLAB:
+    try:
+        # 마운트 후 발생하는 출력을 제거하기 위해 새 위젯 컨텍스 만들기
+        output = widgets.Output()
 
-except ImportError:
-    pass
+        with output:
+            from google.colab import drive
+            drive.mount(shared.GDRIVE_MOUNT_DIR)
+            output.clear_output()
 
-log = Log(
-    Path('temp.log'),
-    widget=widgets.HTML()
-)
+    except ImportError:
+        alert('구글 드라이브에 접근할 수 없습니다, 동기화를 사용할 수 없습니다!')
+
+log: Log
+log_html = widgets.HTML
+
 controls = widgets.VBox()
 wrapper = widgets.GridBox(
-    (controls, log.widget),
+    (controls, log_html),
     layout={
         'padding': '.5em',
         'grid_template_columns': '2fr 1fr',
@@ -34,7 +38,7 @@ display(wrapper)
 try:
     ckpt = Selector(
         options=[
-            SelectorDownloader()
+            SelectorText()
         ],
         refresher=workspace_lookup_generator([
             'models/Stable-diffusion/**/*.ckpt',
@@ -44,7 +48,7 @@ try:
 
     vae = Selector(
         options=[
-            SelectorDownloader()
+            SelectorText()
         ],
         refresher=workspace_lookup_generator([
             'models/VAE/**/*.pt',
