@@ -35,24 +35,20 @@ class SelectorWidget(SelectorOption):
     def __init__(
         self,
         name: str,
-        widget: Optional[widgets.Widget] = None,
+        widget: widgets.Widget,
         extractor: Optional[Callable[['SelectorOption'], Any]] = None
     ) -> None:
         super().__init__(name, extractor)
         self.widget = widget
 
     def selected(self, _):
-        if self.widget:
-            self.widget.layout.display = 'inherit'  # type: ignore
+        self.widget.layout.display = 'inherit'  # type: ignore
 
     def deselected(self, _):
-        if self.widget:
-            self.widget.layout.display = 'none'  # type: ignore
+        self.widget.layout.display = 'none'  # type: ignore
 
 
 class SelectorText(SelectorWidget):
-    widget: widgets.Text
-
     def __init__(
         self,
         name='< 직접 입력 >',
@@ -73,6 +69,7 @@ class SelectorText(SelectorWidget):
         if self.extractor:
             return self.extractor(self)
 
+        assert isinstance(self.widget, widgets.Text)
         assert isinstance(self.widget.value, str)
         return self.widget.value
 
@@ -81,7 +78,6 @@ class Selector:
     """
     로컬 파일 시스템 또는 인터넷으로부터 파일을 선택하거나 업로드할 수 있는 위젯 집합을 만듭니다
     """
-    lock_group: List[object] = []
 
     def __init__(
         self,
@@ -106,7 +102,7 @@ class Selector:
             disabled=True,
             layout={'width': 'auto'})
 
-        self.lock_group += [self.dropdown, self.refresh_button]
+        self.lock_group = [self.dropdown, self.refresh_button]
 
         def on_update_dropdown(change: Dict[str, Any]) -> None:
             """
@@ -122,11 +118,19 @@ class Selector:
                 new.selected(self)
 
         def on_click_refresh_button(_) -> None:
-            assert refresher
-            self.dropdown.options = tuple([
-                (opt.name, opt)
-                for opt in list(refresher()) + list(options)
-            ])
+            if refresher:
+                self.dropdown.options = tuple([
+                    (opt.name, opt)
+                    for opt in list(refresher()) + list(options)
+                ])
+
+            # 각 옵션 값 (비)활성화 이벤트 실행
+            assert isinstance(self.dropdown.options, tuple)
+            for _, opt in self.dropdown.options:
+                if self.dropdown.value == opt:
+                    opt.selected(self)
+                else:
+                    opt.deselected(self)
 
         # 각 위젯에 이벤트 핸들러 연결
         self.dropdown.observe(
@@ -145,7 +149,7 @@ class Selector:
                     self.lock_group
                 ))
 
-            on_click_refresh_button(None)
+        on_click_refresh_button(None)
 
     def create_ui(self) -> widgets.Box:
         """

@@ -16,7 +16,7 @@ if shared.IN_COLAB:
             'SD',
             lambda option: os.path.join(
                 shared.GDRIVE_DIR,
-                str(option.widget.value)
+                str(option.widget.value)  # type: ignore
             )
         )
     )
@@ -28,7 +28,7 @@ workspace = Selector([
         'SD',
         lambda option: os.path.join(
             shared.APP_DIR,
-            str(option.widget.value)
+            str(option.widget.value)  # type: ignore
         )
     )
 ])
