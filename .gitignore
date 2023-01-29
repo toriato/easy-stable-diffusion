@@ -2,5 +2,8 @@
 .venv/
 venv/
 .env
+
+__pycache__/
+
 repository/
 SD/
