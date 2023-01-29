@@ -45,6 +45,7 @@ class Log:
         # 경로를 받으면 최상위 로그로 간주하기
         if isinstance(path_or_text, Path):
             self.path = path_or_text
+            self.path.parent.mkdir(parents=True, exist_ok=True)
             self.file = path_or_text.open('w')
 
             try:
