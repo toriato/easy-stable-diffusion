@@ -38,8 +38,9 @@ def mount_google_drive() -> bool:
         from ipywidgets import widgets
         output = widgets.Output()
 
+        from google.colab import drive
+
         with output:
-            from google.colab import drive
             drive.mount(str(shared.GDRIVE_MOUNT_DIR))
             output.clear_output()
 
@@ -50,5 +51,8 @@ def mount_google_drive() -> bool:
 
     except ImportError:
         alert('구글 드라이브 마운팅에 필요한 라이브러리가 없습니다, 동기화 기능을 사용할 수 없습니다.')
+
+    except Exception as e:
+        alert(f'구글 드라이브 마운팅 중 알 수 없는 오류가 발생했습니다, 동기화 기능을 사용할 수 없습니다\n{e}')
 
     return False
