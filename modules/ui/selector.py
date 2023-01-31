@@ -1,11 +1,16 @@
-from typing import Any, Iterable, Dict, Optional, Callable
+from typing import Any, Callable, Dict, Iterable, Optional
+
 from ipywidgets import widgets
 
+from .option import Option, T, WidgetOption
 from .utils import wrap_widget_locks
-from .option import T, Option, WidgetOption
 
 
 class Selector(WidgetOption[T]):
+    """
+    사용자가 선택한 하위 옵션들로부터 값을 가져오는 옵션입니다.
+    """
+
     def __init__(
         self,
         options: Iterable[Option] = [],
@@ -14,6 +19,10 @@ class Selector(WidgetOption[T]):
         ] = None,
         *args, **kwargs
     ) -> None:
+        """
+        :param options: 새로고침해도 사라지지 않을 기본 옵션들
+        :param refresher: 옵션을 새로고침할 때 추가될 옵션을 반환하는 함수, None 이라면 새로고침 버튼이 나타나지 않습니다.
+        """
         super().__init__(*args, **{
             'widget': widgets.VBox(),
             **kwargs
@@ -31,7 +40,7 @@ class Selector(WidgetOption[T]):
 
         def on_change(change: Dict[str, Any]) -> None:
             """
-            옵션 값이 변경될 때 각 옵션 객체에게 이벤트를 던져주는 함수
+            선택한 옵션이 변경될 때 모든 옵션에게 각 상태에 맞는 이벤트를 던져주는 이벤트 함수입니다.
             """
             old = change['old']
             new = change['new']
@@ -50,11 +59,16 @@ class Selector(WidgetOption[T]):
         self.refresh()
 
     def refresh(self) -> None:
+        """
+        사용자가 선택할 수 있는 옵션을 새로고치는 함수입니다. `refresher` 함수 존재 여부에 따라 새로고침 버튼을 보여주거나 숨기기도 합니다.
+        """
         children = []
 
         if self.refresher:
             self.dropdown.options = tuple([
                 (opt.name, opt)
+
+                # 새로 추가된 옵션은 항상 기본 옵션보다 앞으로 가게끔 정렬
                 for opt in list(self.refresher()) + list(self.options)
             ])
 
@@ -80,6 +94,7 @@ class Selector(WidgetOption[T]):
             if isinstance(opt, WidgetOption):
                 children.append(opt.widget)
 
+            # 각 위젯의 상태에 맞는 이벤트 함수 실행하기
             event = opt.selected if self.dropdown.value == opt else opt.deselected
             event()
 
@@ -88,5 +103,8 @@ class Selector(WidgetOption[T]):
         self.widget.children = tuple(children)
 
     def extract(self, *args, **kwargs) -> T:
+        """
+        사용자가 선택한 옵션으로부터 값을 가져오는 함수입니다.
+        """
         assert isinstance(self.dropdown.value, Option), ''
         return self.dropdown.value.extract(*args, **kwargs)

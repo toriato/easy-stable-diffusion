@@ -1,9 +1,8 @@
-import shutil
 import shlex
+import shutil
 import subprocess
-
-from typing import List, Optional
 from pathlib import Path
+from typing import List, Optional
 
 from modules.log import Log
 
@@ -44,7 +43,7 @@ def call(*args, **kwargs) -> int:
         if not line:
             continue
 
-        log.print(line, style={'color': 'gray'})
+        log.print(line)
 
     rc = p.poll()
     assert rc is not None
@@ -70,8 +69,8 @@ def call_python(
     가상환경을 활성화한 뒤 python 명령어를 실행합니다
 
     :param python_args: python 명령어에 전달할 인자들
-    :param python_executable: python 명령어의 경로, None 이면 시스템에서 정의된 python 을 사용
-    :param venv_dir: 가상환경의 경로, None 이면 사용하지 않음
+    :param python_executable: 사용할 python 명령어 이름, None 이면 기본 python 을 사용
+    :param venv_dir: 사용할 가상환경의 경로, None 이면 사용하지 않음
     :param args: call() 함수에 전달할 인자들
     :param kwargs: call() 함수에 전달할 인자들
 

@@ -1,8 +1,9 @@
-from typing import Union, List, Dict, Optional, Callable, TypeVar, ClassVar
-from typing_extensions import ParamSpec
 from pathlib import Path
+from typing import Callable, ClassVar, Dict, List, Optional, TypeVar, Union
+
 from IPython.display import display
 from ipywidgets import widgets
+from typing_extensions import ParamSpec
 
 _T = TypeVar('_T')
 _A = ParamSpec('_A')
@@ -29,8 +30,6 @@ class Log:
         only_last_lines: Optional[int] = None
     ) -> None:
         """
-        로거 또는 로그를 만듭니다
-
         :param parent: 상위 로거
         :param widget: 로그를 렌더링할 HTML 위젯
         :param summary: 하위 로그에 대한 요약 메세지
@@ -97,6 +96,11 @@ class Log:
 
     @staticmethod
     def current_context() -> Optional['Log']:
+        """
+        현재 with 문에 의해 컨텍스트에 들어간 현재(마지막) 로거를 반환합니다
+
+        :return: 현재 컨텍스트 로거
+        """
         return Log.context[0] if len(Log.context) else None
 
     @staticmethod
@@ -104,6 +108,14 @@ class Log:
         message: str,
         style: Dict[str, str] = {}
     ) -> 'Log':
+        """
+        현재 컨텍스트에 있는 로거에 메세지를 기록합니다
+
+        :param message: 기록할 메세지
+        :param style: 메세지의 HTML 스타일
+        :return: 기록한 메세지를 포함하는 하위 로거
+        """
+
         log = Log.current_context()
         assert log, '컨텍스에 상위 로거가 없으면 기록할 수 없습니다'
 

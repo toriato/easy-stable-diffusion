@@ -1,14 +1,13 @@
-import os
 import itertools
-
-from typing import Iterable, List, Callable
+import os
 from pathlib import Path
+from typing import Callable, Iterable, List
+
 from ipywidgets import widgets
 
 from modules import shared
+from modules.ui import Input, Option, Placeholder, Selector, Text
 from modules.utils import alert
-from modules.ui import Selector, Option, Text, Placeholder, Input
-
 
 prepend_options = []
 
@@ -42,8 +41,19 @@ workspace = Selector[str](
 def workspace_lookup_generator(
     globs: List[str]
 ) -> Callable[..., Iterable[Option]]:
-    # TODO: 기본 작업 경로는 레포지토리를 가르켜야함
+    """
+    사용자가 선택한 작업 경로 하위에 있는 특정 파일을 glob 패턴을 사용해 찾은 뒤 옵션을 생성하는 함수를 반환합니다.
 
+    :param globs: glob 패턴 목록
+    :return: 옵션 생성 함수
+
+    ```py
+    from modules.ui import Selector
+    from modules.workspace import workspace_lookup_generator
+
+    Selector(workspace_lookup_generator(['*.ckpt', '*.safetensors'])
+    ```
+    """
     path = Path(workspace.extract())
 
     def func():
@@ -69,12 +79,14 @@ def workspace_lookup_generator(
 
 def mount_google_drive() -> bool:
     """
-    코랩 환경에서 구글 드라이브 마운팅을 시도합니다
+    코랩 환경에서만 구글 드라이브 마운팅을 시도합니다.
+
+    :return: 성공 여부
     """
 
     if shared.IN_COLAB:
         try:
-            # 마운트 후 발생하는 출력을 제거하기 위해 새 위젯 컨텍스 만들기
+            # 마운트 후 발생하는 출력을 제거하기 위해 새 위젯 컨텍스트 만들기
             output = widgets.Output()
 
             with output:
