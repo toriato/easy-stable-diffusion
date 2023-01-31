@@ -7,8 +7,6 @@ from modules import shared, git
 from modules.subprocess import call, call_python
 from modules.control import ControlContext
 
-from .log import log
-
 
 def to_args(context: ControlContext) -> List[str]:
     args = []
@@ -83,11 +81,10 @@ def launch(context: ControlContext):
 
         args = to_args(context)
 
-        with log:
-            call_python(
-                ['-m', 'launch', *args],
-                python_executable,
-                cwd=repo.working_dir
-            )
+        call_python(
+            ['-m', 'launch', *args],
+            python_executable,
+            cwd=repo.working_dir
+        )
     except:
         raise

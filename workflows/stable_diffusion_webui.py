@@ -1,33 +1,39 @@
 from ipywidgets import widgets
 from IPython.display import display
 
+from modules.log import Log
 from modules.workspace import mount_google_drive
 
-from workflows.stable_diffusion_webui_modules import *
+mount_google_drive()
+
+log = Log()
+controls = widgets.VBox()
+wrapper = widgets.GridBox(
+    (controls, log.widget),
+    layout={
+        'width': '100%',
+        'padding': '.5em',
+        'grid_template_columns': '1fr 1fr',
+        'grid_gap': '.5em'
+    }
+)
+
+display(wrapper)
 
 
 def main():
-    mount_google_drive()
-
-    controls = widgets.VBox()
-    wrapper = widgets.GridBox(
-        (controls, log.widget),
-        layout={
-            'width': '100%',
-            'padding': '.5em',
-            'grid_template_columns': '1fr 1fr',
-            'grid_gap': '.5em'
-        }
-    )
-
-    display(wrapper)
+    from workflows.stable_diffusion_webui_modules import grids, context, launch
 
     button = widgets.Button(
         description='실행',
         layout={'width': 'calc(100% - 1em)'}
     )
 
-    button.on_click(lambda _: launch(context))
+    def on_click(_):
+        with log:
+            launch(context)
+
+    button.on_click(on_click)
 
     controls.children = (
         *[
