@@ -1,8 +1,6 @@
 import time
 import json
 
-from modules.log import Log
-
 
 def alert(text: str, unassign=False) -> None:
     """
