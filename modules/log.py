@@ -1,7 +1,7 @@
-from pathlib import Path
+import traceback
+from types import TracebackType
 from typing import Callable, ClassVar, Dict, List, Optional, TypeVar, Union
 
-from IPython.display import display
 from ipywidgets import widgets
 from typing_extensions import ParamSpec
 
@@ -40,7 +40,7 @@ class Log:
         self.parent = parent
         self.widget = None
         self.summary = summary
-        self.style = None
+        self.style = style
         self.childs: List['Log'] = []
         self.child_style = {
             'padding-left': '.5em',
@@ -91,8 +91,16 @@ class Log:
         Log.context.insert(0, self)
         return self
 
-    def __exit__(self, *args) -> None:
-        Log.context.pop(0)
+    def __exit__(self, exc_type, exc_value, tb: TracebackType) -> Union[None, bool]:
+        log = Log.context.pop(0)
+
+        if exc_type:
+            err = log.error(str(exc_value))
+            err.print(
+                '\n'.join(traceback.format_list(traceback.extract_tb(tb))),
+                {'color': 'gray'}
+            )
+            return True
 
     @staticmethod
     def current_context() -> Optional['Log']:
