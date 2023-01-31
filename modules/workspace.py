@@ -7,14 +7,14 @@ from ipywidgets import widgets
 
 from modules import shared
 from modules.alert import alert
-from modules.ui import Selector, Option, Text
+from modules.ui import Selector, Option, Text, Input
 
 
 prepend_options = []
 
 if shared.IN_COLAB:
     prepend_options.append(
-        Text(
+        Input(
             name='< 구글 드라이브 >',
             default_text='SD',
             extractor=lambda option: os.path.join(
@@ -27,7 +27,7 @@ if shared.IN_COLAB:
 workspace = Selector[str](
     options=[
         *prepend_options,
-        Text(
+        Input(
             name='< 로컬 파일 >',
             default_text='SD',
             extractor=lambda option: os.path.join(
@@ -54,13 +54,13 @@ def workspace_lookup_generator(
         )
 
         # 2차원 배열을 1차원 배열로 펼치기
-        options = [
-            Option(str(path))
+        options: List[Option] = [
+            Text(str(path))
             for path in itertools.chain(*path_chunks)
         ]
 
         if options:
-            options.insert(0, Option('< 자동 선택 >', lambda _: None))
+            options.insert(0, Option('< 자동 선택 >'))
 
         return options
 

@@ -5,26 +5,11 @@ from pathlib import Path
 
 from modules import shared, git
 from modules.subprocess import call, call_python
-from modules.control import ControlContext
+
+from .control import context, to_args
 
 
-def to_args(context: ControlContext) -> List[str]:
-    args = []
-
-    for control in context.values():
-        if not control.argument:
-            continue
-
-        value = control.extract(context)
-        if value is None:
-            continue
-
-        args += [control.argument, str(value)]
-
-    return args
-
-
-def setup_python(context: ControlContext) -> str:
+def setup_python() -> str:
     """
     사용자가 선택한 Python 이 존재하는지 확인하고 없으면 설치를 시도합니다
 
@@ -52,7 +37,7 @@ def setup_python(context: ControlContext) -> str:
     return python_executable
 
 
-def setup_repository(context: ControlContext) -> git.Repo:
+def setup_repository() -> git.Repo:
     repository = context['repository'].extract(context)
     assert isinstance(repository, str)
 
@@ -72,14 +57,14 @@ def setup_repository(context: ControlContext) -> git.Repo:
     return repo
 
 
-def launch(context: ControlContext):
+def launch():
     try:
-        repo = setup_repository(context)
+        repo = setup_repository()
         assert repo.working_dir
 
-        python_executable = setup_python(context)
+        python_executable = setup_python()
 
-        args = to_args(context)
+        args = to_args()
 
         call_python(
             ['-m', 'launch', *args],

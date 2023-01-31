@@ -21,10 +21,9 @@ class Option(Generic[T]):
     def deselected(self):
         pass
 
-    def extract(self, *args, **kwargs) -> Optional[T]:
-        if self.extractor:
-            return self.extractor(self, *args, **kwargs)
-        return None
+    def extract(self, *args, **kwargs) -> T:
+        assert self.extractor
+        return self.extractor(self, *args, **kwargs)
 
 
 class WidgetOption(Option[T]):

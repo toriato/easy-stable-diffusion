@@ -32,7 +32,7 @@ def main():
 
     def on_click(_):
         with log:
-            launch(context)
+            launch()
 
     button.on_click(on_click)
 

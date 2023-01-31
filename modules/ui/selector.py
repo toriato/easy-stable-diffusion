@@ -87,6 +87,6 @@ class Selector(WidgetOption[T]):
         assert isinstance(self.widget, widgets.VBox)
         self.widget.children = tuple(children)
 
-    def extract(self, *args, **kwargs) -> Optional[T]:
+    def extract(self, *args, **kwargs) -> T:
         assert isinstance(self.dropdown.value, Option), ''
         return self.dropdown.value.extract(*args, **kwargs)
