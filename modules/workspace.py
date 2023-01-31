@@ -54,9 +54,9 @@ def workspace_lookup_generator(
     Selector(workspace_lookup_generator(['*.ckpt', '*.safetensors'])
     ```
     """
-    path = Path(workspace.extract())
-
     def func():
+        path = Path(workspace.extract())
+
         # glob 패턴을 통해 일치하는 모든 하위 파일 목록 가져오기
         path_chunks = map(
             lambda pattern: [p for p in path.glob(pattern)],
