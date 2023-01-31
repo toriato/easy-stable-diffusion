@@ -6,5 +6,7 @@ venv/
 __pycache__/
 
 repository/
+drive/
 SD/
+
 *.log
