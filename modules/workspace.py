@@ -56,6 +56,7 @@ def workspace_lookup_generator(
     """
     def func():
         path = Path(workspace.extract())
+        path.mkdir(parents=True, exist_ok=True)
 
         # glob 패턴을 통해 일치하는 모든 하위 파일 목록 가져오기
         path_chunks = map(
