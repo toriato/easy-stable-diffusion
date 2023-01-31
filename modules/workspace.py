@@ -6,7 +6,7 @@ from typing import Callable, Iterable, List
 from ipywidgets import widgets
 
 from modules import shared
-from modules.ui import Input, Option, Placeholder, Selector, Text
+from modules.ui import Input, Option, Placeholder, Selector
 from modules.utils import alert
 
 prepend_options = []
@@ -65,7 +65,7 @@ def workspace_lookup_generator(
 
         # 2차원 배열을 1차원 배열로 펼치기
         options: List[Option] = [
-            Text(str(path))
+            Option(str(path))
             for path in itertools.chain(*path_chunks)
         ]
 
