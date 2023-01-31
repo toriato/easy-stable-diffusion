@@ -5,7 +5,6 @@ import subprocess
 from typing import List, Optional
 from pathlib import Path
 
-from modules import shared
 from modules.log import Log
 
 
@@ -58,7 +57,7 @@ def call(*args, **kwargs) -> int:
 
 def call_python(
     python_args: List[str],
-    python_executable: Optional[str] = shared.PYTHON_EXECUTABLE,
+    python_executable: Optional[str] = None,
     venv_dir: Optional[Path] = None,
     *args, **kwargs
 ) -> int:
