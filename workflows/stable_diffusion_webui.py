@@ -22,7 +22,8 @@ display(wrapper)
 
 
 def main():
-    from workflows.stable_diffusion_webui_modules import grids, context, launch
+    with log:
+        from workflows.stable_diffusion_webui_modules import grids, context, launch
 
     button = widgets.Button(
         description='실행',
