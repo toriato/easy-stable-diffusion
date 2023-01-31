@@ -1,7 +1,7 @@
 import shutil
 from pathlib import Path
 
-from modules import shared
+from modules import git, shared
 from modules.subprocess import call, call_python
 
 from .control import context, to_args
