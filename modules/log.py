@@ -73,7 +73,7 @@ class Log:
                 'padding': '.5em',
                 'background-color': 'black',
                 'line-height': '1.1',
-                'font-family': "'D2Coding', monospace",
+                'font-family': "'D2Coding', monospace !important",
                 'color': 'white'
             }
 

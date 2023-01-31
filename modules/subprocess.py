@@ -31,7 +31,12 @@ def call(*args, **kwargs) -> int:
     else:
         raw_cmd = shlex.join(p.args)  # type: ignore
 
-    log = Log(Log.current_context(), raw_cmd)
+    log = Log(
+        Log.current_context(),
+        raw_cmd,
+        style={'color': 'yellow'},
+        child_style={'color': 'gray'}
+    )
 
     while p.poll() is None:
         assert p.stdout
