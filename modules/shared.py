@@ -1,4 +1,3 @@
-from datetime import datetime
 from os import environ
 from pathlib import Path
 
