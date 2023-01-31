@@ -1,4 +1,5 @@
 import itertools
+import shlex
 from typing import List
 
 from modules.control import Control, ControlContext, ControlGrid
@@ -107,4 +108,7 @@ def to_args() -> List[str]:
 
         args += [control.argument, str(value)]
 
-    return args
+    extra_args = context['extra_args'].extract(context)
+    assert isinstance(extra_args, str)
+
+    return args + shlex.split(extra_args)
