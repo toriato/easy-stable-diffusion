@@ -50,7 +50,7 @@ def main():
             ], layout={
                 'width': '100%',
                 'padding': '.5em',
-                'grid_template_columns': 'repeat(auto-fit, minmax(300px, 1fr))',
+                'grid_template_columns': 'repeat(auto-fit, minmax(200px, 1fr))',
                 'grid_gap': '1em',
                 **grid.layout
             })

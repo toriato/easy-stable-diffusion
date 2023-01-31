@@ -1,10 +1,9 @@
 import itertools
-
 from typing import List
 
-from modules.workspace import workspace, workspace_lookup_generator
 from modules.control import Control, ControlContext, ControlGrid
-from modules.ui import Option, Input, Selector
+from modules.ui import Input, Option, Selector
+from modules.workspace import workspace, workspace_lookup_generator
 
 grids = [
     ControlGrid([
@@ -39,9 +38,7 @@ grids = [
             key='repository_commit',
             summary_html='<h3>레포지토리 커밋</h3>'
         )
-    ], layout={
-        'grid_template_columns': 'repeat(auto-fit, minmax(250px, 1fr))'
-    }),
+    ]),
 
     ControlGrid([
         Control(
