@@ -26,7 +26,7 @@ def main():
         with log:
             # 실행할 때 필요한 패키지들이 import 되자마자 실행되기 때문에 초기 실행기 느려질 수 있음
             # 그러므로 사용자가 작업을 실행할 때 하위 모듈을 가져와야함
-            from workflows.stable_diffusion_webui_modules import launch
+            from workflows.stable_diffusion_webui_modules.launch import launch
             launch()
 
     button = widgets.Button(
@@ -37,7 +37,7 @@ def main():
     button.on_click(on_click)
 
     # 인터페이스에 사용자 설정 추가하기
-    from workflows.stable_diffusion_webui_modules import grids
+    from workflows.stable_diffusion_webui_modules.control import grids
     controls.children = (
         *[
             widgets.GridBox([
