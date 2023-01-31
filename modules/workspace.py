@@ -6,7 +6,7 @@ from pathlib import Path
 from ipywidgets import widgets
 
 from modules import shared
-from modules.alert import alert
+from modules.utils import alert
 from modules.ui import Selector, Option, Text, Placeholder, Input
 
 
