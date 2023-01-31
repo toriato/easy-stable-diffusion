@@ -5,9 +5,6 @@ from modules import shared
 from modules.log import Log
 from modules.utils import mount_google_drive
 
-if shared.IN_COLAB:
-    mount_google_drive()
-
 log = Log()
 controls = widgets.VBox()
 wrapper = widgets.GridBox(
@@ -24,6 +21,10 @@ display(wrapper)
 
 
 def main():
+    if shared.IN_COLAB:
+        with log:
+            mount_google_drive()
+
     def on_click(_):
         with log:
             # 실행할 때 필요한 패키지들이 import 되자마자 실행되기 때문에 초기 실행기 느려질 수 있음
