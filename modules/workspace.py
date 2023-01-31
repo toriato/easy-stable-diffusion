@@ -7,7 +7,7 @@ from ipywidgets import widgets
 
 from modules import shared
 from modules.alert import alert
-from modules.ui import Selector, Option, Text, Input
+from modules.ui import Selector, Option, Text, Placeholder, Input
 
 
 prepend_options = []
@@ -60,7 +60,7 @@ def workspace_lookup_generator(
         ]
 
         if options:
-            options.insert(0, Option('< 자동 선택 >'))
+            options.insert(0, Placeholder('< 자동 선택 >'))
 
         return options
 
