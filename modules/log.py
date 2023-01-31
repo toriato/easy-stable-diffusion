@@ -112,6 +112,13 @@ class Log:
         return Log.context[0] if len(Log.context) else None
 
     @staticmethod
+    def clear() -> None:
+        log = Log.current_context()
+        if log:
+            log.root_parent.childs = []
+            log.root_parent.render()
+
+    @staticmethod
     def print(
         message: str,
         style: Dict[str, str] = {}

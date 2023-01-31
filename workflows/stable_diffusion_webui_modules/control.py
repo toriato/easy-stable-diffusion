@@ -75,6 +75,14 @@ grids = [
             argument='--vae_path',
             summary_html='<h3>VAE 경로</h3>'
         )
+    ]),
+
+    ControlGrid([
+        Control(
+            Input(),
+            key='extra_args',
+            summary_html='<h3>추가 인자</h3>'
+        )
     ])
 ]
 

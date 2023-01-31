@@ -27,6 +27,8 @@ def main():
 
     def on_click(_):
         with log:
+            Log.clear()
+
             # 실행할 때 필요한 패키지들이 import 되자마자 실행되기 때문에 초기 실행기 느려질 수 있음
             # 그러므로 사용자가 작업을 실행할 때 하위 모듈을 가져와야함
             from workflows.stable_diffusion_webui_modules.launch import launch
