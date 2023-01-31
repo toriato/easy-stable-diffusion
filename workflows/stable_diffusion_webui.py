@@ -1,10 +1,12 @@
 from IPython.display import display
 from ipywidgets import widgets
 
+from modules import shared
 from modules.log import Log
-from modules.workspace import mount_google_drive
+from modules.utils import mount_google_drive
 
-mount_google_drive()
+if shared.IN_COLAB:
+    mount_google_drive()
 
 log = Log()
 controls = widgets.VBox()

@@ -76,28 +76,3 @@ def workspace_lookup_generator(
         return options
 
     return func
-
-
-def mount_google_drive() -> bool:
-    """
-    코랩 환경에서만 구글 드라이브 마운팅을 시도합니다.
-
-    :return: 성공 여부
-    """
-
-    if shared.IN_COLAB:
-        try:
-            # 마운트 후 발생하는 출력을 제거하기 위해 새 위젯 컨텍스트 만들기
-            output = widgets.Output()
-
-            with output:
-                from google.colab import drive
-                drive.mount(str(shared.GDRIVE_MOUNT_DIR))
-                output.clear_output()
-
-            return True
-
-        except ImportError:
-            alert('구글 드라이브에 접근할 수 없습니다, 동기화를 사용할 수 없습니다!')
-
-    return False
