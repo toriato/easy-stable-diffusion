@@ -5,7 +5,7 @@ from typing import Any, Dict
 
 from modules import shared
 from modules.log import Log
-from modules.subprocess import call
+from modules.subprocess import call, call_python
 from modules.utils import hook_runtime_disconnect, mount_google_drive
 
 from . import environment as env
@@ -62,7 +62,7 @@ def setup_options(**kwargs):
 
 
 def setup_repository():
-    path = env.options.workspace / 'stable-diffusion-webui'
+    path = Path('stable-diffusion-webui')
 
     with Log.info('저장소를 설정합니다.'):
         if not path.joinpath('.git').is_dir():
@@ -73,5 +73,26 @@ def setup_repository():
             call(['git', 'checkout', env.options.repo_commit], cwd=path)
 
 
-def setup_dependencies():
-    pass
+def launch(**kwargs):
+    setup_options(**kwargs)
+    setup_repository()
+
+    args = env.options.args
+
+    if not args:
+        args += [
+            '--skip-python-version-check',
+            '--skip-torch-cuda-test',
+            '--data-dir', str(env.options.workspace.resolve())
+        ]
+
+        if env.options.use_xformers:
+            args += [
+                '--xformers',
+                '--xformers-flash-attention'
+            ]
+
+    call_python(
+        ['-m', 'launch', *args, *env.options.extra_args],
+        cwd='stable-diffusion-webui'
+    )

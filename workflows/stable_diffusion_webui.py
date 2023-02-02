@@ -17,10 +17,8 @@ def main(**kwargs):
         display(log.widget)
 
     with log:
-        from stable_diffusion_webui_modules import setup
-        setup.setup_options(**kwargs)
-        setup.setup_repository()
-        setup.setup_dependencies()
+        from stable_diffusion_webui_modules import launch
+        launch.launch(**kwargs)
 
 
 if __name__ == '__main__':
