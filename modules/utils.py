@@ -1,8 +1,10 @@
 import json
 import time
+from importlib.util import find_spec
 from pathlib import Path
 
 from . import shared
+from .subprocess import call
 
 
 def alert(text: str, unassign=False) -> None:
@@ -53,3 +55,31 @@ def mount_google_drive() -> Path:
         drive.mount(str(shared.GDRIVE_MOUNT_DIR))
 
     return shared.GDRIVE_MOUNT_DIR
+
+
+def hook_runtime_disconnect():
+    """
+    셀 실행 후 런타임을 자동으로 종료하도록 후킹합니다
+    """
+
+    # google.colab 패키지가 없으면 ImportError 를 raise 하므로
+    # 코랩 런타임 환경 밖에서 이 코드는 동작하지 않음
+    from google.colab import runtime
+
+    # asyncio 는 여러 겹으로 사용할 수 없게끔 설계됐기 때문에
+    # 주피터 노트북 등 이미 루프가 돌고 있는 곳에선 사용할 수 없음
+    # 이는 nest-asyncio 패키지를 통해 어느정도 우회하여 사용할 수 있음
+    # https://pypi.org/project/nest-asyncio/
+    if not find_spec('nest_asyncio'):
+        call(['pip', 'install', 'nest-asyncio'])
+
+    import nest_asyncio
+    nest_asyncio.apply()
+
+    async def unassign():
+        runtime.unassign()
+
+    # 평범한 환경에선 비동기로 동작하여 바로 실행되나
+    # 코랩? IPython 환경에선 순차적으로 실행되기 때문에 현재 셀 종료 후 즉시 실행됨
+    import asyncio
+    asyncio.create_task(unassign())

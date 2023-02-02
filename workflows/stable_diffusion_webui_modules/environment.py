@@ -5,7 +5,7 @@ from typing import List, NamedTuple
 
 from modules import shared
 from modules.log import Log
-from modules.utils import mount_google_drive
+from modules.utils import hook_runtime_disconnect, mount_google_drive
 
 
 class Options(NamedTuple):
@@ -32,11 +32,16 @@ options_ignore_override = [
 def setup_options(**kwargs):
     global options
 
-    # 작업 경로 초기화
     workspace = Path(kwargs['workspace'])
-    if shared.IN_COLAB and kwargs['use_google_drive']:
-        workspace = mount_google_drive() / 'MyDrive' / workspace
-        assert workspace.parent.is_dir(), '구글 드라이브 마운팅에 실패했습니다!'
+
+    if shared.IN_COLAB:
+        # 작업 경로 초기화
+        if kwargs['use_google_drive']:
+            workspace = mount_google_drive() / 'MyDrive' / workspace
+            assert workspace.parent.is_dir(), '구글 드라이브 마운팅에 실패했습니다!'
+
+        if kwargs['disconnect_runtime']:
+            hook_runtime_disconnect()
 
     override_file = workspace.joinpath('override.json')
     if override_file.is_file():
