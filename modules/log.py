@@ -42,7 +42,7 @@ class Log:
         self.style = style
         self.childs: List['Log'] = []
         self.child_style = {
-            'padding-left': '.5em',
+            'padding-left': '1em',
             'white-space': 'pre-wrap',
             **child_style
         }
@@ -69,6 +69,7 @@ class Log:
                 self.style = {
                     **style,
                     'padding': '1em',
+                    'padding-left': '0',
                     'background-color': 'black',
                     'line-height': '1.1',
                     'font-family': "'D2Coding', monospace !important",
