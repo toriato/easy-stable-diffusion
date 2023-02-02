@@ -18,3 +18,6 @@ class Options(NamedTuple):
 
 
 options: Options
+options_ignore_override = [
+    'workspace'
+]
