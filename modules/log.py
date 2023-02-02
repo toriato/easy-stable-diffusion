@@ -178,10 +178,15 @@ class Log:
             html += f'<div style="{style(self.style)}">{self.summary}</div>'
 
         if self.childs:
+            childs = self.childs
+
+            if self.only_last_lines is not None:
+                childs = childs[-self.only_last_lines:]
+
             html += f'<div style="{style(self.child_style)}">'
             html += ''.join([
                 child.render()
-                for child in self.childs[-self.only_last_lines:]
+                for child in childs
             ])
             html += '</div>'
 
