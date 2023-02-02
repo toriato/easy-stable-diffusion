@@ -18,7 +18,7 @@ def main(**kwargs):
     workspace = Path(kwargs['workspace'])
 
     if shared.IN_COLAB and kwargs['use_google_drive']:
-        workspace = workspace / workspace
+        workspace = mount_google_drive() / workspace
 
     with log:
         from .stable_diffusion_webui_modules import environment as env
