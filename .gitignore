@@ -1,4 +1,12 @@
 .vscode/
 .venv/
+venv/
+.env
+
+__pycache__/
+
+stable-diffusion-webui/
+
+drive/
 SD/
-repository/
+*.log
