@@ -12,6 +12,12 @@ from . import environment as env
 
 
 def setup_options(**kwargs):
+    # NamedTuple 로부터 설정 기본 값 가져오기
+    kwargs = {
+        **env.Options()._asdict(),
+        **kwargs
+    }
+
     workspace = Path(kwargs['workspace'])
 
     if shared.IN_COLAB:
@@ -45,7 +51,10 @@ def setup_options(**kwargs):
                     kwargs[key] = value
 
     env.options = env.Options(**{
+        # 사용자가 입력한 값
         **kwargs,
+
+        # 변환된 설정 값
         'workspace': Path(workspace),
         'args': shlex.split(kwargs['args']),
         'extra_args': shlex.split(kwargs['extra_args'])
@@ -65,5 +74,4 @@ def setup_repository():
 
 
 def setup_dependencies():
-
     pass
