@@ -2,7 +2,6 @@ import traceback
 from types import TracebackType
 from typing import Callable, ClassVar, Dict, List, Optional, TypeVar, Union
 
-from ipywidgets import widgets
 from typing_extensions import ParamSpec
 
 _T = TypeVar('_T')
@@ -64,17 +63,19 @@ class Log:
             self.root_parent = self
 
             # 이미 사용자가 위젯을 만들었다면 표시할 필요 없음
-            self.widget = widgets.HTML()
-
-            # 위젯이 있는 최상위 로그에선 widgets.HTML 의 스타일로 사용함
-            self.style = {
-                **style,
-                'padding': '.5em',
-                'background-color': 'black',
-                'line-height': '1.1',
-                'font-family': "'D2Coding', monospace !important",
-                'color': 'white'
-            }
+            try:
+                from ipywidgets import widgets
+                self.widget = widgets.HTML()
+                self.style = {
+                    **style,
+                    'padding': '1em',
+                    'background-color': 'black',
+                    'line-height': '1.1',
+                    'font-family': "'D2Coding', monospace !important",
+                    'color': 'white'
+                }
+            except ImportError:
+                pass
 
         def wrap_context(log: Log, func: Callable[_A, _T]) -> Callable[_A, _T]:
             def wrapped(*args: _A.args, **kwargs: _A.kwargs):
@@ -143,10 +144,10 @@ class Log:
             style=style
         )
 
-        if log.root_parent:
+        if log.widget:
             log.root_parent.render()
         else:
-            log.render()
+            print(message, end='')
 
         return child_log
 
