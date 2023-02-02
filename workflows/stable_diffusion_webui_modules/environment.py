@@ -1,5 +1,11 @@
+import json
+import shlex
 from pathlib import Path
 from typing import List, NamedTuple
+
+from modules import shared
+from modules.log import Log
+from modules.utils import mount_google_drive
 
 
 class Options(NamedTuple):
@@ -21,3 +27,37 @@ options: Options
 options_ignore_override = [
     'workspace'
 ]
+
+
+def setup_options(**kwargs):
+    global options
+
+    # 작업 경로 초기화
+    workspace = Path(kwargs['workspace'])
+    if shared.IN_COLAB and kwargs['use_google_drive']:
+        workspace = mount_google_drive() / 'MyDrive' / workspace
+        assert workspace.parent.is_dir(), '구글 드라이브 마운팅에 실패했습니다!'
+
+    override_file = workspace.joinpath('override.json')
+    if override_file.is_file():
+        with Log.info('override.json 파일이 존재합니다, 설정 값을 덮어씁니다.'):
+            with override_file.open() as file:
+                override = json.load(file)
+
+            for key, value in override.items():
+                if key in options_ignore_override:
+                    Log.warn(f'override.json: "{key}" 값은 덮어쓸 수 없습니다.')
+                elif key not in kwargs:
+                    Log.warn(f'override.json: "{key}" 값은 존재하지 않습니다.')
+                elif type(value) != type(kwargs[key]):
+                    Log.warn(f'override.json: "{key}" 값의 자료형이 잘못됐습니다.')
+                else:
+                    Log.info(f'override.json: "{key}" -> "{value}"')
+                    kwargs[key] = value
+
+    options = Options(**{
+        **kwargs,
+        'workspace': Path(workspace),
+        'args': shlex.split(kwargs['args']),
+        'extra_args': shlex.split(kwargs['extra_args'])
+    })
