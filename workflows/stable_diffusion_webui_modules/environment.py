@@ -46,13 +46,13 @@ def setup_options(**kwargs):
 
             for key, value in override.items():
                 if key in options_ignore_override:
-                    Log.warn(f'override.json: "{key}" 값은 덮어쓸 수 없습니다.')
+                    Log.warning(f'"{key}" 값은 덮어쓸 수 없습니다.')
                 elif key not in kwargs:
-                    Log.warn(f'override.json: "{key}" 값은 존재하지 않습니다.')
+                    Log.warning(f'"{key}" 값은 존재하지 않습니다.')
                 elif type(value) != type(kwargs[key]):
-                    Log.warn(f'override.json: "{key}" 값의 자료형이 잘못됐습니다.')
+                    Log.warning(f'"{key}" 값의 자료형이 잘못됐습니다.')
                 else:
-                    Log.info(f'override.json: "{key}" -> "{value}"')
+                    Log.info(f'"{key}" -> "{value}"')
                     kwargs[key] = value
 
     options = Options(**{

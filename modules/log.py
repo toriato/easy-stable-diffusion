@@ -85,15 +85,16 @@ class Log:
 
         self.print = wrap_context(self, Log.print)
         self.info = wrap_context(self, Log.info)
-        self.warn = wrap_context(self, Log.warn)
+        self.success = wrap_context(self, Log.success)
+        self.warning = wrap_context(self, Log.warning)
         self.error = wrap_context(self, Log.error)
 
     def __enter__(self) -> 'Log':
-        Log.context.insert(0, self)
+        Log.context.append(self)
         return self
 
     def __exit__(self, exc_type, exc_value, tb: TracebackType) -> Union[None, bool]:
-        log = Log.context.pop(0)
+        log = Log.context.pop()
 
         if exc_type:
             err = log.error(str(exc_value))
@@ -110,7 +111,7 @@ class Log:
 
         :return: 현재 컨텍스트 로거
         """
-        return Log.context[0] if len(Log.context) else None
+        return Log.context[-1] if Log.context else None
 
     @staticmethod
     def clear() -> None:
@@ -144,7 +145,7 @@ class Log:
             style=style
         )
 
-        if log.widget:
+        if log.root_parent.widget:
             log.root_parent.render()
         else:
             print(message, end='')
@@ -156,7 +157,11 @@ class Log:
         return Log.print(message + '\n', {'color': 'white'})
 
     @staticmethod
-    def warn(message: str) -> 'Log':
+    def success(message: str) -> 'Log':
+        return Log.print(message + '\n', {'color': 'darkgreen'})
+
+    @staticmethod
+    def warning(message: str) -> 'Log':
         return Log.print(message + '\n', {'color': 'yellow'})
 
     @staticmethod
