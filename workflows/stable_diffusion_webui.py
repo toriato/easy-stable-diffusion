@@ -11,5 +11,7 @@ except ImportError:
 
 def main(**kwargs):
     with log:
-        from .stable_diffusion_webui_modules.environment import setup_options
-        setup_options(**kwargs)
+        from .stable_diffusion_webui_modules import environment
+        environment.setup_options(**kwargs)
+        environment.setup_repository()
+        environment.setup_dependencies()

@@ -5,6 +5,7 @@ from typing import List, NamedTuple
 
 from modules import shared
 from modules.log import Log
+from modules.subprocess import call, call_python
 from modules.utils import hook_runtime_disconnect, mount_google_drive
 
 
@@ -17,6 +18,7 @@ class Options(NamedTuple):
     gradio_username: str
     gradio_password: str
     ngrok_api_token: str
+    python_executable: str
     repo_url: str
     repo_commit: str
     args: List[str]
@@ -40,6 +42,7 @@ def setup_options(**kwargs):
             workspace = mount_google_drive() / 'MyDrive' / workspace
             assert workspace.parent.is_dir(), '구글 드라이브 마운팅에 실패했습니다!'
 
+        # 런타임 자동 해제
         if kwargs['disconnect_runtime']:
             hook_runtime_disconnect()
 
@@ -66,3 +69,19 @@ def setup_options(**kwargs):
         'args': shlex.split(kwargs['args']),
         'extra_args': shlex.split(kwargs['extra_args'])
     })
+
+
+def setup_repository():
+    path = options.workspace / 'stable-diffusion-webui'
+
+    with Log.info('저장소를 설정합니다.'):
+        if not path.joinpath('.git').is_dir():
+            call(['git', 'clone', options.repo_url, str(path)])
+
+        if options.repo_commit:
+            call(['git', 'stash'], cwd=path)
+            call(['git', 'checkout', options.repo_commit], cwd=path)
+
+
+def setup_dependencies():
+    pass
