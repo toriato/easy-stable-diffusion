@@ -57,7 +57,10 @@ class Log:
             # 하위 로거로 추가하기
             self.parent.childs.append(self)
 
-            #
+            # 너무 많이 쌓이면 메모리 터질 수도 있으니 제거
+            if len(self.parent.childs) > 1000:
+                self.parent.childs.pop(0)
+
             self.root_parent = self.parent.root_parent or self.parent
 
         # 최상위 로거라면
