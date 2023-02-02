@@ -4,6 +4,8 @@ from typing import Callable, ClassVar, Dict, List, Optional, TypeVar, Union
 
 from typing_extensions import ParamSpec
 
+from . import shared
+
 _T = TypeVar('_T')
 _A = ParamSpec('_A')
 
@@ -63,7 +65,7 @@ class Log:
             self.root_parent = self
 
             # 이미 사용자가 위젯을 만들었다면 표시할 필요 없음
-            try:
+            if shared.IN_INTERACTIVE:
                 from ipywidgets import widgets
                 self.widget = widgets.HTML()
                 self.style = {
@@ -75,8 +77,6 @@ class Log:
                     'font-family': "'D2Coding', monospace !important",
                     'color': 'white'
                 }
-            except ImportError:
-                pass
 
         def wrap_context(log: Log, func: Callable[_A, _T]) -> Callable[_A, _T]:
             def wrapped(*args: _A.args, **kwargs: _A.kwargs):
