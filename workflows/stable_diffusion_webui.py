@@ -11,7 +11,11 @@ except ImportError:
 
 def main(**kwargs):
     with log:
-        from .stable_diffusion_webui_modules import environment
-        environment.setup_options(**kwargs)
-        environment.setup_repository()
-        environment.setup_dependencies()
+        from .stable_diffusion_webui_modules import setup
+        setup.setup_options(**kwargs)
+        setup.setup_repository()
+        setup.setup_dependencies()
+
+
+if __name__ == '__main__':
+    main()
