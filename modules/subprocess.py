@@ -7,10 +7,17 @@ from typing import List, Optional
 from modules.log import Log
 
 
-def call(*args, **kwargs) -> int:
+def call(
+    *args,
+    fold_on_success=True,
+    unfold_on_failed=True,
+    **kwargs
+) -> int:
     """
     하위 프로세스를 실행하고 모든 출력을 print() 함수로 전달합니다
 
+    :param fold_on_success: 성공시 출력을 접습니다
+    :param unfold_on_failed: 실패시 출력을 펼칩니다
     :param args: subprocess.Popen() 함수에 전달할 인자들
     :param kwargs: subprocess.Popen() 함수에 전달할 인자들
 
@@ -48,13 +55,23 @@ def call(*args, **kwargs) -> int:
     rc = p.poll()
     assert rc is not None
 
-    if rc != 0:
-        log.style = {'color': 'red'}
+    # 로그 스타일 업데이트
+    try:
+        if rc != 0:
+            if unfold_on_failed:
+                log.only_last_lines = None
+
+            log.style = {'color': 'red'}
+
+            raise subprocess.CalledProcessError(rc, p.args)
+
+        if fold_on_success:
+            log.only_last_lines = 0
+
+    finally:
         log.root_parent.render()
-        raise subprocess.CalledProcessError(rc, p.args)
 
     log.style = {'color': 'green'}
-    log.root_parent.render()
 
     return rc
 

@@ -1,6 +1,6 @@
 from modules.log import Log
 
-log = Log()
+log = Log(only_last_lines=0)
 
 try:
     from IPython.display import display

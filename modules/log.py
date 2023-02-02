@@ -26,7 +26,7 @@ class Log:
         summary: Optional[str] = None,
         style: Dict[str, str] = {},
         child_style: Dict[str, str] = {},
-        only_last_lines: Optional[int] = None
+        only_last_lines: Optional[int] = 10
     ) -> None:
         """
         :param parent: 상위 로거
@@ -48,7 +48,7 @@ class Log:
         }
 
         # 상위 로거가 있다면 끝에서 10줄만 보여주기
-        self.only_last_lines = only_last_lines or (10 if self.parent else 0)
+        self.only_last_lines = only_last_lines
 
         # 상위 로거가 존재한다면
         if self.parent:
