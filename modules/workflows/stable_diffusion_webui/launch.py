@@ -8,7 +8,7 @@ from modules.log import Log
 from modules.subprocess import call, call_python
 from modules.utils import hook_runtime_disconnect, mount_google_drive
 
-from . import environment as env
+from . import env
 
 
 def setup_options(**kwargs):
