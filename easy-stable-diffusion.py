@@ -6,7 +6,6 @@ import shlex
 import shutil
 import subprocess
 import sys
-import tempfile
 from datetime import datetime
 from distutils.spawn import find_executable
 from importlib.util import find_spec
@@ -239,7 +238,7 @@ def setup_environment():
 
     # 로그 파일 만들기
     global LOG_FILE
-    workspace = Path(WORKSPACE)
+    workspace = Path(WORKSPACE).resolve()
     log_path = workspace.joinpath(
         'logs',
         datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S.log')
@@ -278,14 +277,9 @@ def setup_environment():
     if not has_checkpoint():
         for file in [
             {
-                'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp16.safetensors',
-                'target': str(workspace.joinpath('models/Stable-diffusion/wd-1-4-epoch2-fp16.safetensors')),
+                'url': 'https://huggingface.co/gsdf/Counterfeit-V2.5/resolve/main/Counterfeit-V2.5_fp16.safetensors',
+                'target': str(workspace.joinpath('models/Stable-diffusion/Counterfeit-V2.5_fp16.safetensors')),
                 'summary': '기본 체크포인트 파일을 받아옵니다'
-            },
-            {
-                'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp16.yaml',
-                'target': str(workspace.joinpath('models/Stable-diffusion/wd-1-4-epoch2-fp16.yaml')),
-                'summary': '기본 체크포인트 설정 파일을 받아옵니다'
             },
             {
                 'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/VAE/kl-f8-anime2.ckpt',
@@ -613,6 +607,7 @@ def download(url: str, target: str, ignore_aria2=False, **kwargs):
             execute(['apt', 'install', 'aria2'])
 
         if find_executable('aria2c'):
+            p = Path(target)
             execute(
                 [
                     'aria2c',
@@ -626,7 +621,8 @@ def download(url: str, target: str, ignore_aria2=False, **kwargs):
                     '--max-overall-download-limit', '0',
                     '--max-download-limit', '0',
                     '--split', '8',
-                    '--out', target,
+                    '--dir', str(p.parent),
+                    '--out', p.name,
                     url
                 ],
                 **kwargs)
