@@ -83,6 +83,7 @@ REPO_COMMIT = '' #@param {type:"string"}
 OPTIONS['REPO_COMMIT'] = REPO_COMMIT
 
 #@markdown ##### <font color="orange">***Python 바이너리 이름***</font>
+#@markdown 입력 란을 <font color="red">비워두면</font> 시스템에 설치된 Python 을 사용함
 PYTHON_EXECUTABLE = '' #@param {type:"string"}
 OPTIONS['PYTHON_EXECUTABLE'] = PYTHON_EXECUTABLE
 
