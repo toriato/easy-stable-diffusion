@@ -385,6 +385,9 @@ def log(
             return len(LOG_BLOCKS) - 1
 
         # 부모 로그가 존재한다면 추가하기
+        if len(LOG_BLOCKS[parent_index]['childs']) > 100:
+            LOG_BLOCKS[parent_index]['childs'].pop(0)
+
         LOG_BLOCKS[parent_index]['childs'].append(msg)
         render_log()
 
