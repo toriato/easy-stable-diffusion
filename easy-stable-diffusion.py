@@ -101,15 +101,9 @@ OPTIONS['EXTRA_ARGS'] = shlex.split(EXTRA_ARGS)
 #####################################################
 # fmt: on
 
-# 임시 디렉터리
-TEMP_DIR = tempfile.mkdtemp()
-
-# 로그 파일
+# 로그 변수
 LOG_FILE: Optional[io.TextIOWrapper] = None
-
-# 로그 HTML 위젯
 LOG_WIDGET = None
-
 LOG_BLOCKS = []
 
 # 로그 HTML 위젯 스타일
@@ -151,6 +145,7 @@ LOG_WIDGET_STYLES['dialog_error'] = {
     'background-color': 'red',
 }
 
+IN_INTERACTIVE = hasattr(sys, 'ps1')
 IN_COLAB = False
 
 try:
@@ -189,10 +184,9 @@ def hook_runtime_disconnect():
 def setup_colab():
     global WORKSPACE
 
-    from google.colab import drive
-
     # 구글 드라이브 마운트하기
     if OPTIONS['USE_GOOGLE_DRIVE']:
+        from google.colab import drive
         drive.mount('drive')
 
         WORKSPACE = str(
@@ -227,7 +221,7 @@ def setup_environment():
     global LOG_WIDGET
 
     # 노트북 환경이라면 로그 표시를 위한 HTML 요소 만들기
-    if hasattr(sys, 'ps1'):
+    if IN_INTERACTIVE:
         try:
             from IPython.display import display
             from ipywidgets import widgets
