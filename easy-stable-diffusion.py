@@ -1,17 +1,17 @@
+import io
 import json
 import os
 import re
 import shlex
 import shutil
+import subprocess
 import sys
 import tempfile
 from datetime import datetime
 from distutils.spawn import find_executable
 from importlib.util import find_spec
-from io import FileIO
 from pathlib import Path
-from subprocess import PIPE, STDOUT, Popen
-from typing import Callable, Dict, List, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import requests
 import torch
@@ -28,7 +28,6 @@ OPTIONS = {}
 #@markdown ### <font color="orange">***작업 디렉터리 경로***</font>
 #@markdown 임베딩, 모델, 결과와 설정 파일 등이 영구적으로 보관될 디렉터리 경로
 WORKSPACE = 'SD' #@param {type:"string"}
-OPTIONS['WORKSPACE'] = WORKSPACE
 
 #@markdown ##### <font color="orange">***자동으로 코랩 런타임을 종료할지?***</font>
 DISCONNECT_RUNTIME = True  #@param {type:"boolean"}
@@ -84,7 +83,7 @@ REPO_COMMIT = '' #@param {type:"string"}
 OPTIONS['REPO_COMMIT'] = REPO_COMMIT
 
 #@markdown ##### <font color="orange">***Python 바이너리 이름***</font>
-PYTHON_EXECUTABLE = ''
+PYTHON_EXECUTABLE = '' #@param {type:"string"}
 OPTIONS['PYTHON_EXECUTABLE'] = PYTHON_EXECUTABLE
 
 #@markdown ##### <font color="orange">***WebUI 인자***</font>
@@ -106,10 +105,12 @@ OPTIONS['EXTRA_ARGS'] = shlex.split(EXTRA_ARGS)
 TEMP_DIR = tempfile.mkdtemp()
 
 # 로그 파일
-LOG_FILE: FileIO = None
+LOG_FILE: Optional[io.TextIOWrapper] = None
 
 # 로그 HTML 위젯
 LOG_WIDGET = None
+
+LOG_BLOCKS = []
 
 # 로그 HTML 위젯 스타일
 LOG_WIDGET_STYLES = {
@@ -150,53 +151,58 @@ LOG_WIDGET_STYLES['dialog_error'] = {
     'background-color': 'red',
 }
 
+IN_COLAB = False
+
+try:
+    from IPython import get_ipython
+    IN_COLAB = 'google.colab' in str(get_ipython())
+except ImportError:
+    pass
+
 
 def hook_runtime_disconnect():
-    try:
-        # google.colab 패키지가 없으면 ImportError 를 raise 하므로
-        # 코랩 런타임 환경 밖에서 이 코드는 동작하지 않음
-        from google.colab import runtime
+    if not IN_COLAB:
+        return
 
-        # asyncio 는 여러 겹으로 사용할 수 없게끔 설계됐기 때문에
-        # 주피터 노트북 등 이미 루프가 돌고 있는 곳에선 사용할 수 없음
-        # 이는 nest-asyncio 패키지를 통해 어느정도 우회하여 사용할 수 있음
-        # https://pypi.org/project/nest-asyncio/
-        if not has_python_package('nest_asyncio'):
-            execute(['pip', 'install', 'nest-asyncio'])
+    from google.colab import runtime
 
-        import nest_asyncio
-        nest_asyncio.apply()
+    # asyncio 는 여러 겹으로 사용할 수 없게끔 설계됐기 때문에
+    # 주피터 노트북 등 이미 루프가 돌고 있는 곳에선 사용할 수 없음
+    # 이는 nest-asyncio 패키지를 통해 어느정도 우회하여 사용할 수 있음
+    # https://pypi.org/project/nest-asyncio/
+    if not has_python_package('nest_asyncio'):
+        execute(['pip', 'install', 'nest-asyncio'])
 
-        import asyncio
+    import nest_asyncio
+    nest_asyncio.apply()
 
-        async def unassign():
-            runtime.unassign()
+    import asyncio
 
-        # 평범한 환경에선 비동기로 동작하여 바로 실행되나
-        # 코랩 런타임에선 순차적으로 실행되기 때문에 현재 셀 종료 후 즉시 실행됨
-        asyncio.create_task(unassign())
-    except ImportError:
-        pass
+    async def unassign():
+        runtime.unassign()
+
+    # 평범한 환경에선 비동기로 동작하여 바로 실행되나
+    # 코랩 런타임에선 순차적으로 실행되기 때문에 현재 셀 종료 후 즉시 실행됨
+    asyncio.create_task(unassign())
 
 
 def setup_colab():
-    try:
-        from google.colab import drive
-    except ImportError:
-        return
+    global WORKSPACE
+
+    from google.colab import drive
 
     # 구글 드라이브 마운트하기
     if OPTIONS['USE_GOOGLE_DRIVE']:
         drive.mount('drive')
 
-        OPTIONS['WORKSPACE'] = str(
-            Path('drive', 'MyDrive').joinpath(OPTIONS['WORKSPACE'])
+        WORKSPACE = str(
+            Path('drive', 'MyDrive').joinpath(WORKSPACE)
         )
 
     if not OPTIONS['USE_GRADIO'] and not OPTIONS['NGROK_API_TOKEN']:
         alert('선택된 터널링 서비스가 없습니다!')
 
-    if not find_executable(OPTIONS['PYTHON_EXECUTABLE']):
+    if OPTIONS['PYTHON_EXECUTABLE'] and not find_executable(OPTIONS['PYTHON_EXECUTABLE']):
         execute(['apt', 'install', OPTIONS['PYTHON_EXECUTABLE']])
         execute(
             f"curl -sS https://bootstrap.pypa.io/get-pip.py | {OPTIONS['PYTHON_EXECUTABLE']}")
@@ -221,20 +227,19 @@ def setup_environment():
     global LOG_WIDGET
 
     # 노트북 환경이라면 로그 표시를 위한 HTML 요소 만들기
-    if 'ipykernel' in sys.modules:
+    if hasattr(sys, 'ps1'):
         try:
             from IPython.display import display
             from ipywidgets import widgets
 
             LOG_WIDGET = widgets.HTML()
-            LOG_WIDGET.blocks = []
             display(LOG_WIDGET)
 
         except ImportError:
             pass
 
     # google.colab 패키지가 있다면 코랩 환경으로 인식하기
-    if has_python_package('google') and has_python_package('google.colab'):
+    if IN_COLAB:
         setup_colab()
 
     update_workspace()
@@ -244,17 +249,17 @@ def setup_environment():
         for file in [
             {
                 'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp16.safetensors',
-                'target': os.path.join(OPTIONS['WORKSPACE'], 'models/Stable-diffusion/wd-1-4-epoch2-fp16.safetensors'),
+                'target': os.path.join(WORKSPACE, 'models/Stable-diffusion/wd-1-4-epoch2-fp16.safetensors'),
                 'summary': '기본 체크포인트 파일을 받아옵니다'
             },
             {
                 'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp16.yaml',
-                'target': os.path.join(OPTIONS['WORKSPACE'], 'models/Stable-diffusion/wd-1-4-epoch2-fp16.yaml'),
+                'target': os.path.join(WORKSPACE, 'models/Stable-diffusion/wd-1-4-epoch2-fp16.yaml'),
                 'summary': '기본 체크포인트 설정 파일을 받아옵니다'
             },
             {
                 'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/VAE/kl-f8-anime2.ckpt',
-                'target': os.path.join(OPTIONS['WORKSPACE'], 'models/VAE/kl-f8-anime2.ckpt'),
+                'target': os.path.join(WORKSPACE, 'models/VAE/kl-f8-anime2.ckpt'),
                 'summary': '기본 VAE 파일을 받아옵니다'
             }
         ]:
@@ -278,9 +283,17 @@ def format_list(value):
 
 
 def render_log() -> None:
+    try:
+        from ipywidgets import widgets
+    except ImportError:
+        return
+
+    if not isinstance(LOG_WIDGET, widgets.HTML):
+        return
+
     html = f'''<div style="{format_styles(LOG_WIDGET_STYLES['wrapper'])}">'''
 
-    for block in LOG_WIDGET.blocks:
+    for block in LOG_BLOCKS:
         styles = {
             'display': 'inline-block',
             **block['styles']
@@ -308,7 +321,7 @@ def log(
     newline=True,
 
     parent=False,
-    parent_index: int = None,
+    parent_index: Optional[int] = None,
     child_styles={
         'padding-left': '1em',
         'color': 'gray'
@@ -317,8 +330,7 @@ def log(
 
     print_to_file=True,
     print_to_widget=True
-) -> Tuple[None, int]:
-
+) -> Optional[int]:
     # 기록할 내용이 ngrok API 키와 일치한다면 숨기기
     # TODO: 더 나은 문자열 검사, 원치 않은 내용이 가려질 수도 있음
     if OPTIONS['NGROK_API_TOKEN'] != '':
@@ -338,7 +350,7 @@ def log(
     if print_to_widget and LOG_WIDGET:
         # 부모 로그가 없다면 새 블록 만들기
         if parent or parent_index is None:
-            LOG_WIDGET.blocks.append({
+            LOG_BLOCKS.append({
                 'msg': msg,
                 'styles': styles,
                 'childs': [],
@@ -346,15 +358,13 @@ def log(
                 'max_childs': max_childs
             })
             render_log()
-            return len(LOG_WIDGET.blocks) - 1
+            return len(LOG_BLOCKS) - 1
 
         # 부모 로그가 존재한다면 추가하기
-        LOG_WIDGET.blocks[parent_index]['childs'].append(msg)
+        LOG_BLOCKS[parent_index]['childs'].append(msg)
         render_log()
-        return
 
     print('\t' if parent_index else '' + msg, end='')
-    return
 
 
 def log_trace() -> None:
@@ -373,17 +383,18 @@ def log_trace() -> None:
         styles = LOG_WIDGET_STYLES['dialog_error']
 
     parent_index = log('보고서를 만들고 있습니다...', styles)
+    assert parent_index
 
     # 오류가 존재한다면 오류 정보와 스택 트레이스 출력하기
     if ex_type is not None:
-        log(parent_index=parent_index, msg=f'{ex_type.__name__}: {ex_value}')
+        log(f'{ex_type.__name__}: {ex_value}', parent_index=parent_index)
         log(
-            parent_index=parent_index,
-            msg=format_list(
+            format_list(
                 map(
                     lambda v: f'{v[0]}#{v[1]}\n\t{v[2]}\n\t{v[3]}',
                     traceback.extract_tb(ex_traceback))
-            )
+            ),
+            parent_index=parent_index
         )
 
     # 로그 파일이 없으면 보고하지 않기
@@ -401,12 +412,14 @@ def log_trace() -> None:
 
         # 로그 업로드
         # TODO: 업로드 실패 시 오류 처리
-        res = requests.post('https://hastebin.com/documents',
-                            data=logs.encode('utf-8'))
+        res = requests.post(
+            'https://hastebin.com/documents',
+            data=logs.encode('utf-8')
+        )
         url = f"https://hastebin.com/raw/{json.loads(res.text)['key']}"
 
         # 기존 오류 메세지 업데이트
-        LOG_WIDGET.blocks[parent_index]['msg'] = '\n'.join([
+        LOG_BLOCKS[parent_index]['msg'] = '\n'.join([
             '오류가 발생했습니다, 아래 주소를 <a href="https://discord.gg/6wQeA2QXgM">디스코드 서버</a>에 보고해주세요',
             f'<a target="_blank" href="{url}">{url}</a>',
         ])
@@ -430,61 +443,55 @@ def alert(message: str):
 # ==============================
 # 서브 프로세스
 # ==============================
-running_subprocess = None
-
-
 def execute(
     args: Union[str, List[str]],
-    parser: Callable = None,
-    summary: str = None,
+    parser: Optional[
+        Callable[[str, Optional[int]], None]
+    ] = None,
+    summary: Optional[str] = None,
     hide_summary=False,
     print_to_file=True,
     print_to_widget=True,
     throw=True,
     **kwargs
-) -> Tuple[str, Popen]:
-
-    global running_subprocess
-
-    # 이미 서브 프로세스가 존재한다면 예외 처리하기
-    if running_subprocess and running_subprocess.poll() is None:
-        raise Exception('이미 다른 하위 프로세스가 실행되고 있습니다')
-
+) -> Tuple[str, int]:
     if isinstance(args, str) and 'shell' not in kwargs:
         kwargs['shell'] = True
 
     # 서브 프로세스 만들기
-    running_subprocess = Popen(
+    p = subprocess.Popen(
         args,
-        stdout=PIPE,
-        stderr=STDOUT,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         encoding='utf-8',
         **kwargs)
-    running_subprocess.output = ''
 
     # 로그에 시작한 프로세스 정보 출력하기
     formatted_args = args if isinstance(args, str) else ' '.join(args)
     summary = formatted_args if summary is None else f'{summary}\n   {formatted_args}'
 
-    running_subprocess.parent_index = log(
+    log_index = log(
         f'=> {summary}',
         styles={'color': 'yellow'},
         max_childs=5)
 
+    output = ''
+
     # 프로세스 출력 위젯에 리다이렉션하기
-    while running_subprocess.poll() is None:
+    while p.poll() is None:
         # 출력이 비어있다면 넘어가기
-        line = running_subprocess.stdout.readline()
+        assert p.stdout
+        line = p.stdout.readline()
         if not line:
             continue
 
         # 프로세스 출력 버퍼에 추가하기
-        running_subprocess.output += line
+        output += line
 
         # 파서 함수 실행하기
         if callable(parser):
             try:
-                if parser(line):
+                if parser(line, log_index):
                     continue
             except:
                 log_trace()
@@ -493,38 +500,40 @@ def execute(
         log(
             line,
             newline=False,
-            parent_index=running_subprocess.parent_index,
+            parent_index=log_index,
             print_to_file=print_to_file,
             print_to_widget=print_to_widget)
 
     # 변수 정리하기
-    output = running_subprocess.output
-    returncode = running_subprocess.poll()
+    rc = p.poll()
+    assert rc is not None
 
     # 로그 블록 업데이트
     if LOG_WIDGET:
-        if returncode == 0:
+        assert log_index
+
+        if rc == 0:
             # 성공적으로 프로세스가 종료됐을 때
             if hide_summary:
                 # 현재 로그 블록 숨기기 (제거하기)
-                del LOG_WIDGET.blocks[running_subprocess.parent_index]
+                del LOG_BLOCKS[log_index]
             else:
                 # 현재 로그 텍스트 초록색으로 변경하고 프로세스 출력 숨기기
-                LOG_WIDGET.blocks[running_subprocess.parent_index]['styles']['color'] = 'green'
-                LOG_WIDGET.blocks[running_subprocess.parent_index]['max_childs'] = None
+                LOG_BLOCKS[log_index]['styles']['color'] = 'green'
+                LOG_BLOCKS[log_index]['max_childs'] = None
         else:
             # 현재 로그 텍스트 빨간색으로 변경하고 프로세스 출력 모두 표시하기
-            LOG_WIDGET.blocks[running_subprocess.parent_index]['styles']['color'] = 'red'
-            LOG_WIDGET.blocks[running_subprocess.parent_index]['max_childs'] = 0
+            LOG_BLOCKS[log_index]['styles']['color'] = 'red'
+            LOG_BLOCKS[log_index]['max_childs'] = 0
 
         # 로그 블록 렌더링
         render_log()
 
     # 오류 코드를 반환했다면
-    if returncode != 0 and throw:
-        raise Exception(f'프로세스가 {returncode} 코드를 반환했습니다')
+    if rc != 0 and throw:
+        raise Exception(f'프로세스가 {rc} 코드를 반환했습니다')
 
-    return output, returncode
+    return output, rc
 
 # ==============================
 # 작업 경로
@@ -534,7 +543,7 @@ def execute(
 def update_workspace() -> None:
     global LOG_FILE
 
-    workspace = Path(OPTIONS['WORKSPACE'])
+    workspace = Path(WORKSPACE)
 
     # 로그 만들기
     log_dir = workspace.joinpath('logs')
@@ -580,7 +589,7 @@ def delete(path: os.PathLike) -> None:
         shutil.rmtree(path, ignore_errors=True)
 
 
-def has_python_package(pkg: str, executable: str = None) -> bool:
+def has_python_package(pkg: str, executable: Optional[str] = None) -> bool:
     if not executable:
         return find_spec(pkg) is not None
 
@@ -660,7 +669,7 @@ def download(url: str, target: str, ignore_aria2=False, **kwargs):
 
 
 def has_checkpoint() -> bool:
-    workspace = Path(OPTIONS['WORKSPACE'])
+    workspace = Path(WORKSPACE)
     for p in workspace.joinpath('models', 'Stable-diffusion').glob('**/*'):
         if p.suffix != '.ckpt' and p.suffix != '.safetensors':
             continue
@@ -671,23 +680,6 @@ def has_checkpoint() -> bool:
 
         return True
     return False
-
-
-# ==============================
-# WebUI 레포지토리 및 종속 패키지 설치
-# ==============================
-def patch_webui_repository() -> None:
-    # Gradio 에서 앱이 위치한 경로와 다른 장치에 있는 내부 파일 접근시 발생하던 ValueError 를 해결하는 스크립트
-    download(
-        'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/fix_gradio_route.py',
-        'repository/scripts/fix_gradio_route.py',
-        ignore_aria2=True)
-
-    # 모델 변경 전 임시 폴더로 옮기는 스크립트
-    download(
-        'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/alternate_load_model_weights.py',
-        'repository/scripts/alternate_load_model_weights.py',
-        ignore_aria2=True)
 
 
 def setup_webui() -> None:
@@ -701,8 +693,7 @@ def setup_webui() -> None:
             # 사용자 파일만 남겨두고 레포지토리 초기화하기
             # https://stackoverflow.com/a/12096327
             execute(
-                'git reset --hard HEAD && git pull',
-                summary='레포지토리를 업데이트 합니다',
+                'git stash && git pull',
                 cwd='repository')
 
             need_clone = False
@@ -712,27 +703,36 @@ def setup_webui() -> None:
 
     if need_clone:
         shutil.rmtree(path, ignore_errors=True)
-        execute(
-            ['git', 'clone', OPTIONS['REPO_URL'], str(path)],
-            summary='레포지토리를 가져옵니다')
+        execute(['git', 'clone', OPTIONS['REPO_URL'], str(path)])
 
     # 특정 커밋이 지정됐다면 체크아웃하기
     if OPTIONS['REPO_COMMIT'] != '':
         execute(
             ['git', 'checkout', OPTIONS['REPO_COMMIT']],
-            summary=f"레포지토리를 {OPTIONS['REPO_COMMIT']} 커밋으로 되돌립니다",
             cwd=path)
 
-    patch_webui_repository()
+    if IN_COLAB:
+        # Gradio 에서 앱이 위치한 경로와 다른 장치에 있는 내부 파일 접근시 발생하던 ValueError 를 해결하는 스크립트
+        download(
+            'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/fix_gradio_route.py',
+            'repository/scripts/fix_gradio_route.py',
+            ignore_aria2=True)
+
+        # 모델 변경 전 임시 폴더로 옮기는 스크립트
+        download(
+            'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/alternate_load_model_weights.py',
+            'repository/scripts/alternate_load_model_weights.py',
+            ignore_aria2=True)
 
 
-def parse_webui_output(line: str) -> bool:
+def parse_webui_output(line: str, log_index: Optional[int]) -> None:
     global NGROK_URL
 
     # 하위 파이썬 실행 중 오류가 발생하면 전체 기록 표시하기
     # TODO: 더 나은 오류 핸들링, 잘못된 내용으로 트리거 될 수 있음
     if LOG_WIDGET and 'Traceback (most recent call last):' in line:
-        LOG_WIDGET.blocks[running_subprocess.parent_index]['max_childs'] = 0
+        assert log_index
+        LOG_BLOCKS[log_index]['max_childs'] = 0
         render_log()
         return
 
@@ -776,7 +776,9 @@ def parse_webui_output(line: str) -> bool:
 
     # 외부 주소 출력되면 성공적으로 실행한 것으로 판단
     if line.startswith('ngrok connected to') or line.startswith('Running on public URL:'):
-        url = re.search(r'https?://.+', line)[0]
+        matches = re.search(r'https?://.+', line)
+        assert matches
+        url = matches[0]
 
         # gradio 는 웹 서버가 켜진 이후 바로 나오기 때문에 사용자에게 바로 보여줘도 상관 없음
         if 'gradio' in url:
@@ -799,16 +801,8 @@ def parse_webui_output(line: str) -> bool:
         return
 
 
-def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = None) -> None:
+def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = {}) -> None:
     global GRADIO_PASSWORD_GENERATED
-
-    # 기본 환경 변수 만들기
-    if env is None:
-        env = {
-            **os.environ,
-            'PYTHONUNBUFFERED': '1',
-            'HF_HOME': os.path.join(OPTIONS['WORKSPACE'], 'cache', 'huggingface')
-        }
 
     # 기본 인자 만들기
     if len(args) < 1:
@@ -842,20 +836,25 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = None) -
                 '--ngrok-region', 'jp'
             ]
 
-        if OPTIONS['WORKSPACE']:
+        if WORKSPACE:
             args += [
                 '--data-dir',
-                str(Path(OPTIONS['WORKSPACE']).resolve())
+                str(Path(WORKSPACE).resolve())
             ]
 
     # 추가 인자
     args += OPTIONS['EXTRA_ARGS']
 
     execute(
-        [OPTIONS['PYTHON_EXECUTABLE'], '-m', 'launch', *args],
+        [OPTIONS['PYTHON_EXECUTABLE'] or 'python', '-m', 'launch', *args],
         parser=parse_webui_output,
         cwd='repository',
-        env=env)
+        env={
+            **os.environ,
+            'PYTHONUNBUFFERED': '1',
+            'HF_HOME': os.path.join(WORKSPACE, 'cache', 'huggingface'),
+            **env
+        })
 
 
 try:
