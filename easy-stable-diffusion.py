@@ -1,20 +1,20 @@
+import json
 import os
-import sys
-import shutil
-import tempfile
 import re
 import shlex
-import json
-import requests
-import torch
-
-from typing import Dict, Union, Callable, Tuple, List
-from subprocess import Popen, PIPE, STDOUT
+import shutil
+import sys
+import tempfile
+from datetime import datetime
 from distutils.spawn import find_executable
 from importlib.util import find_spec
-from pathlib import Path
 from io import FileIO
-from datetime import datetime
+from pathlib import Path
+from subprocess import PIPE, STDOUT, Popen
+from typing import Callable, Dict, List, Tuple, Union
+
+import requests
+import torch
 
 OPTIONS = {}
 
@@ -83,6 +83,10 @@ OPTIONS['REPO_URL'] = REPO_URL
 REPO_COMMIT = '' #@param {type:"string"}
 OPTIONS['REPO_COMMIT'] = REPO_COMMIT
 
+#@markdown ##### <font color="orange">***Python 바이너리 이름***</font>
+PYTHON_EXECUTABLE = ''
+OPTIONS['PYTHON_EXECUTABLE'] = PYTHON_EXECUTABLE
+
 #@markdown ##### <font color="orange">***WebUI 인자***</font>
 #@markdown <font color="red">**주의**</font>: 비어있지 않으면 실행에 필요한 인자가 자동으로 생성되지 않음
 #@markdown <br>[사용할 수 있는 인자 목록](https://github.com/AUTOMATIC1111/stable-diffusion-webui/blob/master/modules/shared.py#L23)
@@ -146,8 +150,6 @@ LOG_WIDGET_STYLES['dialog_error'] = {
     'background-color': 'red',
 }
 
-PYTHON_EXECUTABLE = 'python3.10'
-
 
 def hook_runtime_disconnect():
     try:
@@ -194,10 +196,10 @@ def setup_colab():
     if not OPTIONS['USE_GRADIO'] and not OPTIONS['NGROK_API_TOKEN']:
         alert('선택된 터널링 서비스가 없습니다!')
 
-    if not find_executable(PYTHON_EXECUTABLE):
-        execute(['apt', 'install', 'python3.10'])
+    if not find_executable(OPTIONS['PYTHON_EXECUTABLE']):
+        execute(['apt', 'install', OPTIONS['PYTHON_EXECUTABLE']])
         execute(
-            'curl -sS https://bootstrap.pypa.io/get-pip.py | python3.10')
+            f"curl -sS https://bootstrap.pypa.io/get-pip.py | {OPTIONS['PYTHON_EXECUTABLE']}")
 
     if len(OPTIONS['ARGS']) < 1:
         # --listen 또는 --share 인자를 사용하면 확장 기능 탭이 막혀버림
@@ -850,7 +852,7 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = None) -
     args += OPTIONS['EXTRA_ARGS']
 
     execute(
-        [PYTHON_EXECUTABLE, '-m', 'launch', *args],
+        [OPTIONS['PYTHON_EXECUTABLE'], '-m', 'launch', *args],
         parser=parse_webui_output,
         cwd='repository',
         env=env)
