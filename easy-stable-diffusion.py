@@ -236,7 +236,42 @@ def setup_environment():
     if IN_COLAB:
         setup_colab()
 
-    update_workspace()
+    # 로그 파일 만들기
+    global LOG_FILE
+    workspace = Path(WORKSPACE)
+    log_path = workspace.joinpath(
+        'logs',
+        datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S.log')
+    )
+
+    log_path.parent.mkdir(0o777, True, True)
+
+    LOG_FILE = log_path.open('a')
+
+    # 현재 환경 출력
+    import platform
+    log(' '.join(os.uname()))
+    log(f'Python {platform.python_version()}')
+    log(str(Path().resolve()))
+
+    # 덮어쓸 설정 파일 가져오기
+    override_path = workspace.joinpath('override.json')
+    if override_path.exists():
+        with override_path.open('r') as file:
+            override_options = json.loads(file.read())
+            for key, value in override_options.items():
+                if key not in OPTIONS:
+                    log(f'{key} 키는 존재하지 않는 설정입니다', styles={'color': 'red'})
+                    continue
+
+                if type(value) != type(OPTIONS[key]):
+                    log(f'{key} 키는 {type(OPTIONS[key]).__name__} 자료형이여만 합니다', styles={
+                        'color': 'red'})
+                    continue
+
+                OPTIONS[key] = value
+
+                log(f'override.json: {key} = {json.dumps(value)}')
 
     # 체크포인트 모델이 존재하지 않는다면 기본 모델 받아오기
     if not has_checkpoint():
@@ -422,12 +457,13 @@ def log_trace() -> None:
 
 
 def alert(message: str):
-    try:
-        from IPython.display import display
-        from ipywidgets import widgets
-    except ImportError:
-        log(message)
+    log(message)
+
+    if not IN_INTERACTIVE:
         return
+
+    from IPython.display import display
+    from ipywidgets import widgets
 
     display(
         widgets.HTML(f'<script>alert({json.dumps(message)})</script>')
@@ -534,46 +570,6 @@ def execute(
 # ==============================
 
 
-def update_workspace() -> None:
-    global LOG_FILE
-
-    workspace = Path(WORKSPACE)
-
-    # 로그 만들기
-    log_dir = workspace.joinpath('logs')
-    log_dir.mkdir(0o777, True, True)
-    log_path = log_dir.joinpath(
-        datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S.log')
-    )
-
-    LOG_FILE = log_path.open('a')
-
-    # 현재 환경 출력
-    import platform
-    log(platform.platform())
-    log(f'Python {platform.python_version()}')
-    log(str(Path.cwd()))
-
-    # 덮어쓸 설정 파일 가져오기
-    override_path = workspace.joinpath('override.json')
-    if override_path.exists():
-        with override_path.open('r') as file:
-            override_options = json.loads(file.read())
-            for key, value in override_options.items():
-                if key not in OPTIONS:
-                    log(f'{key} 키는 존재하지 않는 설정입니다', styles={'color': 'red'})
-                    continue
-
-                if type(value) != type(OPTIONS[key]):
-                    log(f'{key} 키는 {type(OPTIONS[key]).__name__} 자료형이여만 합니다', styles={
-                        'color': 'red'})
-                    continue
-
-                OPTIONS[key] = value
-
-                log(f'override.json: {key} = {json.dumps(value)}')
-
-
 def delete(path: os.PathLike) -> None:
     path = Path(path)
 
@@ -609,29 +605,28 @@ def download(url: str, target: str, ignore_aria2=False, **kwargs):
     Path(target).parent.mkdir(0o777, True, True)
 
     # 빠른 다운로드를 위해 aria2 패키지 설치 시도하기
-    if not ignore_aria2 and not find_executable('aria2c') and find_executable('apt'):
-        execute(
-            ['apt', 'install', 'aria2'],
-            throw=False)
+    if not ignore_aria2:
+        if not find_executable('aria2c') and find_executable('apt'):
+            execute(['apt', 'install', 'aria2'])
 
-    if find_executable('aria2c'):
-        execute(
-            [
-                'aria2c',
-                '--continue',
-                '--always-resume',
-                '--summary-interval', '10',
-                '--disk-cache', '64M',
-                '--min-split-size', '8M',
-                '--max-concurrent-downloads', '8',
-                '--max-connection-per-server', '8',
-                '--max-overall-download-limit', '0',
-                '--max-download-limit', '0',
-                '--split', '8',
-                '--out', target,
-                url
-            ],
-            **kwargs)
+        if find_executable('aria2c'):
+            execute(
+                [
+                    'aria2c',
+                    '--continue',
+                    '--always-resume',
+                    '--summary-interval', '10',
+                    '--disk-cache', '64M',
+                    '--min-split-size', '8M',
+                    '--max-concurrent-downloads', '8',
+                    '--max-connection-per-server', '8',
+                    '--max-overall-download-limit', '0',
+                    '--max-download-limit', '0',
+                    '--split', '8',
+                    '--out', target,
+                    url
+                ],
+                **kwargs)
 
     elif find_executable('curl'):
         execute(
@@ -802,7 +797,10 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = {}) -> 
     if len(args) < 1:
         # xformers
         if OPTIONS['USE_XFORMERS'] and torch.cuda.is_available():
-            args += ['--xformers']
+            args += [
+                '--xformers',
+                '--xformers-flash-attention'
+            ]
 
         # gradio
         if OPTIONS['USE_GRADIO']:
