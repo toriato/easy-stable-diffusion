@@ -794,6 +794,8 @@ def parse_webui_output(line: str, log_index: Optional[int]) -> None:
 def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = {}) -> None:
     global GRADIO_PASSWORD_GENERATED
 
+    workspace = Path(WORKSPACE).resolve()
+
     # 기본 인자 만들기
     if len(args) < 1:
         # xformers
@@ -832,7 +834,7 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = {}) -> 
         if WORKSPACE:
             args += [
                 '--data-dir',
-                str(Path(WORKSPACE).resolve())
+                str(workspace)
             ]
 
     # 추가 인자
@@ -845,7 +847,7 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = {}) -> 
         env={
             **os.environ,
             'PYTHONUNBUFFERED': '1',
-            'HF_HOME': os.path.join(WORKSPACE, 'cache', 'huggingface'),
+            'HF_HOME': str(workspace.joinpath('cache', 'huggingface')),
             **env
         })
 
