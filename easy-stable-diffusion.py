@@ -191,7 +191,7 @@ def setup_colab():
         drive.mount('drive')
 
         WORKSPACE = str(
-            Path('drive', 'MyDrive').joinpath(WORKSPACE)
+            Path('drive', 'MyDrive', WORKSPACE).resolve()
         )
 
     if not OPTIONS['USE_GRADIO'] and not OPTIONS['NGROK_API_TOKEN']:
@@ -279,17 +279,17 @@ def setup_environment():
         for file in [
             {
                 'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp16.safetensors',
-                'target': os.path.join(WORKSPACE, 'models/Stable-diffusion/wd-1-4-epoch2-fp16.safetensors'),
+                'target': str(workspace.joinpath('models/Stable-diffusion/wd-1-4-epoch2-fp16.safetensors')),
                 'summary': '기본 체크포인트 파일을 받아옵니다'
             },
             {
                 'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/wd-1-4-epoch2-fp16.yaml',
-                'target': os.path.join(WORKSPACE, 'models/Stable-diffusion/wd-1-4-epoch2-fp16.yaml'),
+                'target': str(workspace.joinpath('models/Stable-diffusion/wd-1-4-epoch2-fp16.yaml')),
                 'summary': '기본 체크포인트 설정 파일을 받아옵니다'
             },
             {
                 'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/VAE/kl-f8-anime2.ckpt',
-                'target': os.path.join(WORKSPACE, 'models/VAE/kl-f8-anime2.ckpt'),
+                'target': str(workspace.joinpath(WORKSPACE, 'models/VAE/kl-f8-anime2.ckpt')),
                 'summary': '기본 VAE 파일을 받아옵니다'
             }
         ]:
@@ -800,6 +800,8 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = {}) -> 
 
     # 기본 인자 만들기
     if len(args) < 1:
+        args += ['--data-dir', str(workspace)]
+
         # xformers
         if OPTIONS['USE_XFORMERS'] and torch.cuda.is_available():
             args += [
@@ -833,12 +835,6 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = {}) -> 
                 '--ngrok-region', 'jp'
             ]
 
-        if WORKSPACE:
-            args += [
-                '--data-dir',
-                str(workspace)
-            ]
-
     # 추가 인자
     args += OPTIONS['EXTRA_ARGS']
 
@@ -849,7 +845,7 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = {}) -> 
         env={
             **os.environ,
             'PYTHONUNBUFFERED': '1',
-            'HF_HOME': str(workspace.joinpath('cache', 'huggingface')),
+            'HF_HOME': str(workspace / 'cache' / 'huggingface'),
             **env
         })
 
