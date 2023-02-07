@@ -412,7 +412,9 @@ def log_trace() -> None:
     if ex_type is not None:
         styles = LOG_WIDGET_STYLES['dialog_error']
 
-    parent_index = log('보고서를 만들고 있습니다...', styles)
+    parent_index = log(
+        '오류가 발생했습니다, <a href="https://discord.gg/6wQeA2QXgM">디스코드 서버</a>에 보고해주세요',
+        styles)
     assert parent_index
 
     # 오류가 존재한다면 오류 정보와 스택 트레이스 출력하기
