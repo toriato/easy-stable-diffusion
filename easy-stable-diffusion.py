@@ -884,13 +884,10 @@ def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
             if IN_COLAB and MODEL_RELOAD:
                 if '--skip-install' not in args:
                     args += ['--skip-install']
-
+                
+                LAUNCHED += 1
                 continue
-
             raise
-
-        finally:
-            LAUNCHED += 1
 
 
 try:
