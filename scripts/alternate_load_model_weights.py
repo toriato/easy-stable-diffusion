@@ -1,8 +1,9 @@
 import os
-from typing import Callable
 from shutil import rmtree
-from tempfile import mkdtemp
 from subprocess import call
+from tempfile import mkdtemp
+from typing import Callable
+
 from modules import sd_models
 
 load_model_weights: Callable
@@ -18,7 +19,11 @@ def alternate_load_model_weights(model, checkpoint_info: sd_models.CheckpointInf
     print(f'Successfully copied model to {copied_checkpoint_file}')
 
     try:
-        sd = load_model_weights(model, checkpoint_info, *args, **kwargs)
+        sd = load_model_weights(
+            model,
+            sd_models.CheckpointInfo(copied_checkpoint_file),
+            *args, **kwargs
+        )
     finally:
         print('Discarding temporary model file.')
         rmtree(temp_dir, True)
