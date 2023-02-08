@@ -6,6 +6,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import time
 from datetime import datetime
 from distutils.spawn import find_executable
 from importlib.util import find_spec
@@ -54,9 +55,8 @@ OPTIONS['USE_GRADIO'] = USE_GRADIO
 #@markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
 #@markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> 인증 과정을 사용하지 않음
 #@markdown <br>`GRADIO_PASSWORD` 입력 란을 <font color="red">비워두면</font> 자동으로 비밀번호를 생성함
-GRADIO_USERNAME = 'gradio' #@param {type:"string"}
+GRADIO_USERNAME = '' #@param {type:"string"}
 GRADIO_PASSWORD = '' #@param {type:"string"}
-GRADIO_PASSWORD_GENERATED = False
 OPTIONS['GRADIO_USERNAME'] = GRADIO_USERNAME
 OPTIONS['GRADIO_PASSWORD'] = GRADIO_PASSWORD
 
@@ -67,7 +67,6 @@ OPTIONS['GRADIO_PASSWORD'] = GRADIO_PASSWORD
 #@markdown - <font color="green">장점</font>: 접속이 빠른 편이고 타임아웃이 거의 발생하지 않음
 #@markdown - <font color="red">**단점**</font>: 계정을 만들고 API 토큰을 직접 입력해줘야함
 NGROK_API_TOKEN = '' #@param {type:"string"}
-NGROK_URL = None
 OPTIONS['NGROK_API_TOKEN'] = NGROK_API_TOKEN
 
 #@markdown ##### <font color="orange">***WebUI 레포지토리 주소***</font>
@@ -134,11 +133,6 @@ LOG_WIDGET_STYLES['dialog_success'] = {
     'border': '3px dashed darkgreen',
     'background-color': 'green',
 }
-LOG_WIDGET_STYLES['dialog_warning'] = {
-    **LOG_WIDGET_STYLES['dialog'],
-    'border': '3px dashed darkyellow',
-    'background-color': 'yellow',
-}
 LOG_WIDGET_STYLES['dialog_error'] = {
     **LOG_WIDGET_STYLES['dialog'],
     'border': '3px dashed darkred',
@@ -147,6 +141,15 @@ LOG_WIDGET_STYLES['dialog_error'] = {
 
 IN_INTERACTIVE = hasattr(sys, 'ps1')
 IN_COLAB = False
+
+MODEL_LOADED = False
+MODEL_RELOAD = False
+LAUNCHED = 0
+
+# 코랩에선 서브프로세스가 다시 시작될 수 있기 때문에
+# 이 스크립트가 실행 중인 부모 프로세스에서 터널링을 직접 열어줘야함
+TUNNEL_GRADIO_URL: Optional[str] = None
+TUNNEL_NGROK_URL: Optional[str] = None
 
 try:
     from IPython import get_ipython
@@ -174,6 +177,7 @@ def hook_runtime_disconnect():
     import asyncio
 
     async def unassign():
+        time.sleep(1)
         runtime.unassign()
 
     # 평범한 환경에선 비동기로 동작하여 바로 실행되나
@@ -194,27 +198,70 @@ def setup_colab():
         )
 
     if not OPTIONS['USE_GRADIO'] and not OPTIONS['NGROK_API_TOKEN']:
-        alert('선택된 터널링 서비스가 없습니다!')
+        alert('터널링 서비스가 하나라도 없으면 외부에서 접근할 방법이 없습니다!', True)
 
     if OPTIONS['PYTHON_EXECUTABLE'] and not find_executable(OPTIONS['PYTHON_EXECUTABLE']):
         execute(['apt', 'install', OPTIONS['PYTHON_EXECUTABLE']])
         execute(
             f"curl -sS https://bootstrap.pypa.io/get-pip.py | {OPTIONS['PYTHON_EXECUTABLE']}")
 
-    if len(OPTIONS['ARGS']) < 1:
-        # --listen 또는 --share 인자를 사용하면 확장 기능 탭이 막혀버림
-        # 어처피 Gradio 비밀번호는 자동으로 생성되는데
-        # 일부러 제거하고 외부 접근 공개한 바보 책임이니 인자 넣어둠
-        OPTIONS['EXTRA_ARGS'] += ['--enable-insecure-extension-access']
+    if not torch.cuda.is_available():
+        alert('GPU 런타임이 아닙니다, 할당량이 초과 됐을 수도 있습니다!')
 
-        if not torch.cuda.is_available():
-            alert('GPU 런타임이 아닙니다, 할당량이 초과 됐을 수도 있습니다!')
+        OPTIONS['EXTRA_ARGS'] += [
+            '--skip-torch-cuda-test',
+            '--no-half',
+            '--opt-sub-quad-attention'
+        ]
 
-            OPTIONS['EXTRA_ARGS'] += [
-                '--skip-torch-cuda-test',
-                '--no-half',
-                '--opt-sub-quad-attention'
-            ]
+
+def setup_tunnels():
+    # 코랩 외 환경에선 웹UI 자체 인자를 통해 설정하므로 여기서는 아무런 작업도 하지 않음
+    if not IN_COLAB:
+        return
+
+    if OPTIONS['USE_GRADIO']:
+        if not has_python_package('gradio'):
+            execute(['pip', 'install', 'gradio'])
+
+        from gradio.networking import setup_tunnel
+
+        global TUNNEL_GRADIO_URL
+        TUNNEL_GRADIO_URL = setup_tunnel('localhost', 7860)
+
+    if OPTIONS['NGROK_API_TOKEN']:
+        if not has_python_package('pyngrok'):
+            execute(['pip', 'install', 'pyngrok'])
+
+        auth = None
+        token = OPTIONS['NGROK_API_TOKEN']
+
+        if ':' in token:
+            parts = token.split(':')
+            auth = parts[1] + ':' + parts[-1]
+            token = parts[0]
+
+        from pyngrok import conf, exception, ngrok, process
+
+        # 로컬 포트가 닫혀있으면 경고 메세지가 스팸마냥 출력되므로 오류만 표시되게 수정함
+        process.ngrok_logger.setLevel('ERROR')
+
+        try:
+            tunnel = ngrok.connect(
+                7860,
+                pyngrok_config=conf.PyngrokConfig(
+                    auth_token=token,
+                    region='jp'
+                ),
+                auth=auth,
+                bind_tls=True
+            )
+
+            assert isinstance(tunnel, ngrok.NgrokTunnel)
+            global TUNNEL_NGROK_URL
+            TUNNEL_NGROK_URL = tunnel.public_url
+        except exception.PyngrokNgrokError:
+            alert('ngrok 연결에 실패했습니다, 토큰을 확인해주세요!', True)
 
 
 def setup_environment():
@@ -272,6 +319,8 @@ def setup_environment():
                 OPTIONS[key] = value
 
                 log(f'override.json: {key} = {json.dumps(value)}')
+
+    setup_tunnels()
 
     # 체크포인트 모델이 존재하지 않는다면 기본 모델 받아오기
     if not has_checkpoint():
@@ -456,18 +505,22 @@ def log_trace() -> None:
         render_log()
 
 
-def alert(message: str):
+def alert(message: str, unassign=False):
     log(message)
 
-    if not IN_INTERACTIVE:
-        return
+    if IN_INTERACTIVE:
+        from IPython.display import display
+        from ipywidgets import widgets
 
-    from IPython.display import display
-    from ipywidgets import widgets
+        display(
+            widgets.HTML(f'<script>alert({json.dumps(message)})</script>')
+        )
 
-    display(
-        widgets.HTML(f'<script>alert({json.dumps(message)})</script>')
-    )
+    if IN_COLAB and unassign:
+        from google.colab import runtime
+
+        time.sleep(1)
+        runtime.unassign()
 
 
 # ==============================
@@ -476,13 +529,16 @@ def alert(message: str):
 def execute(
     args: Union[str, List[str]],
     parser: Optional[
-        Callable[[str, Optional[int]], None]
+        Callable[[
+            str,
+            subprocess.Popen,
+            Optional[int]
+        ], None]
     ] = None,
     summary: Optional[str] = None,
     hide_summary=False,
     print_to_file=True,
     print_to_widget=True,
-    throw=True,
     **kwargs
 ) -> Tuple[str, int]:
     if isinstance(args, str) and 'shell' not in kwargs:
@@ -503,7 +559,7 @@ def execute(
     log_index = log(
         f'=> {summary}',
         styles={'color': 'yellow'},
-        max_childs=5)
+        max_childs=10)
 
     output = ''
 
@@ -521,7 +577,7 @@ def execute(
         # 파서 함수 실행하기
         if callable(parser):
             try:
-                if parser(line, log_index):
+                if parser(line, p, log_index):
                     continue
             except:
                 log_trace()
@@ -543,25 +599,24 @@ def execute(
         assert log_index
 
         if rc == 0:
-            # 성공적으로 프로세스가 종료됐을 때
-            if hide_summary:
-                # 현재 로그 블록 숨기기 (제거하기)
-                del LOG_BLOCKS[log_index]
-            else:
-                # 현재 로그 텍스트 초록색으로 변경하고 프로세스 출력 숨기기
-                LOG_BLOCKS[log_index]['styles']['color'] = 'green'
-                LOG_BLOCKS[log_index]['max_childs'] = None
+            # 현재 로그 텍스트 초록색으로 변경하고 프로세스 출력 숨기기
+            LOG_BLOCKS[log_index]['styles']['color'] = 'green'
+            LOG_BLOCKS[log_index]['max_childs'] = None
         else:
             # 현재 로그 텍스트 빨간색으로 변경하고 프로세스 출력 모두 표시하기
             LOG_BLOCKS[log_index]['styles']['color'] = 'red'
             LOG_BLOCKS[log_index]['max_childs'] = 0
 
+        if hide_summary:
+            # 현재 로그 블록 숨기기 (제거하기)
+            del LOG_BLOCKS[log_index]
+
         # 로그 블록 렌더링
         render_log()
 
     # 오류 코드를 반환했다면
-    if rc != 0 and throw:
-        raise Exception(f'프로세스가 {rc} 코드를 반환했습니다')
+    if rc != 0:
+        raise subprocess.CalledProcessError(rc, args)
 
     return output, rc
 
@@ -591,8 +646,7 @@ def has_python_package(pkg: str, executable: Optional[str] = None) -> bool:
             import sys
             sys.exit(0 if importlib.find_loader({shlex.quote(pkg)}) else 0)
             '''
-        ],
-        throw=False)
+        ])
 
     return True if rc == 0 else False
 
@@ -716,9 +770,11 @@ def setup_webui() -> None:
             ignore_aria2=True)
 
 
-def parse_webui_output(line: str, log_index: Optional[int]) -> None:
-    global NGROK_URL
-
+def parse_webui_output(
+    line: str,
+    process: subprocess.Popen,
+    log_index: Optional[int]
+) -> None:
     # 하위 파이썬 실행 중 오류가 발생하면 전체 기록 표시하기
     # TODO: 더 나은 오류 핸들링, 잘못된 내용으로 트리거 될 수 있음
     if LOG_WIDGET and 'Traceback (most recent call last):' in line:
@@ -727,74 +783,38 @@ def parse_webui_output(line: str, log_index: Optional[int]) -> None:
         render_log()
         return
 
-    # 내부에서 재시작할 때 ngrok 세션이 존재해도 다시 열려고 시도하는데
-    # 사용 중인 토큰이 무료 플랜이면 한 세션만 열 수 있다며 뻑 나는 경우가 있음
-    # 애초에 세션이 여러 개 생기면 안되긴 하지만... 일단 자동좌가 수정해주거나 PR 넣는 방법 밖엔 없을듯
-    # NGROK_URL 변수가 비어있을 때만 오류 처리하도록 수정함
-    if NGROK_URL == None and line == 'Invalid ngrok authtoken, ngrok connection aborted.\n':
-        raise Exception('ngrok 인증 토큰이 잘못됐습니다, 올바른 토큰을 입력하거나 토큰 값 없이 실행해주세요')
+    # launch.py 서브프로세스 실행 후 모델 두번째로 불러와질 때 프로세스 강제 종료하기
+    if line.startswith('Loading weights'):
+        global MODEL_LOADED, MODEL_RELOAD
 
-    # 로컬 웹 서버가 열렸을 때
-    if line.startswith('Running on local URL:'):
-        if GRADIO_PASSWORD_GENERATED:
-            # gradio 인증
+        if MODEL_LOADED:
+            MODEL_RELOAD = True
+            process.kill()
+
+        MODEL_LOADED = True
+        return
+
+    # 첫 시작에 한해서 웹 서버 열렸을 때 다이어로그 표시하기
+    if line.startswith('Running on local URL:') and LAUNCHED == 0:
+        if TUNNEL_GRADIO_URL:
             log(
                 '\n'.join([
-                    'Gradio 인증 비밀번호가 자동으로 생성됐습니다',
-                    f"아이디: {OPTIONS['GRADIO_USERNAME']}",
-                    f"비밀번호: {OPTIONS['GRADIO_PASSWORD']}"
+                    '성공적으로 Gradio 터널이 열렸습니다',
+                    f'<a target="_blank" href="{TUNNEL_GRADIO_URL}">{TUNNEL_GRADIO_URL}</a>',
                 ]),
-                LOG_WIDGET_STYLES['dialog_success'],
-                print_to_file=False)
+                LOG_WIDGET_STYLES['dialog_success'])
 
-        # ngork
-        if OPTIONS['NGROK_API_TOKEN'] != '':
-            # 이전 로그에서 ngrok 주소가 표시되지 않았다면 ngrok 관련 오류 발생한 것으로 판단
-            if NGROK_URL == None:
-                raise Exception('ngrok 터널을 여는 중 알 수 없는 오류가 발생했습니다')
-
-            if LOG_WIDGET:
-                log(
-                    '\n'.join([
-                        '성공적으로 ngrok 터널이 열렸습니다',
-                        NGROK_URL if LOG_WIDGET is None else f'<a target="_blank" href="{NGROK_URL}">{NGROK_URL}</a>',
-                    ]),
-                    LOG_WIDGET_STYLES['dialog_success'])
-            else:
-                log(f'성공적으로 ngrok 터널이 열렸습니다: {NGROK_URL}')
-
-        return
-
-    # 외부 주소 출력되면 성공적으로 실행한 것으로 판단
-    if line.startswith('ngrok connected to') or line.startswith('Running on public URL:'):
-        matches = re.search(r'https?://.+', line)
-        assert matches
-        url = matches[0]
-
-        # gradio 는 웹 서버가 켜진 이후 바로 나오기 때문에 사용자에게 바로 보여줘도 상관 없음
-        if 'gradio' in url:
-            if LOG_WIDGET:
-                log(
-                    '\n'.join([
-                        '성공적으로 Gradio 터널이 열렸습니다',
-                        '<a target="_blank" href="https://arca.live/b/aiart/60683088">Gradio 는 느리고 버그가 있으므로 ngrok 사용을 추천합니다</a>',
-                        f'<a target="_blank" href="{url}">{url}</a>',
-                    ]),
-                    LOG_WIDGET_STYLES['dialog_warning'])
-            else:
-                log(f'성공적으로 Gradio 터널이 열렸습니다: {url}')
-
-        # ngork 는 우선 터널이 시작되고 이후에 웹 서버가 켜지기 때문에
-        # 미리 주소를 저장해두고 이후에 로컬호스트 주소가 나온 뒤에 사용자에게 알려야함
-        if 'ngrok.io' in url:
-            NGROK_URL = url
-
+        if TUNNEL_NGROK_URL:
+            log(
+                '\n'.join([
+                    '성공적으로 ngrok 터널이 열렸습니다',
+                    f'<a target="_blank" href="{TUNNEL_NGROK_URL}">{TUNNEL_NGROK_URL}</a>',
+                ]),
+                LOG_WIDGET_STYLES['dialog_success'])
         return
 
 
-def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = {}) -> None:
-    global GRADIO_PASSWORD_GENERATED
-
+def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
     workspace = Path(WORKSPACE).resolve()
 
     # 기본 인자 만들기
@@ -808,45 +828,69 @@ def start_webui(args: List[str] = OPTIONS['ARGS'], env: Dict[str, str] = {}) -> 
                 '--xformers-flash-attention'
             ]
 
-        # gradio
-        if OPTIONS['USE_GRADIO']:
-            args += ['--share']
+        # 코랩 외부 환경에선 웹UI 자체 인자를 사용해 터널링 서비스를 사용함
+        if not IN_COLAB:
+            # Gradio
+            if OPTIONS['USE_GRADIO']:
+                args += ['--share']
 
-        # gradio 인증
+            # ngrok
+            if OPTIONS['NGROK_API_TOKEN'] != '':
+                args += [
+                    '--ngrok', OPTIONS['NGROK_API_TOKEN'],
+                    '--ngrok-region', 'jp'
+                ]
+
+        # Gradio 인증 정보
         if OPTIONS['GRADIO_USERNAME'] != '':
-            # 다계정이 아니고 비밀번호가 없다면 무작위로 만들기
-            if OPTIONS['GRADIO_PASSWORD'] == '' and ';' not in OPTIONS['GRADIO_USERNAME']:
-                from secrets import token_urlsafe
-                OPTIONS['GRADIO_PASSWORD'] = token_urlsafe(8)
-                GRADIO_PASSWORD_GENERATED = True
-
             args += [
                 f'--gradio-auth',
                 OPTIONS['GRADIO_USERNAME'] +
                 ('' if OPTIONS['GRADIO_PASSWORD'] ==
-                 '' else ':' + OPTIONS['GRADIO_PASSWORD'])
-            ]
-
-        # ngrok
-        if OPTIONS['NGROK_API_TOKEN'] != '':
-            args += [
-                '--ngrok', OPTIONS['NGROK_API_TOKEN'],
-                '--ngrok-region', 'jp'
+                    '' else ':' + OPTIONS['GRADIO_PASSWORD'])
             ]
 
     # 추가 인자
     args += OPTIONS['EXTRA_ARGS']
 
-    execute(
-        [OPTIONS['PYTHON_EXECUTABLE'] or 'python', '-m', 'launch', *args],
-        parser=parse_webui_output,
-        cwd='repository',
-        env={
-            **os.environ,
-            'PYTHONUNBUFFERED': '1',
-            'HF_HOME': str(workspace / 'cache' / 'huggingface'),
-            **env
-        })
+    # 코랩 환경에선 구글의 tcmalloc 관련 이슈로 메모리가 릴리즈되지 않는 버그가 있음
+    # 현재로썬 모델을 다시 불러올 때 런타임을 완전히 종료하는 방법 밖엔 없음
+    # 원클릭 코랩에선 서브프로세스를 사용하기 때문에 웹UI 에서 모델이 불러와질 때 `MODEL_LOADED` True 로 변경되고
+    # 이후 모델이 변경되면 `MODEL_RELOAD` 를 True 로 변경한 뒤 `Popen.kill()` 메소드로 강제 종료함
+    # https://github.com/googlecolab/colabtools/issues/3363#issuecomment-1421405493
+    while True:
+        global MODEL_LOADED, MODEL_RELOAD, LAUNCHED
+        MODEL_LOADED = False
+        MODEL_RELOAD = False
+
+        try:
+            execute(
+                [
+                    OPTIONS['PYTHON_EXECUTABLE'] or 'python',
+                    '-u',
+                    '-m', 'launch',
+                    *args
+                ],
+                parser=parse_webui_output,
+                cwd='repository',
+                env={
+                    **os.environ,
+                    'HF_HOME': str(workspace / 'cache' / 'huggingface'),
+                },
+                hide_summary=True)
+
+        except subprocess.CalledProcessError:
+            # 코랩 환경에서 모델을 다시 불러오는 상황이라면 반복하기
+            if IN_COLAB and MODEL_RELOAD:
+                if '--skip-install' not in args:
+                    args += ['--skip-install']
+
+                continue
+
+            raise
+
+        finally:
+            LAUNCHED += 1
 
 
 try:
