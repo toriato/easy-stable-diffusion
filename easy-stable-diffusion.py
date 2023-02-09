@@ -53,7 +53,7 @@ OPTIONS['GRADIO_USERNAME'] = GRADIO_USERNAME
 OPTIONS['GRADIO_PASSWORD'] = GRADIO_PASSWORD
 
 #@markdown ##### <font color="orange">***터널링 서비스***</font>
-TUNNEL = 'cloudflared' #@param ["none", "gradio", "cloudflared", "ngrok"]
+TUNNEL = 'gradio' #@param ["none", "gradio", "cloudflared", "ngrok"]
 TUNNEL_URL: Optional[str] = None
 OPTIONS['TUNNEL'] = TUNNEL
 
@@ -184,7 +184,7 @@ def setup_colab():
     # 구글 드라이브 마운트하기
     if OPTIONS['USE_GOOGLE_DRIVE']:
         from google.colab import drive
-        drive.mount('drive')
+        drive.mount('/content/drive')
 
         WORKSPACE = str(
             Path('drive', 'MyDrive', WORKSPACE).resolve()

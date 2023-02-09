@@ -50,7 +50,7 @@ def on_app_started(*args, **kwargs):
         if 2 < meminfo['MemAvailable'] / 1024 / 1024:
             return call_queue.wrap_queued_call(
                 sd_models.reload_model_weights
-            )(*args, **kwargs)
+            )()
 
         # 클라이언트에게 결과를 반환하지 않으면 설정을 다시 바꿀 수 없게 되어버림
         # 새 스레드에서 1초 대기 후 프로세스를 종료해 인터페이스가 먹통되지 않도록 우회함
