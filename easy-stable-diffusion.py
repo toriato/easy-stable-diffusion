@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Callable, List, Optional, Tuple, Union
 
 import requests
-import torch
 
 OPTIONS = {}
 
@@ -44,21 +43,19 @@ OPTIONS['USE_GOOGLE_DRIVE'] = USE_GOOGLE_DRIVE
 USE_XFORMERS = True  #@param {type:"boolean"}
 OPTIONS['USE_XFORMERS'] = USE_XFORMERS
 
-#@markdown ##### <font color="orange">***Gradio 터널을 사용할지?***</font>
-#@markdown - <font color="green">장점</font>: 따로 설정할 필요가 없어 편리함
-#@markdown - <font color="red">**단점**</font>: 접속이 느리고 끊기거나 버튼이 안 눌리는 등 오류 빈도가 높음
-USE_GRADIO = True #@param {type:"boolean"}
-OPTIONS['USE_GRADIO'] = USE_GRADIO
-
-#@markdown ##### <font color="orange">***Gradio 인증 정보***</font>
-#@markdown Gradio 접속 시 사용할 사용자 아이디와 비밀번호
+#@markdown ##### <font color="orange">***인증 정보***</font>
+#@markdown 접속 시 사용할 사용자 아이디와 비밀번호
 #@markdown <br>`GRADIO_USERNAME` 입력 란에 `user1:pass1,user,pass2`처럼 입력하면 여러 사용자 추가 가능
 #@markdown <br>`GRADIO_USERNAME` 입력 란을 <font color="red">비워두면</font> 인증 과정을 사용하지 않음
-#@markdown <br>`GRADIO_PASSWORD` 입력 란을 <font color="red">비워두면</font> 자동으로 비밀번호를 생성함
 GRADIO_USERNAME = '' #@param {type:"string"}
 GRADIO_PASSWORD = '' #@param {type:"string"}
 OPTIONS['GRADIO_USERNAME'] = GRADIO_USERNAME
 OPTIONS['GRADIO_PASSWORD'] = GRADIO_PASSWORD
+
+#@markdown ##### <font color="orange">***터널링 서비스***</font>
+TUNNEL = 'gradio' #@param ["none", "gradio", "cloudflared", "ngrok"]
+TUNNEL_URL: Optional[str] = None
+OPTIONS['TUNNEL'] = TUNNEL
 
 #@markdown ##### <font color="orange">***ngrok API 키***</font>
 #@markdown ngrok 터널에 사용할 API 토큰
@@ -139,15 +136,10 @@ LOG_WIDGET_STYLES['dialog_error'] = {
     'background-color': 'red',
 }
 
-IN_INTERACTIVE = hasattr(sys, 'ps1')
-IN_COLAB = False
-
 LAUNCHED = 0
 
-# 코랩에선 서브프로세스가 다시 시작될 수 있기 때문에
-# 이 스크립트가 실행 중인 부모 프로세스에서 터널링을 직접 열어줘야함
-TUNNEL_GRADIO_URL: Optional[str] = None
-TUNNEL_NGROK_URL: Optional[str] = None
+IN_INTERACTIVE = hasattr(sys, 'ps1')
+IN_COLAB = False
 
 try:
     from IPython import get_ipython
@@ -195,39 +187,49 @@ def setup_colab():
             Path('drive', 'MyDrive', WORKSPACE).resolve()
         )
 
-    if not OPTIONS['USE_GRADIO'] and not OPTIONS['NGROK_API_TOKEN']:
-        alert('터널링 서비스가 하나라도 없으면 외부에서 접근할 방법이 없습니다!', True)
-
     if OPTIONS['PYTHON_EXECUTABLE'] and not find_executable(OPTIONS['PYTHON_EXECUTABLE']):
         execute(['apt', 'install', OPTIONS['PYTHON_EXECUTABLE']])
         execute(
             f"curl -sS https://bootstrap.pypa.io/get-pip.py | {OPTIONS['PYTHON_EXECUTABLE']}")
 
-    if not torch.cuda.is_available():
-        alert('GPU 런타임이 아닙니다, 할당량이 초과 됐을 수도 있습니다!')
+    try:
+        import torch
+    except:
+        alert('torch 패키지가 잘못됐습니다, 런타임을 다시 실행해주세요!', True)
+    else:
+        if not torch.cuda.is_available():
+            alert('GPU 런타임이 아닙니다, 할당량이 초과 됐을 수도 있습니다!')
 
-        OPTIONS['EXTRA_ARGS'] += [
-            '--skip-torch-cuda-test',
-            '--no-half',
-            '--opt-sub-quad-attention'
-        ]
+            OPTIONS['EXTRA_ARGS'] += [
+                '--skip-torch-cuda-test',
+                '--no-half',
+                '--opt-sub-quad-attention'
+            ]
 
 
 def setup_tunnels():
-    # 코랩 외 환경에선 웹UI 자체 인자를 통해 설정하므로 여기서는 아무런 작업도 하지 않음
-    if not IN_COLAB:
-        return
+    global TUNNEL_URL
 
-    if OPTIONS['USE_GRADIO']:
+    service = OPTIONS['TUNNEL']
+
+    if service == 'none':
+        pass
+
+    elif service == 'gradio':
         if not has_python_package('gradio'):
             execute(['pip', 'install', 'gradio'])
 
         from gradio.networking import setup_tunnel
+        TUNNEL_URL = setup_tunnel('localhost', 7860)
 
-        global TUNNEL_GRADIO_URL
-        TUNNEL_GRADIO_URL = setup_tunnel('localhost', 7860)
+    elif service == 'cloudflared':
+        if not has_python_package('pycloudflared'):
+            execute(['pip', 'install', 'pycloudflared'])
 
-    if OPTIONS['NGROK_API_TOKEN']:
+        from pycloudflared import try_cloudflare
+        TUNNEL_URL = try_cloudflare(port=7860).tunnel
+
+    elif service == 'ngrok':
         if not has_python_package('pyngrok'):
             execute(['pip', 'install', 'pyngrok'])
 
@@ -254,12 +256,14 @@ def setup_tunnels():
                 auth=auth,
                 bind_tls=True
             )
-
-            assert isinstance(tunnel, ngrok.NgrokTunnel)
-            global TUNNEL_NGROK_URL
-            TUNNEL_NGROK_URL = tunnel.public_url
         except exception.PyngrokNgrokError:
             alert('ngrok 연결에 실패했습니다, 토큰을 확인해주세요!', True)
+        else:
+            assert isinstance(tunnel, ngrok.NgrokTunnel)
+            TUNNEL_URL = tunnel.public_url
+
+    else:
+        raise ValueError(f'{service} 에 대응하는 터널 서비스가 존재하지 않습니다')
 
 
 def setup_environment():
@@ -721,17 +725,15 @@ def setup_webui() -> None:
             cwd=path)
 
     if IN_COLAB:
-        # Gradio 에서 앱이 위치한 경로와 다른 장치에 있는 내부 파일 접근시 발생하던 ValueError 를 해결하는 스크립트
         download(
             'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/fix_gradio_route.py',
             'repository/scripts/fix_gradio_route.py',
             ignore_aria2=True)
 
-        # # 모델 변경 전 임시 폴더로 옮기는 스크립트
-        # download(
-        #     'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/alternate_load_model_weights.py',
-        #     'repository/scripts/alternate_load_model_weights.py',
-        #     ignore_aria2=True)
+        download(
+            'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/alternate_load_model_weights.py',
+            'repository/scripts/alternate_load_model_weights.py',
+            ignore_aria2=True)
 
 
 def parse_webui_output(
@@ -741,21 +743,13 @@ def parse_webui_output(
 ) -> None:
     # 첫 시작에 한해서 웹 서버 열렸을 때 다이어로그 표시하기
     if line.startswith('Running on local URL:') and LAUNCHED == 0:
-        if TUNNEL_GRADIO_URL:
-            log(
-                '\n'.join([
-                    '성공적으로 Gradio 터널이 열렸습니다',
-                    f'<a target="_blank" href="{TUNNEL_GRADIO_URL}">{TUNNEL_GRADIO_URL}</a>',
-                ]),
-                LOG_WIDGET_STYLES['dialog_success'])
-
-        if TUNNEL_NGROK_URL:
-            log(
-                '\n'.join([
-                    '성공적으로 ngrok 터널이 열렸습니다',
-                    f'<a target="_blank" href="{TUNNEL_NGROK_URL}">{TUNNEL_NGROK_URL}</a>',
-                ]),
-                LOG_WIDGET_STYLES['dialog_success'])
+        log(
+            '\n'.join([
+                '성공적으로 터널이 열렸습니다',
+                f'<a target="_blank" href="{TUNNEL_URL}">{TUNNEL_URL}</a>',
+            ]),
+            LOG_WIDGET_STYLES['dialog_success']
+        )
         return
 
 
@@ -767,24 +761,17 @@ def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
         args += ['--data-dir', str(workspace)]
 
         # xformers
-        if OPTIONS['USE_XFORMERS'] and torch.cuda.is_available():
-            args += [
-                '--xformers',
-                '--xformers-flash-attention'
-            ]
-
-        # 코랩 외부 환경에선 웹UI 자체 인자를 사용해 터널링 서비스를 사용함
-        if not IN_COLAB:
-            # Gradio
-            if OPTIONS['USE_GRADIO']:
-                args += ['--share']
-
-            # ngrok
-            if OPTIONS['NGROK_API_TOKEN'] != '':
-                args += [
-                    '--ngrok', OPTIONS['NGROK_API_TOKEN'],
-                    '--ngrok-region', 'jp'
-                ]
+        if OPTIONS['USE_XFORMERS']:
+            try:
+                import torch
+            except ImportError:
+                pass
+            else:
+                if torch.cuda.is_available():
+                    args += [
+                        '--xformers',
+                        '--xformers-flash-attention'
+                    ]
 
         # Gradio 인증 정보
         if OPTIONS['GRADIO_USERNAME'] != '':
