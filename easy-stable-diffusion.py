@@ -53,7 +53,7 @@ OPTIONS['GRADIO_USERNAME'] = GRADIO_USERNAME
 OPTIONS['GRADIO_PASSWORD'] = GRADIO_PASSWORD
 
 #@markdown ##### <font color="orange">***터널링 서비스***</font>
-TUNNEL = 'gradio' #@param ["none", "gradio", "cloudflared", "ngrok"]
+TUNNEL = 'cloudflared' #@param ["none", "gradio", "cloudflared", "ngrok"]
 TUNNEL_URL: Optional[str] = None
 OPTIONS['TUNNEL'] = TUNNEL
 
@@ -149,6 +149,9 @@ except ImportError:
 
 
 def hook_runtime_disconnect():
+    """
+    셀이 종료됐을 때 자동으로 런타임을 해제하도록 asyncio 스레드를 생성합니다
+    """
     if not IN_COLAB:
         return
 
@@ -190,7 +193,8 @@ def setup_colab():
     if OPTIONS['PYTHON_EXECUTABLE'] and not find_executable(OPTIONS['PYTHON_EXECUTABLE']):
         execute(['apt', 'install', OPTIONS['PYTHON_EXECUTABLE']])
         execute(
-            f"curl -sS https://bootstrap.pypa.io/get-pip.py | {OPTIONS['PYTHON_EXECUTABLE']}")
+            f"curl -sS https://bootstrap.pypa.io/get-pip.py | {OPTIONS['PYTHON_EXECUTABLE']}"
+        )
 
     try:
         import torch
@@ -210,26 +214,26 @@ def setup_colab():
 def setup_tunnels():
     global TUNNEL_URL
 
-    service = OPTIONS['TUNNEL']
+    tunnel = OPTIONS['TUNNEL']
 
-    if service == 'none':
+    if tunnel == 'none':
         pass
 
-    elif service == 'gradio':
+    elif tunnel == 'gradio':
         if not has_python_package('gradio'):
             execute(['pip', 'install', 'gradio'])
 
         from gradio.networking import setup_tunnel
         TUNNEL_URL = setup_tunnel('localhost', 7860)
 
-    elif service == 'cloudflared':
+    elif tunnel == 'cloudflared':
         if not has_python_package('pycloudflared'):
             execute(['pip', 'install', 'pycloudflared'])
 
         from pycloudflared import try_cloudflare
         TUNNEL_URL = try_cloudflare(port=7860).tunnel
 
-    elif service == 'ngrok':
+    elif tunnel == 'ngrok':
         if not has_python_package('pyngrok'):
             execute(['pip', 'install', 'pyngrok'])
 
@@ -263,7 +267,7 @@ def setup_tunnels():
             TUNNEL_URL = tunnel.public_url
 
     else:
-        raise ValueError(f'{service} 에 대응하는 터널 서비스가 존재하지 않습니다')
+        raise ValueError(f'{tunnel} 에 대응하는 터널 서비스가 존재하지 않습니다')
 
 
 def setup_environment():
@@ -497,11 +501,7 @@ def alert(message: str, unassign=False):
 def execute(
     args: Union[str, List[str]],
     parser: Optional[
-        Callable[[
-            str,
-            subprocess.Popen,
-            Optional[int]
-        ], None]
+        Callable[[str], None]
     ] = None,
     summary: Optional[str] = None,
     hide_summary=False,
@@ -544,11 +544,7 @@ def execute(
 
         # 파서 함수 실행하기
         if callable(parser):
-            try:
-                if parser(line, p, log_index):
-                    continue
-            except:
-                log_trace()
+            parser(line)
 
         # 프로세스 출력 로그하기
         log(
@@ -695,34 +691,48 @@ def has_checkpoint() -> bool:
     return False
 
 
+def parse_webui_output(line: str) -> None:
+    # 첫 시작에 한해서 웹 서버 열렸을 때 다이어로그 표시하기
+    if line.startswith('Running on local URL:') and LAUNCHED == 0:
+        log(
+            '\n'.join([
+                '성공적으로 터널이 열렸습니다',
+                f'<a target="_blank" href="{TUNNEL_URL}">{TUNNEL_URL}</a>',
+            ]),
+            LOG_WIDGET_STYLES['dialog_success']
+        )
+        return
+
+
 def setup_webui() -> None:
+    repo_dir = Path('repository')
     need_clone = True
 
-    path = Path('repository')
-
     # 이미 디렉터리가 존재한다면 정상적인 레포인지 확인하기
-    if path.is_dir():
+    if repo_dir.is_dir():
         try:
             # 사용자 파일만 남겨두고 레포지토리 초기화하기
             # https://stackoverflow.com/a/12096327
             execute(
                 'git stash && git pull',
-                cwd='repository')
-
+                cwd=repo_dir
+            )
+        except subprocess.CalledProcessError:
+            log('레포지토리가 잘못됐습니다, 디렉터리를 제거합니다')
+        else:
             need_clone = False
 
-        except:
-            log('레포지토리가 잘못됐습니다, 디렉터리를 제거합니다')
-
+    # 레포지토리 클론이 필요하다면 기존 디렉터리 지우고 클론하기
     if need_clone:
-        shutil.rmtree(path, ignore_errors=True)
-        execute(['git', 'clone', OPTIONS['REPO_URL'], str(path)])
+        shutil.rmtree(repo_dir, ignore_errors=True)
+        execute(['git', 'clone', OPTIONS['REPO_URL'], str(repo_dir)])
 
     # 특정 커밋이 지정됐다면 체크아웃하기
-    if OPTIONS['REPO_COMMIT'] != '':
+    if OPTIONS['REPO_COMMIT']:
         execute(
             ['git', 'checkout', OPTIONS['REPO_COMMIT']],
-            cwd=path)
+            cwd=repo_dir
+        )
 
     if IN_COLAB:
         download(
@@ -736,25 +746,9 @@ def setup_webui() -> None:
             ignore_aria2=True)
 
 
-def parse_webui_output(
-    line: str,
-    process: subprocess.Popen,
-    log_index: Optional[int]
-) -> None:
-    # 첫 시작에 한해서 웹 서버 열렸을 때 다이어로그 표시하기
-    if line.startswith('Running on local URL:') and LAUNCHED == 0:
-        log(
-            '\n'.join([
-                '성공적으로 터널이 열렸습니다',
-                f'<a target="_blank" href="{TUNNEL_URL}">{TUNNEL_URL}</a>',
-            ]),
-            LOG_WIDGET_STYLES['dialog_success']
-        )
-        return
-
-
 def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
     workspace = Path(WORKSPACE).resolve()
+    repository = Path('repository').resolve()
 
     # 기본 인자 만들기
     if len(args) < 1:
@@ -787,9 +781,10 @@ def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
 
     # 코랩 환경에선 구글의 tcmalloc 관련 이슈로 메모리가 릴리즈되지 않는 버그가 있음
     # 현재로썬 모델을 다시 불러올 때 런타임을 완전히 종료하는 방법 밖엔 없음
-    # 원클릭 코랩에선 서브프로세스를 사용하기 때문에 웹UI 에서 모델이 불러와질 때 `MODEL_LOADED` True 로 변경되고
-    # 이후 모델이 변경되면 `MODEL_RELOAD` 를 True 로 변경한 뒤 `Popen.kill()` 메소드로 강제 종료함
+    # 따라서 모델을 불러올 때 메모리가 부족하다면 프로세스를 정상 종료(0)하는 외부 스크립트를 사용함
     # https://github.com/googlecolab/colabtools/issues/3363#issuecomment-1421405493
+    summary: Optional[str] = None
+
     while True:
         execute(
             [
@@ -798,21 +793,25 @@ def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
                 '-m', 'launch',
                 *args
             ],
+            summary=summary,
             parser=parse_webui_output,
-            cwd='repository',
+            cwd=str(repository),
             env={
                 **os.environ,
                 'HF_HOME': str(workspace / 'cache' / 'huggingface'),
             },
-            start_new_session=True
+            start_new_session=True,
         )
 
         if IN_COLAB:
             if '--skip-install' not in args:
                 args += ['--skip-install']
 
+            summary = '메모리가 부족해 모델을 불러올 수 없어 프로세스를 다시 시작합니다'
+
             global LAUNCHED
             LAUNCHED += 1
+
             continue
 
 
