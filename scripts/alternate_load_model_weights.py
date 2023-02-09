@@ -6,7 +6,7 @@ from subprocess import call
 from tempfile import mkdtemp
 from typing import Callable
 
-from modules import scripts, sd_models, shared
+from modules import call_queue, scripts, sd_models, shared
 
 load_model_weights: Callable
 
@@ -37,20 +37,32 @@ def alternate_load_model_weights(model, checkpoint_info: sd_models.CheckpointInf
 def on_app_started(*args, **kwargs):
     # TODO: VAE 같은 다른 모델 선택할 때도 메모리 밀어줘야함
 
-    def save_and_exit():
+    def on_change():
+        # 먼저 설정 파일을 저장해둬야 메모리 부족으로 터져도 다시 불러올 수 있음
+        shared.opts.save(shared.config_filename)
+
+        meminfo = dict(
+            (i.split()[0].rstrip(':'), int(i.split()[1]))
+            for i in open('/proc/meminfo').readlines()
+        )
+
+        # 사용 가능한 메모리가 2GB 보다 많을 때만 모델 불러오기
+        if 2 < meminfo['MemAvailable'] / 1024 / 1024:
+            return call_queue.wrap_queued_call(
+                sd_models.reload_model_weights
+            )(*args, **kwargs)
+
         # 클라이언트에게 결과를 반환하지 않으면 설정을 다시 바꿀 수 없게 되어버림
         # 새 스레드에서 1초 대기 후 프로세스를 종료해 인터페이스가 먹통되지 않도록 우회함
-        print('설정을 저장하고 프로세스를 종료한 뒤 원클릭 코랩을 통해 프로세스를 재시작합니다.')
-        time.sleep(1)
 
-        # 설정 파일 저장한 뒤 프로세스 종료
-        shared.opts.save(shared.config_filename)
-        os._exit(0)
+        def _exit():
+            print('설정을 저장하고 프로세스를 종료한 뒤 원클릭 코랩을 통해 프로세스를 재시작합니다.')
+            time.sleep(1)
+            os._exit(0)
 
-    shared.opts.onchange(
-        'sd_model_checkpoint',
-        lambda: threading.Thread(target=save_and_exit).start(),
-        call=False)
+        threading.Thread(target=_exit).start()
+
+    shared.opts.onchange('sd_model_checkpoint', on_change, call=False)
 
 
 scripts.script_callbacks.on_app_started(on_app_started)
