@@ -46,8 +46,8 @@ def on_app_started(*args, **kwargs):
             for i in open('/proc/meminfo').readlines()
         )
 
-        # 사용 가능한 메모리가 2GB 보다 많을 때만 모델 불러오기
-        if 2 < meminfo['MemAvailable'] / 1024 / 1024:
+        # 사용 가능한 메모리가 충분할 때만 모델 불러오기
+        if 4 < meminfo['MemAvailable'] / 1024 / 1024:
             return call_queue.wrap_queued_call(
                 sd_models.reload_model_weights
             )()
