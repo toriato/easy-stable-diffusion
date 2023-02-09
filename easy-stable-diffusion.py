@@ -11,7 +11,7 @@ from datetime import datetime
 from distutils.spawn import find_executable
 from importlib.util import find_spec
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union
 
 import requests
 import torch
@@ -142,8 +142,6 @@ LOG_WIDGET_STYLES['dialog_error'] = {
 IN_INTERACTIVE = hasattr(sys, 'ps1')
 IN_COLAB = False
 
-MODEL_LOADED = False
-MODEL_RELOAD = False
 LAUNCHED = 0
 
 # 코랩에선 서브프로세스가 다시 시작될 수 있기 때문에
@@ -348,13 +346,6 @@ def format_styles(styles: dict) -> str:
     return ';'.join(map(lambda kv: ':'.join(kv), styles.items()))
 
 
-def format_list(value):
-    if isinstance(value, dict):
-        return '\n'.join(map(lambda kv: f'{kv[0]}: {kv[1]}', value.items()))
-    else:
-        return '\n'.join(value)
-
-
 def render_log() -> None:
     try:
         from ipywidgets import widgets
@@ -467,11 +458,7 @@ def log_trace() -> None:
     if ex_type is not None:
         log(f'{ex_type.__name__}: {ex_value}', parent_index=parent_index)
         log(
-            format_list(
-                map(
-                    lambda v: f'{v[0]}#{v[1]}\n\t{v[2]}\n\t{v[3]}',
-                    traceback.extract_tb(ex_traceback))
-            ),
+            '\n'.join(traceback.format_tb(ex_traceback)),
             parent_index=parent_index
         )
 
@@ -480,29 +467,6 @@ def log_trace() -> None:
     if not LOG_FILE:
         log('로그 파일이 존재하지 않습니다, 보고서를 만들지 않습니다')
         return
-
-    # 로그 위젯이 존재한다면 보고서 올리고 내용 업데이트하기
-    if LOG_WIDGET:
-        # 이전 로그 전부 긁어오기
-        logs = ''
-        with open(LOG_FILE.name) as file:
-            logs = file.read()
-
-        # 로그 업로드
-        # TODO: 업로드 실패 시 오류 처리
-        res = requests.post(
-            'https://hastebin.com/documents',
-            data=logs.encode('utf-8')
-        )
-        url = f"https://hastebin.com/raw/{json.loads(res.text)['key']}"
-
-        # 기존 오류 메세지 업데이트
-        LOG_BLOCKS[parent_index]['msg'] = '\n'.join([
-            '오류가 발생했습니다, 아래 주소를 <a href="https://discord.gg/6wQeA2QXgM">디스코드 서버</a>에 보고해주세요',
-            f'<a target="_blank" href="{url}">{url}</a>',
-        ])
-
-        render_log()
 
 
 def alert(message: str, unassign=False):
@@ -763,11 +727,11 @@ def setup_webui() -> None:
             'repository/scripts/fix_gradio_route.py',
             ignore_aria2=True)
 
-        # 모델 변경 전 임시 폴더로 옮기는 스크립트
-        download(
-            'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/alternate_load_model_weights.py',
-            'repository/scripts/alternate_load_model_weights.py',
-            ignore_aria2=True)
+        # # 모델 변경 전 임시 폴더로 옮기는 스크립트
+        # download(
+        #     'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/alternate_load_model_weights.py',
+        #     'repository/scripts/alternate_load_model_weights.py',
+        #     ignore_aria2=True)
 
 
 def parse_webui_output(
@@ -775,25 +739,6 @@ def parse_webui_output(
     process: subprocess.Popen,
     log_index: Optional[int]
 ) -> None:
-    # 하위 파이썬 실행 중 오류가 발생하면 전체 기록 표시하기
-    # TODO: 더 나은 오류 핸들링, 잘못된 내용으로 트리거 될 수 있음
-    if LOG_WIDGET and 'Traceback (most recent call last):' in line:
-        assert log_index
-        LOG_BLOCKS[log_index]['max_childs'] = 0
-        render_log()
-        return
-
-    # launch.py 서브프로세스 실행 후 모델 두번째로 불러와질 때 프로세스 강제 종료하기
-    if line.startswith('Loading weights'):
-        global MODEL_LOADED, MODEL_RELOAD
-
-        if MODEL_LOADED:
-            MODEL_RELOAD = True
-            process.kill()
-
-        MODEL_LOADED = True
-        return
-
     # 첫 시작에 한해서 웹 서버 열렸을 때 다이어로그 표시하기
     if line.startswith('Running on local URL:') and LAUNCHED == 0:
         if TUNNEL_GRADIO_URL:
@@ -859,35 +804,29 @@ def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
     # 이후 모델이 변경되면 `MODEL_RELOAD` 를 True 로 변경한 뒤 `Popen.kill()` 메소드로 강제 종료함
     # https://github.com/googlecolab/colabtools/issues/3363#issuecomment-1421405493
     while True:
-        global MODEL_LOADED, MODEL_RELOAD, LAUNCHED
-        MODEL_LOADED = False
-        MODEL_RELOAD = False
+        execute(
+            [
+                OPTIONS['PYTHON_EXECUTABLE'] or 'python',
+                '-u',
+                '-m', 'launch',
+                *args
+            ],
+            parser=parse_webui_output,
+            cwd='repository',
+            env={
+                **os.environ,
+                'HF_HOME': str(workspace / 'cache' / 'huggingface'),
+            },
+            start_new_session=True
+        )
 
-        try:
-            execute(
-                [
-                    OPTIONS['PYTHON_EXECUTABLE'] or 'python',
-                    '-u',
-                    '-m', 'launch',
-                    *args
-                ],
-                parser=parse_webui_output,
-                cwd='repository',
-                env={
-                    **os.environ,
-                    'HF_HOME': str(workspace / 'cache' / 'huggingface'),
-                },
-                hide_summary=True)
+        if IN_COLAB:
+            if '--skip-install' not in args:
+                args += ['--skip-install']
 
-        except subprocess.CalledProcessError:
-            # 코랩 환경에서 모델을 다시 불러오는 상황이라면 반복하기
-            if IN_COLAB and MODEL_RELOAD:
-                if '--skip-install' not in args:
-                    args += ['--skip-install']
-                
-                LAUNCHED += 1
-                continue
-            raise
+            global LAUNCHED
+            LAUNCHED += 1
+            continue
 
 
 try:
