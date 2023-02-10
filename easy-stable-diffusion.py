@@ -734,6 +734,12 @@ def setup_webui() -> None:
             cwd=repo_dir
         )
 
+    # https://fastapi.tiangolo.com/release-notes/#0910
+    execute([
+        PYTHON_EXECUTABLE or 'python', '-m',
+        'pip', 'install', '--upgrade', 'fastapi==0.90.1'
+    ])
+
     if IN_COLAB:
         patch_path = repo_dir.joinpath('scripts', 'patches.py')
 
