@@ -1,19 +1,11 @@
 import os
+import sys
 import threading
 import time
-from shutil import rmtree
-from subprocess import call
-from tempfile import mkdtemp
-from typing import Callable
 
-from modules import call_queue, scripts, sd_models, shared
+from modules import call_queue, paths, scripts, sd_models, shared
 
-load_model_weights: Callable
-
-
-def alternate_load_model_weights(*args, **kwargs):
-    print('모델 용량에 따라 5분 이상 소요될 수 있습니다, 잠시만 기다려주세요!')
-    return load_model_weights(*args, **kwargs)
+sys.path.insert(0, paths.data_path)
 
 
 def on_app_started(*args, **kwargs):
@@ -46,8 +38,3 @@ def on_app_started(*args, **kwargs):
 
 
 scripts.script_callbacks.on_app_started(on_app_started)
-
-
-if not sd_models.load_model_weights == alternate_load_model_weights:
-    load_model_weights = sd_models.load_model_weights
-    sd_models.load_model_weights = alternate_load_model_weights
