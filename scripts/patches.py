@@ -60,7 +60,7 @@ class Patches:
                 continue
 
             if route.dependant.call != original_endpoint:
-                endpoint = route.dependant.call  # type: ignore
+                original_endpoint = route.dependant.call  # type: ignore
                 route.dependant.call = endpoint
 
             break
