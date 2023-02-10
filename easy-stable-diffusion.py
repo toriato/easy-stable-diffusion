@@ -735,10 +735,13 @@ def setup_webui() -> None:
         )
 
     if IN_COLAB:
-        download(
-            'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/patches.py',
-            'repository/scripts/patches.py',
-            ignore_aria2=True)
+        patch_path = repo_dir.joinpath('scripts', 'patches.py')
+
+        if not patch_path.exists():
+            download(
+                'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/patches.py',
+                str(patch_path),
+                ignore_aria2=True)
 
 
 def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
