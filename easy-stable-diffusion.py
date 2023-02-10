@@ -736,13 +736,8 @@ def setup_webui() -> None:
 
     if IN_COLAB:
         download(
-            'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/fix_gradio_route.py',
-            'repository/scripts/fix_gradio_route.py',
-            ignore_aria2=True)
-
-        download(
-            'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/alternate_load_model_weights.py',
-            'repository/scripts/alternate_load_model_weights.py',
+            'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/patches.py',
+            'repository/scripts/patches.py',
             ignore_aria2=True)
 
 
