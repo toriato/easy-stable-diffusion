@@ -28,12 +28,13 @@ class Patches:
         `Path.resolve().parents` 값 사용으로 인해 하위 디렉터리가 아닌 것으로 인식해
         접근할 수 없는 이슈를 해결하고자 기존 엔드포인트 함수를 재정의합니다. 
         """
-        original_endpoint: Callable
+        original_endpoint: Optional[Callable] = None
 
         async def endpoint(path: str, *args, **kwargs):
             original_error: ValueError
 
             try:
+                assert original_endpoint
                 return await original_endpoint(path, *args, **kwargs)
             except ValueError as e:
                 # `path` 가 `app.cwd` 속에 있는 경로가 아닌 경우에 ValueError 를 반환함
