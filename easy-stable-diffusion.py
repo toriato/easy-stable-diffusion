@@ -221,7 +221,8 @@ def setup_tunnels():
 
     elif tunnel == 'gradio':
         if not has_python_package('gradio'):
-            execute(['pip', 'install', 'gradio'])
+            # https://fastapi.tiangolo.com/release-notes/#0910
+            execute(['pip', 'install', 'gradio', 'fastapi==0.90.1'])
 
         from gradio.networking import setup_tunnel
         TUNNEL_URL = setup_tunnel('localhost', 7860)
@@ -734,18 +735,12 @@ def setup_webui() -> None:
             cwd=repo_dir
         )
 
-    # https://fastapi.tiangolo.com/release-notes/#0910
-    execute([
-        PYTHON_EXECUTABLE or 'python', '-m',
-        'pip', 'install', '--upgrade', 'fastapi==0.90.1'
-    ])
-
     if IN_COLAB:
         patch_path = repo_dir.joinpath('scripts', 'patches.py')
 
         if not patch_path.exists():
             download(
-                'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/patches.py',
+                f'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/patches.py?{time.time()}',
                 str(patch_path),
                 ignore_aria2=True)
 
