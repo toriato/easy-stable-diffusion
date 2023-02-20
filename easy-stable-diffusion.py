@@ -334,9 +334,9 @@ def setup_environment():
                 'https://launchpad.net/ubuntu/+source/google-perftools/2.5-2.2ubuntu3/+build/14795286/+files/libtcmalloc-minimal4_2.5-2.2ubuntu3_amd64.deb',
                 'https://launchpad.net/ubuntu/+source/google-perftools/2.5-2.2ubuntu3/+build/14795286/+files/libgoogle-perftools4_2.5-2.2ubuntu3_amd64.deb'
             ):
-                download(url)
-            execute('dpkg -i *.deb')
+                download(url, ignore_aria2=True)
             execute('apt install -qq libunwind8-dev')
+            execute('dpkg -i *.deb')
             execute('rm *.deb')
 
     # 외부 터널링 초기화
