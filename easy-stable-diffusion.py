@@ -1,9 +1,9 @@
 import io
 import json
 import os
-import re
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -136,8 +136,6 @@ LOG_WIDGET_STYLES['dialog_error'] = {
     'background-color': 'red',
 }
 
-LAUNCHED = 0
-
 IN_INTERACTIVE = hasattr(sys, 'ps1')
 IN_COLAB = False
 
@@ -178,39 +176,6 @@ def hook_runtime_disconnect():
     asyncio.create_task(unassign())
 
 
-def setup_colab():
-    global WORKSPACE
-
-    # 구글 드라이브 마운트하기
-    if OPTIONS['USE_GOOGLE_DRIVE']:
-        from google.colab import drive
-        drive.mount('/content/drive')
-
-        WORKSPACE = str(
-            Path('drive', 'MyDrive', WORKSPACE).resolve()
-        )
-
-    if OPTIONS['PYTHON_EXECUTABLE'] and not find_executable(OPTIONS['PYTHON_EXECUTABLE']):
-        execute(['apt', 'install', OPTIONS['PYTHON_EXECUTABLE']])
-        execute(
-            f"curl -sS https://bootstrap.pypa.io/get-pip.py | {OPTIONS['PYTHON_EXECUTABLE']}"
-        )
-
-    try:
-        import torch
-    except:
-        alert('torch 패키지가 잘못됐습니다, 런타임을 다시 실행해주세요!', True)
-    else:
-        if not torch.cuda.is_available():
-            alert('GPU 런타임이 아닙니다, 할당량이 초과 됐을 수도 있습니다!')
-
-            OPTIONS['EXTRA_ARGS'] += [
-                '--skip-torch-cuda-test',
-                '--no-half',
-                '--opt-sub-quad-attention'
-            ]
-
-
 def setup_tunnels():
     global TUNNEL_URL
 
@@ -224,8 +189,10 @@ def setup_tunnels():
             # https://fastapi.tiangolo.com/release-notes/#0910
             execute(['pip', 'install', 'gradio', 'fastapi==0.90.1'])
 
+        import secrets
+
         from gradio.networking import setup_tunnel
-        TUNNEL_URL = setup_tunnel('localhost', 7860)
+        TUNNEL_URL = setup_tunnel('localhost', 7860, secrets.token_urlsafe(32))
 
     elif tunnel == 'cloudflared':
         if not has_python_package('pycloudflared'):
@@ -272,23 +239,28 @@ def setup_tunnels():
 
 
 def setup_environment():
-    global LOG_WIDGET
-
     # 노트북 환경이라면 로그 표시를 위한 HTML 요소 만들기
     if IN_INTERACTIVE:
         try:
             from IPython.display import display
             from ipywidgets import widgets
 
+            global LOG_WIDGET
             LOG_WIDGET = widgets.HTML()
             display(LOG_WIDGET)
 
         except ImportError:
             pass
 
-    # google.colab 패키지가 있다면 코랩 환경으로 인식하기
-    if IN_COLAB:
-        setup_colab()
+    # 구글 드라이브 마운트하기
+    if IN_COLAB and OPTIONS['USE_GOOGLE_DRIVE']:
+        from google.colab import drive
+        drive.mount('/content/drive')
+
+        global WORKSPACE
+        WORKSPACE = str(
+            Path('drive', 'MyDrive', WORKSPACE).resolve()
+        )
 
     # 로그 파일 만들기
     global LOG_FILE
@@ -327,6 +299,47 @@ def setup_environment():
 
                 log(f'override.json: {key} = {json.dumps(value)}')
 
+    if IN_COLAB:
+        # 다른 Python 버전 설치
+        if OPTIONS['PYTHON_EXECUTABLE'] and not find_executable(OPTIONS['PYTHON_EXECUTABLE']):
+            execute(['apt', 'install', OPTIONS['PYTHON_EXECUTABLE']])
+            execute(
+                f"curl -sS https://bootstrap.pypa.io/get-pip.py | {OPTIONS['PYTHON_EXECUTABLE']}"
+            )
+
+        # 런타임이 정상적으로 초기화 됐는지 확인하기
+        try:
+            import torch
+        except:
+            alert('torch 패키지가 잘못됐습니다, 런타임을 다시 실행해주세요!', True)
+        else:
+            if not torch.cuda.is_available():
+                alert('GPU 런타임이 아닙니다, 할당량이 초과 됐을 수도 있습니다!')
+
+                OPTIONS['EXTRA_ARGS'] += [
+                    '--skip-torch-cuda-test',
+                    '--no-half',
+                    '--opt-sub-quad-attention'
+                ]
+
+        # 코랩 tcmalloc 관련 이슈 우회
+        # https://github.com/googlecolab/colabtools/issues/3412
+        try:
+            # 패키지가 이미 다운그레이드 됐는지 확인하기
+            execute('dpkg -l libunwind8-dev', hide_summary=True)
+        except subprocess.CalledProcessError:
+            for url in (
+                'http://launchpadlibrarian.net/367274644/libgoogle-perftools-dev_2.5-2.2ubuntu3_amd64.deb',
+                'https://launchpad.net/ubuntu/+source/google-perftools/2.5-2.2ubuntu3/+build/14795286/+files/google-perftools_2.5-2.2ubuntu3_all.deb',
+                'https://launchpad.net/ubuntu/+source/google-perftools/2.5-2.2ubuntu3/+build/14795286/+files/libtcmalloc-minimal4_2.5-2.2ubuntu3_amd64.deb',
+                'https://launchpad.net/ubuntu/+source/google-perftools/2.5-2.2ubuntu3/+build/14795286/+files/libgoogle-perftools4_2.5-2.2ubuntu3_amd64.deb'
+            ):
+                download(url)
+            execute('dpkg -i *.deb')
+            execute('apt install -qq libunwind8-dev')
+            execute('rm *.deb')
+
+    # 외부 터널링 초기화
     setup_tunnels()
 
     # 체크포인트 모델이 존재하지 않는다면 기본 모델 받아오기
@@ -581,6 +594,9 @@ def execute(
 
     # 오류 코드를 반환했다면
     if rc != 0:
+        if isinstance(rc, signal.Signals):
+            rc = rc.value
+
         raise subprocess.CalledProcessError(rc, args)
 
     return output, rc
@@ -619,7 +635,11 @@ def has_python_package(pkg: str, executable: Optional[str] = None) -> bool:
 # ==============================
 # 파일 다운로드
 # ==============================
-def download(url: str, target: str, ignore_aria2=False, **kwargs):
+def download(url: str, target: Optional[str] = None, ignore_aria2=False, **kwargs):
+    if not target:
+        # TODO: 경로 중 params 제거하기
+        target = url.split('/')[-1]
+
     # 파일을 받을 디렉터리 만들기
     Path(target).parent.mkdir(0o777, True, True)
 
@@ -694,7 +714,7 @@ def has_checkpoint() -> bool:
 
 def parse_webui_output(line: str) -> None:
     # 첫 시작에 한해서 웹 서버 열렸을 때 다이어로그 표시하기
-    if line.startswith('Running on local URL:') and LAUNCHED == 0:
+    if line.startswith('Running on local URL:'):
         log(
             '\n'.join([
                 '성공적으로 터널이 열렸습니다',
@@ -740,7 +760,7 @@ def setup_webui() -> None:
 
         if not patch_path.exists():
             download(
-                f'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/patches.py?{time.time()}',
+                'https://raw.githubusercontent.com/toriato/easy-stable-diffusion/main/scripts/patches.py',
                 str(patch_path),
                 ignore_aria2=True)
 
@@ -778,13 +798,16 @@ def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
     # 추가 인자
     args += OPTIONS['EXTRA_ARGS']
 
-    # 코랩 환경에선 구글의 tcmalloc 관련 이슈로 메모리가 릴리즈되지 않는 버그가 있음
-    # 현재로썬 모델을 다시 불러올 때 런타임을 완전히 종료하는 방법 밖엔 없음
-    # 따라서 모델을 불러올 때 메모리가 부족하다면 프로세스를 정상 종료(0)하는 외부 스크립트를 사용함
-    # https://github.com/googlecolab/colabtools/issues/3363#issuecomment-1421405493
-    summary: Optional[str] = None
+    env = {
+        **os.environ,
+        'HF_HOME': str(workspace / 'cache' / 'huggingface'),
+    }
 
-    while True:
+    # https://github.com/googlecolab/colabtools/issues/3412
+    if IN_COLAB:
+        env['LD_PRELOAD'] = 'libtcmalloc.so'
+
+    try:
         execute(
             [
                 OPTIONS['PYTHON_EXECUTABLE'] or 'python',
@@ -792,26 +815,15 @@ def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
                 '-m', 'launch',
                 *args
             ],
-            summary=summary,
             parser=parse_webui_output,
             cwd=str(repository),
-            env={
-                **os.environ,
-                'HF_HOME': str(workspace / 'cache' / 'huggingface'),
-            },
+            env=env,
             start_new_session=True,
         )
-
-        if IN_COLAB:
-            if '--skip-install' not in args:
-                args += ['--skip-install']
-
-            summary = '메모리가 부족해 모델을 불러올 수 없어 프로세스를 다시 시작합니다'
-
-            global LAUNCHED
-            LAUNCHED += 1
-
-            continue
+    except subprocess.CalledProcessError as e:
+        if IN_COLAB and e.returncode == signal.SIGINT.value:
+            raise RuntimeError(
+                '프로세스가 강제 종료됐습니다, 메모리가 부족해 발생한 문제일 수도 있습니다') from e
 
 
 try:
