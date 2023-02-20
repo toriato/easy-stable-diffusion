@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.routing import APIRoute
 from gradio import Blocks
-from modules import call_queue, paths, sd_models, shared
+from modules import paths, shared
 from modules.script_callbacks import on_app_started
 
 
