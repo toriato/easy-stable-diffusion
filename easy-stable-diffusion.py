@@ -27,6 +27,7 @@ OPTIONS = {}
 #@markdown ### <font color="orange">***작업 디렉터리 경로***</font>
 #@markdown 임베딩, 모델, 결과와 설정 파일 등이 영구적으로 보관될 디렉터리 경로
 WORKSPACE = 'SD' #@param {type:"string"}
+REPOSITORY = 'repository'
 
 #@markdown ##### <font color="orange">***자동으로 코랩 런타임을 종료할지?***</font>
 DISCONNECT_RUNTIME = True  #@param {type:"boolean"}
@@ -726,17 +727,17 @@ def parse_webui_output(line: str) -> None:
 
 
 def setup_webui() -> None:
-    repo_dir = Path('repository')
+    repository = Path(REPOSITORY)
     need_clone = True
 
     # 이미 디렉터리가 존재한다면 정상적인 레포인지 확인하기
-    if repo_dir.is_dir():
+    if repository.is_dir():
         try:
             # 사용자 파일만 남겨두고 레포지토리 초기화하기
             # https://stackoverflow.com/a/12096327
             execute(
                 'git stash && git pull',
-                cwd=repo_dir
+                cwd=str(repository)
             )
         except subprocess.CalledProcessError:
             log('레포지토리가 잘못됐습니다, 디렉터리를 제거합니다')
@@ -745,18 +746,18 @@ def setup_webui() -> None:
 
     # 레포지토리 클론이 필요하다면 기존 디렉터리 지우고 클론하기
     if need_clone:
-        shutil.rmtree(repo_dir, ignore_errors=True)
-        execute(['git', 'clone', OPTIONS['REPO_URL'], str(repo_dir)])
+        shutil.rmtree(repository, ignore_errors=True)
+        execute(['git', 'clone', OPTIONS['REPO_URL'], str(repository)])
 
     # 특정 커밋이 지정됐다면 체크아웃하기
     if OPTIONS['REPO_COMMIT']:
         execute(
             ['git', 'checkout', OPTIONS['REPO_COMMIT']],
-            cwd=repo_dir
+            cwd=str(repository)
         )
 
     if IN_COLAB:
-        patch_path = repo_dir.joinpath('scripts', 'patches.py')
+        patch_path = repository.joinpath('scripts', 'patches.py')
 
         if not patch_path.exists():
             download(
@@ -767,7 +768,7 @@ def setup_webui() -> None:
 
 def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
     workspace = Path(WORKSPACE).resolve()
-    repository = Path('repository').resolve()
+    repository = Path(REPOSITORY).resolve()
 
     # 기본 인자 만들기
     if len(args) < 1:
