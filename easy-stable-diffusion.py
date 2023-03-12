@@ -352,7 +352,7 @@ def setup_environment():
             },
             {
                 'url': 'https://huggingface.co/saltacc/wd-1-4-anime/resolve/main/VAE/kl-f8-anime2.ckpt',
-                'target': str(workspace.joinpath(WORKSPACE, 'models/VAE/kl-f8-anime2.ckpt')),
+                'target': str(workspace.joinpath('models/VAE/kl-f8-anime2.ckpt')),
                 'summary': '기본 VAE 파일을 받아옵니다'
             }
         ]:
