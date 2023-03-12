@@ -8,7 +8,8 @@ from tempfile import TemporaryDirectory
 from typing import Union, List, Dict
 from IPython.display import display
 from ipywidgets import widgets
-from google.colab import drive, runtime
+
+OPTIONS = {}
 
 # fmt: off
 #@title
@@ -19,6 +20,11 @@ WORKSPACE = 'SD' #@param {type:"string"}
 
 #@markdown ##### <font color="orange">***다운로드가 끝나면 자동으로 코랩 런타임을 종료할지?***</font>
 DISCONNECT_RUNTIME = True  #@param {type:"boolean"}
+
+#@markdown ##### <font color="orange">***구글 드라이브와 동기화할지?***</font>
+#@markdown <font color="red">**주의**</font>: 동기화 전 남은 용량이 충분한지 확인 필수 (5GB 이상)
+USE_GOOGLE_DRIVE = True  #@param {type:"boolean"}
+OPTIONS['USE_GOOGLE_DRIVE'] = USE_GOOGLE_DRIVE
 
 # fmt: on
 
@@ -42,14 +48,16 @@ display(
 
 
 # 파일 경로
-workspace_dir = Path('drive', 'MyDrive', WORKSPACE)
+workspace_dir = Path('drive', 'MyDrive', WORKSPACE) if OPTIONS['USE_GOOGLE_DRIVE'] else Path(WORKSPACE)
 sd_model_dir = workspace_dir.joinpath('models', 'Stable-diffusion')
 sd_embedding_dir = workspace_dir.joinpath('embeddings')
 vae_dir = workspace_dir.joinpath('models', 'VAE')
 
 # 구글 드라이브 마운팅
-with output:
-    drive.mount('drive')
+if OPTIONS['USE_GOOGLE_DRIVE']:
+    from google.colab import drive, runtime
+    with output:
+        drive.mount('drive')
 
 sd_model_dir.mkdir(0o777, True, True)
 sd_embedding_dir.mkdir(0o777, True, True)
