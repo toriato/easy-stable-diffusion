@@ -735,7 +735,7 @@ def setup_webui() -> None:
             # 사용자 파일만 남겨두고 레포지토리 초기화하기
             # https://stackoverflow.com/a/12096327
             execute(
-                'git stash && git pull',
+                'git stash && git pull origin master',
                 cwd=repo_dir
             )
         except subprocess.CalledProcessError:
