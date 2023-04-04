@@ -800,8 +800,7 @@ def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
 
     env = {
         **os.environ,
-        'HF_HOME': str(workspace / 'cache' / 'huggingface'),
-        'XFORMERS_PACKAGE' : 'xformers==0.0.17'
+        'HF_HOME': str(workspace / 'cache' / 'huggingface')
     }
 
     # https://github.com/googlecolab/colabtools/issues/3412
