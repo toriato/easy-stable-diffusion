@@ -1,3 +1,4 @@
+#@markdown ## 원클릭 코랩
 import io
 import json
 import os
@@ -24,7 +25,12 @@ OPTIONS = {}
 #####################################################
 #@title
 
-#@markdown ### <font color="orange">***작업 디렉터리 경로***</font>
+#@markdown ##### <font color="orange">***Torch+xFormers 버전 선택***</font>
+TORCH_VERSION = "torch==1.13.1+cu117"  # @param ["torch==1.13.1+cu117", "torch==2.0.0+cu118"]
+#@markdown - <font color="green">선택 A</font>: torch==1.13.1+cu117, ddetailer 확장 사용 가능
+#@markdown - <font color="red">선택 B</font>: torch==2.0.0+cu118, ddetailer 확장 사용 불가
+
+#@markdown ##### <font color="orange">***작업 디렉터리 경로***</font>
 #@markdown 임베딩, 모델, 결과와 설정 파일 등이 영구적으로 보관될 디렉터리 경로
 WORKSPACE = 'SD' #@param {type:"string"}
 
@@ -306,6 +312,22 @@ def setup_environment():
             execute(
                 f"curl -sS https://bootstrap.pypa.io/get-pip.py | {OPTIONS['PYTHON_EXECUTABLE']}"
             )
+
+        # 선택한 토치 버전 설치
+        if 'torch==1.13.1+cu117' in TORCH_VERSION:
+          execute(['pip', 'uninstall', '-q', '-y', 'torch', 'torchvision', 'torchtext', 'torchdata', 'torchaudio'])
+          execute(['pip', 'install', '-q', '-U', 'torch==1.13.1+cu117', 'torchvision==0.14.1+cu117', 'torchtext', 'torchdata', 'torchaudio', '--extra-index-url', 'https://download.pytorch.org/whl/cu117'])
+
+          if OPTIONS['USE_XFORMERS']:
+            execute(['pip', 'uninstall', '-q', '-y', 'xformers'])
+            execute(['pip', 'install', '-q', '-U', 'xformers==0.0.16rc425'])
+        elif 'torch==2.0.0+cu118' in TORCH_VERSION:
+          #execute(['pip', 'uninstall', '-q', '-y', 'torch', 'torchvision', 'torchtext', 'torchdata', 'torchaudio'])
+          #execute(['pip', 'install', '-q', '-U', 'torch==2.0.0+cu118', 'torchvision==0.15.1+cu118', 'torchtext', 'torchdata', 'torchaudio', '--extra-index-url', 'https://download.pytorch.org/whl/cu118'])
+
+          if OPTIONS['USE_XFORMERS']:
+            execute(['pip', 'uninstall', '-q', '-y', 'xformers'])
+            execute(['pip', 'install', '-q', '-U', 'xformers==0.0.17'])
 
         # 런타임이 정상적으로 초기화 됐는지 확인하기
         try:
