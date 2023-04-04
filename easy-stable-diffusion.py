@@ -25,7 +25,7 @@ OPTIONS = {}
 #####################################################
 #@title
 
-#@markdown ##### <font color="orange">***Torch+xFormers 버전 선택***</font>
+#@markdown ##### <font color="orange">***Torch 버전 선택***</font>
 TORCH_VERSION = "torch==1.13.1+cu117"  # @param ["torch==1.13.1+cu117", "torch==2.0.0+cu118"]
 #@markdown - <font color="green">선택 A</font>: torch==1.13.1+cu117, ddetailer 확장 사용 가능
 #@markdown - <font color="red">선택 B</font>: torch==2.0.0+cu118, ddetailer 확장 사용 불가
@@ -44,6 +44,7 @@ USE_GOOGLE_DRIVE = True  #@param {type:"boolean"}
 OPTIONS['USE_GOOGLE_DRIVE'] = USE_GOOGLE_DRIVE
 
 #@markdown ##### <font color="orange">***xformers 를 사용할지?***</font>
+#@markdown 선택한 Torch 버전에 따라 0.0.16rc425(torch==1.13.1), 0.0.17(torch==2.0.0)이 설치
 #@markdown - <font color="green">장점</font>: 이미지 생성 속도 개선 가능성 있음
 #@markdown - <font color="red">단점</font>: 출력한 그림의 질이 조금 떨어질 수 있음
 USE_XFORMERS = True  #@param {type:"boolean"}
