@@ -13,20 +13,20 @@ from google.colab import drive, runtime
 # fmt: off
 #@title
 
-#@markdown ### <font color="orange">***작업 디렉터리 경로***</font>
-#@markdown 모델 파일 등이 영구적으로 보관될 디렉터리 경로
+#@markdown###<font color="orange">***工作目录路径***</font>
+#@markdown模型文件等将被永久保存的目录路径
 WORKSPACE = 'SD' #@param {type:"string"}
 
-#@markdown ##### <font color="orange">***다운로드가 끝나면 자동으로 코랩 런타임을 종료할지?***</font>
+#@markdown######<font color="orange">***下载完成后,是否会自动结束CORAP运行时?***</font>
 DISCONNECT_RUNTIME = True  #@param {type:"boolean"}
 
 # fmt: on
 
-# 인터페이스 요소
+#界面元素
 dropdowns = widgets.VBox()
 output = widgets.Output()
 download_button = widgets.Button(
-    description='다운로드',
+    description='下载',
     disabled=True,
     layout={"width": "99%"}
 )
@@ -41,13 +41,13 @@ display(
     )))
 
 
-# 파일 경로
+#文件路径
 workspace_dir = Path('drive', 'MyDrive', WORKSPACE)
 sd_model_dir = workspace_dir.joinpath('models', 'Stable-diffusion')
 sd_embedding_dir = workspace_dir.joinpath('embeddings')
 vae_dir = workspace_dir.joinpath('models', 'VAE')
 
-# 구글 드라이브 마운팅
+#安装谷歌硬盘
 with output:
     drive.mount('drive')
 
@@ -88,27 +88,27 @@ class File:
             ))
 
             with output:
-                # aria2 로 파일 받아오기
+                # 使用aria2获取文件
                 # fmt: off
                 !which aria2c || apt install -y aria2
                 output.clear_output()
 
-                print('aria2 를 사용해 파일을 받아옵니다.')
+                print('使用aria 2接收文件.')
                 !aria2c {args}
                 output.clear_output()
 
-                print('파일을 성공적으로 받았습니다, 드라이브로 이동합니다.')
-                print('이 작업은 파일의 크기에 따라 5분 이상 걸릴 수도 있으니 잠시만 기다려주세요.')
+                print('文件已成功接收,请转到驱动器.')
+                print('根据文件大小,此操作可能需要5分钟或更长时间,请稍候.')
                 if DISCONNECT_RUNTIME:
-                    print('작업이 완료되면 런타임을 자동으로 해제하니 다른 작업을 진행하셔도 좋습니다.')
+                    print('任务完成后将自动关闭运行时,您可以继续执行其他任务.')
 
-                # 목적지 경로가 디렉터리가 아니라면 그대로 사용하기
+                #如果目的地路径不是目录,请按原样使用
                 filename = str(self.path) if not self.path.is_dir() else self.path.joinpath(
-                    # 아니라면 파일 원격 주소로부터 파일 이름 가져오기
+                    #否则,从文件远程地址获取文件名
                     unquote(os.path.basename(urlparse(self.url).path))
                 )
 
-                print(f'경로: {filename}')
+                print(f'路径:{filename}')
 
                 !rsync -aP "{tempdir}/$(ls -AU {tempdir} | head -1)" "{filename}"
 
@@ -127,12 +127,12 @@ class VaeFile(File):
     prefix = vae_dir
 
 
-# 모델 목록
+#型号列表
 CONFIG_V2_V = 'https://raw.githubusercontent.com/Stability-AI/stablediffusion/main/configs/stable-diffusion/v2-inference-v.yaml'
 
 files = {
     'Stable-Diffusion Checkpoints': {
-        # 현재 목록의 키 값 정렬해서 보여주기
+        # 排列并显示当前列表中的键值
         '$sort': True,
 
         'Stable Diffusion': {
@@ -607,7 +607,7 @@ def global_disable(disabled: bool):
 
     download_button.disabled = disabled
 
-    # 마지막 드롭다운이 하위 드롭다운이라면 버튼 비활성화하기
+    # 如果最后一个下拉菜单是子下拉菜单,请禁用按钮
     if not disabled:
         dropdown = dropdowns.children[len(dropdowns.children) - 1]
         download_button.disabled = isinstance(dropdown, dict)
@@ -619,23 +619,23 @@ def on_download(_):
 
     global_disable(True)
 
-    # 단일 파일 받기
+    #接收单个文件
     if isinstance(entry, File):
         entry.download()
 
-    # 다중 파일 받기
+    #接收多个文件
     elif isinstance(entry, list):
         for file in entry:
             file.download()
 
-    # TODO: 오류 처리
+    #TODO:错误处理
     else:
         pass
 
     if DISCONNECT_RUNTIME:
-        print('파일을 성공적으로 옮겼습니다, 이제 런타임을 해제해도 좋습니다.')
+        print('文件已成功移动,现在可以关闭运行时了.')
 
-        # 런타임을 바로 종료해버리면 마지막 출력이 잘림
+        #如果立即退出运行时,最后一次输出将被截断
         time.sleep(1)
         runtime.unassign()
 
@@ -646,7 +646,7 @@ def on_dropdown_change(event):
     dropdown: widgets.Dropdown = event['owner']
     entries: Union[List, Dict] = dropdown.entries[event['new']]
 
-    # 이전 하위 드롭다운 전부 제거하기
+    #删除所有上一个子下拉列表
     dropdowns.children = dropdowns.children[:dropdown.children_index + 1]
 
     if isinstance(entries, dict):
@@ -654,7 +654,7 @@ def on_dropdown_change(event):
         create_dropdown(entries)
         return
 
-    # 하위 드롭다운 만들기
+    #创建子下拉列表
     download_button.disabled = False
 
 
@@ -685,7 +685,7 @@ def create_dropdown(entries: Dict) -> widgets.Dropdown:
     return dropdown
 
 
-# 첫 엔트리 드롭다운 만들기
+#创建第一个条目下拉列表
 create_dropdown(files)
 
 download_button.on_click(on_download)
