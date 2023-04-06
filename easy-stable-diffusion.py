@@ -30,6 +30,13 @@ TORCH_VERSION = "torch==1.13.1+cu117"  # @param ["torch==1.13.1+cu117", "torch==
 #@markdown - <font color="green">선택 A</font>: torch==1.13.1+cu117, ddetailer 확장 사용 가능
 #@markdown - <font color="red">선택 B</font>: torch==2.0.0+cu118, ddetailer 확장 사용 불가
 
+#@markdown ##### <font color="orange">***ddetailer 의존 패키지를 미리 설치할지?***</font>
+#@markdown 아래 패키지를 미리 설치해 버전 문제로 인한 확장 설치 문제를 해결 합니다.<br> 설치 패키지 : openmim==0.3.7, mmcv-full==1.7.1, mmdet==2.28.2
+#@markdown - <font color="green">체크시</font>: ddetailer 확장을 사용하는 경우 필요한 패키지를 미리 설치
+#@markdown - <font color="red">해제시</font>: ddetailer 확장을 사용하지 않으면 체크 해제
+INSTALL_DDETAILER_REQUIREMENTS = True  #@param {type:"boolean"}
+OPTIONS['INSTALL_DDETAILER_REQUIREMENTS'] = INSTALL_DDETAILER_REQUIREMENTS
+
 #@markdown ##### <font color="orange">***작업 디렉터리 경로***</font>
 #@markdown 임베딩, 모델, 결과와 설정 파일 등이 영구적으로 보관될 디렉터리 경로
 WORKSPACE = 'SD' #@param {type:"string"}
@@ -329,6 +336,12 @@ def setup_environment():
           if OPTIONS['USE_XFORMERS']:
             execute(['pip', 'uninstall', '-q', '-y', 'xformers'])
             execute(['pip', 'install', '-q', '-U', 'xformers==0.0.17'])
+
+        # ddetailer 의존 패키지 미리 설치
+        if INSTALL_DDETAILER_REQUIREMENTS:
+          execute(['pip', 'install', '-q', '-U', 'openmim==0.3.7'])
+          execute(['pip', 'install', '-q', '-U', 'mmcv-full==1.7.1'])
+          execute(['pip', 'install', '-q', '-U', 'mmdet==2.28.2'])
 
         # 런타임이 정상적으로 초기화 됐는지 확인하기
         try:
