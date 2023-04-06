@@ -340,7 +340,7 @@ def setup_environment():
         # ddetailer 의존 패키지 미리 설치
         if INSTALL_DDETAILER_REQUIREMENTS:
           execute(['pip', 'install', '-q', '-U', 'openmim==0.3.7'])
-          execute(['pip', 'install', '-q', '-U', 'mmcv-full==1.7.1'])
+          execute(['mim', 'install', '-q', '-U', 'mmcv-full==1.7.1'])
           execute(['pip', 'install', '-q', '-U', 'mmdet==2.28.2'])
 
         # 런타임이 정상적으로 초기화 됐는지 확인하기
