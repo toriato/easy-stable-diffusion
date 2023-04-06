@@ -31,7 +31,7 @@ TORCH_VERSION = "torch==1.13.1+cu117"  # @param ["torch==1.13.1+cu117", "torch==
 #@markdown - <font color="red">선택 B</font>: torch==2.0.0+cu118, ddetailer 확장 사용 불가
 
 #@markdown ##### <font color="orange">***ddetailer 의존 패키지를 미리 설치할지?***</font>
-#@markdown 아래 패키지를 미리 설치해 버전 문제로 인한 확장 설치 문제를 해결 합니다.<br> 설치 패키지 : openmim==0.3.7, mmcv-full==1.7.1, mmdet==2.28.2
+#@markdown 아래 패키지를 미리 설치해 mmcv-full 버전 문제로 인한 확장 설치 문제를 해결 합니다.<br> 설치 패키지 : openmim==0.3.7, mmcv-full==1.7.1, mmdet==2.28.2
 #@markdown - <font color="green">체크시</font>: ddetailer 확장을 사용하는 경우 필요한 패키지를 미리 설치
 #@markdown - <font color="red">해제시</font>: ddetailer 확장을 사용하지 않으면 체크 해제
 INSTALL_DDETAILER_REQUIREMENTS = True  #@param {type:"boolean"}
