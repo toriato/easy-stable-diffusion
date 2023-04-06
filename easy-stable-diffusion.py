@@ -329,6 +329,13 @@ def setup_environment():
           if OPTIONS['USE_XFORMERS']:
             execute(['pip', 'uninstall', '-q', '-y', 'xformers'])
             execute(['pip', 'install', '-q', '-U', 'xformers==0.0.16rc425'])
+          
+          # ddetailer 의존 패키지 미리 설치
+          if INSTALL_DDETAILER_REQUIREMENTS:
+            execute(['pip', 'install', '-q', '-U', 'openmim==0.3.7'])
+            execute(['mim', 'install', '-q', '-U', 'mmcv-full==1.7.1'])
+            execute(['pip', 'install', '-q', '-U', 'mmdet==2.28.2'])
+
         elif 'torch==2.0.0+cu118' in TORCH_VERSION:
           #execute(['pip', 'uninstall', '-q', '-y', 'torch', 'torchvision', 'torchtext', 'torchdata', 'torchaudio'])
           #execute(['pip', 'install', '-q', '-U', 'torch==2.0.0+cu118', 'torchvision==0.15.1+cu118', 'torchtext', 'torchdata', 'torchaudio', '--extra-index-url', 'https://download.pytorch.org/whl/cu118'])
@@ -336,12 +343,6 @@ def setup_environment():
           if OPTIONS['USE_XFORMERS']:
             execute(['pip', 'uninstall', '-q', '-y', 'xformers'])
             execute(['pip', 'install', '-q', '-U', 'xformers==0.0.17'])
-
-        # ddetailer 의존 패키지 미리 설치
-        if INSTALL_DDETAILER_REQUIREMENTS:
-          execute(['pip', 'install', '-q', '-U', 'openmim==0.3.7'])
-          execute(['mim', 'install', '-q', '-U', 'mmcv-full==1.7.1'])
-          execute(['pip', 'install', '-q', '-U', 'mmdet==2.28.2'])
 
         # 런타임이 정상적으로 초기화 됐는지 확인하기
         try:
