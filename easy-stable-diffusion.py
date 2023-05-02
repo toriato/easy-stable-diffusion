@@ -832,6 +832,9 @@ def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
                     '' else ':' + OPTIONS['GRADIO_PASSWORD'])
             ]
 
+    # 임시 해결 : https://github.com/AUTOMATIC1111/stable-diffusion-webui/issues/9991
+    args += ['--disable-safe-unpickle']
+
     # 추가 인자
     args += OPTIONS['EXTRA_ARGS']
 
