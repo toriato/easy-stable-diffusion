@@ -26,7 +26,7 @@ OPTIONS = {}
 #@title
 
 #@markdown ##### <font color="orange">***Torch 버전 선택***</font>
-TORCH_VERSION = "torch==1.13.1+cu117"  # @param ["torch==1.13.1+cu117", "torch==2.0.0+cu118"]
+TORCH_VERSION = "torch==2.0.0+cu118"  # @param ["torch==1.13.1+cu117", "torch==2.0.0+cu118", "기본 버전"]
 #@markdown - <font color="green">선택 A</font>: torch==1.13.1+cu117, ddetailer 확장 사용 가능
 #@markdown - <font color="red">선택 B</font>: torch==2.0.0+cu118, ddetailer 확장 사용 불가
 
@@ -323,11 +323,9 @@ def setup_environment():
 
         # 선택한 토치 버전 설치
         if 'torch==1.13.1+cu117' in TORCH_VERSION:
-          execute(['pip', 'uninstall', '-q', '-y', 'torch', 'torchvision', 'torchtext', 'torchdata', 'torchaudio'])
-          execute(['pip', 'install', '-q', '-U', 'torch==1.13.1+cu117', 'torchvision==0.14.1+cu117', 'torchtext', 'torchdata', 'torchaudio', '--extra-index-url', 'https://download.pytorch.org/whl/cu117'])
+          execute(['pip', 'install', '-q', '-U', 'torch==1.13.1+cu117', 'torchvision==0.14.1+cu117', 'torchaudio==0.13.1+cu117', 'torchtext==0.14.1', 'torchdata==0.5.1', '--extra-index-url', 'https://download.pytorch.org/whl/cu117'])
 
           if OPTIONS['USE_XFORMERS']:
-            execute(['pip', 'uninstall', '-q', '-y', 'xformers'])
             execute(['pip', 'install', '-q', '-U', 'xformers==0.0.16rc425'])
           
           # ddetailer 의존 패키지 미리 설치
@@ -337,11 +335,9 @@ def setup_environment():
             execute(['pip', 'install', '-q', '-U', 'mmdet==2.28.2'])
 
         elif 'torch==2.0.0+cu118' in TORCH_VERSION:
-          #execute(['pip', 'uninstall', '-q', '-y', 'torch', 'torchvision', 'torchtext', 'torchdata', 'torchaudio'])
-          #execute(['pip', 'install', '-q', '-U', 'torch==2.0.0+cu118', 'torchvision==0.15.1+cu118', 'torchtext', 'torchdata', 'torchaudio', '--extra-index-url', 'https://download.pytorch.org/whl/cu118'])
+          execute(['pip', 'install', '-q', '-U', 'torch==2.0.0+cu118', 'torchvision==0.15.1+cu118', 'torchaudio==2.0.1+cu118', 'torchtext==0.15.1', 'torchdata==0.6.0', '--extra-index-url', 'https://download.pytorch.org/whl/cu118'])
 
           if OPTIONS['USE_XFORMERS']:
-            execute(['pip', 'uninstall', '-q', '-y', 'xformers'])
             execute(['pip', 'install', '-q', '-U', 'xformers==0.0.17'])
 
         # 런타임이 정상적으로 초기화 됐는지 확인하기
@@ -831,9 +827,6 @@ def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
                 ('' if OPTIONS['GRADIO_PASSWORD'] ==
                     '' else ':' + OPTIONS['GRADIO_PASSWORD'])
             ]
-
-    # 임시 해결 : https://github.com/AUTOMATIC1111/stable-diffusion-webui/issues/9991
-    args += ['--disable-safe-unpickle']
 
     # 추가 인자
     args += OPTIONS['EXTRA_ARGS']
