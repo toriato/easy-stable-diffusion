@@ -1,3 +1,4 @@
+#@markdown ## 원클릭 코랩
 import io
 import json
 import os
@@ -24,7 +25,19 @@ OPTIONS = {}
 #####################################################
 #@title
 
-#@markdown ### <font color="orange">***작업 디렉터리 경로***</font>
+#@markdown ##### <font color="orange">***Torch 버전 선택***</font>
+TORCH_VERSION = "torch==1.13.1+cu117"  # @param ["torch==1.13.1+cu117", "torch==2.0.0+cu118", "기본 버전"]
+#@markdown - <font color="green">선택 A</font>: torch==1.13.1+cu117, ddetailer 확장 사용 가능
+#@markdown - <font color="red">선택 B</font>: torch==2.0.0+cu118, ddetailer 확장 사용 불가
+
+#@markdown ##### <font color="orange">***ddetailer 의존 패키지를 미리 설치할지?***</font>
+#@markdown 아래 패키지를 미리 설치해 mmcv-full 버전 문제로 인한 확장 설치 문제를 해결 합니다.<br> 설치 패키지 : openmim==0.3.7, mmcv-full==1.7.1, mmdet==2.28.2
+#@markdown - <font color="green">체크시</font>: ddetailer 확장을 사용하는 경우 필요한 패키지를 미리 설치
+#@markdown - <font color="red">해제시</font>: ddetailer 확장을 사용하지 않으면 체크 해제
+INSTALL_DDETAILER_REQUIREMENTS = True  #@param {type:"boolean"}
+OPTIONS['INSTALL_DDETAILER_REQUIREMENTS'] = INSTALL_DDETAILER_REQUIREMENTS
+
+#@markdown ##### <font color="orange">***작업 디렉터리 경로***</font>
 #@markdown 임베딩, 모델, 결과와 설정 파일 등이 영구적으로 보관될 디렉터리 경로
 WORKSPACE = 'SD' #@param {type:"string"}
 
@@ -38,6 +51,7 @@ USE_GOOGLE_DRIVE = True  #@param {type:"boolean"}
 OPTIONS['USE_GOOGLE_DRIVE'] = USE_GOOGLE_DRIVE
 
 #@markdown ##### <font color="orange">***xformers 를 사용할지?***</font>
+#@markdown 선택한 Torch 버전에 따라 0.0.16rc425(torch==1.13.1), 0.0.17(torch==2.0.0)이 설치
 #@markdown - <font color="green">장점</font>: 이미지 생성 속도 개선 가능성 있음
 #@markdown - <font color="red">단점</font>: 출력한 그림의 질이 조금 떨어질 수 있음
 USE_XFORMERS = True  #@param {type:"boolean"}
@@ -306,6 +320,25 @@ def setup_environment():
             execute(
                 f"curl -sS https://bootstrap.pypa.io/get-pip.py | {OPTIONS['PYTHON_EXECUTABLE']}"
             )
+
+        # 선택한 토치 버전 설치
+        if 'torch==1.13.1+cu117' in TORCH_VERSION:
+          execute(['pip', 'install', '-q', '-U', 'torch==1.13.1+cu117', 'torchvision==0.14.1+cu117', 'torchaudio==0.13.1+cu117', 'torchtext==0.14.1', 'torchdata==0.5.1', '--extra-index-url', 'https://download.pytorch.org/whl/cu117'])
+
+          if OPTIONS['USE_XFORMERS']:
+            execute(['pip', 'install', '-q', '-U', 'xformers==0.0.16rc425'])
+          
+          # ddetailer 의존 패키지 미리 설치
+          if INSTALL_DDETAILER_REQUIREMENTS:
+            execute(['pip', 'install', '-q', '-U', 'openmim==0.3.7'])
+            execute(['mim', 'install', '-q', '-U', 'mmcv-full==1.7.1'])
+            execute(['pip', 'install', '-q', '-U', 'mmdet==2.28.2'])
+
+        elif 'torch==2.0.0+cu118' in TORCH_VERSION:
+          execute(['pip', 'install', '-q', '-U', 'torch==2.0.0+cu118', 'torchvision==0.15.1+cu118', 'torchaudio==2.0.1+cu118', 'torchtext==0.15.1', 'torchdata==0.6.0', '--extra-index-url', 'https://download.pytorch.org/whl/cu118'])
+
+          if OPTIONS['USE_XFORMERS']:
+            execute(['pip', 'install', '-q', '-U', 'xformers==0.0.17'])
 
         # 런타임이 정상적으로 초기화 됐는지 확인하기
         try:
@@ -714,7 +747,7 @@ def has_checkpoint() -> bool:
 
 def parse_webui_output(line: str) -> None:
     # 첫 시작에 한해서 웹 서버 열렸을 때 다이어로그 표시하기
-    if line.startswith('Running on local URL:'):
+    if 'Running on local URL:' in line:
         log(
             '\n'.join([
                 '성공적으로 터널이 열렸습니다',
@@ -800,7 +833,7 @@ def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
 
     env = {
         **os.environ,
-        'HF_HOME': str(workspace / 'cache' / 'huggingface'),
+        'HF_HOME': str(workspace / 'cache' / 'huggingface')
     }
 
     # https://github.com/googlecolab/colabtools/issues/3412
