@@ -747,7 +747,7 @@ def has_checkpoint() -> bool:
 
 def parse_webui_output(line: str) -> None:
     # 첫 시작에 한해서 웹 서버 열렸을 때 다이어로그 표시하기
-    if line.startswith('Running on local URL:'):
+    if 'Running on local URL:' in line:
         log(
             '\n'.join([
                 '성공적으로 터널이 열렸습니다',
