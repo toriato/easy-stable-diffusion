@@ -355,23 +355,6 @@ def setup_environment():
                     '--opt-sub-quad-attention'
                 ]
 
-        # 코랩 tcmalloc 관련 이슈 우회
-        # https://github.com/googlecolab/colabtools/issues/3412
-        try:
-            # 패키지가 이미 다운그레이드 됐는지 확인하기
-            execute('dpkg -l libunwind8-dev', hide_summary=True)
-        except subprocess.CalledProcessError:
-            for url in (
-                'http://launchpadlibrarian.net/367274644/libgoogle-perftools-dev_2.5-2.2ubuntu3_amd64.deb',
-                'https://launchpad.net/ubuntu/+source/google-perftools/2.5-2.2ubuntu3/+build/14795286/+files/google-perftools_2.5-2.2ubuntu3_all.deb',
-                'https://launchpad.net/ubuntu/+source/google-perftools/2.5-2.2ubuntu3/+build/14795286/+files/libtcmalloc-minimal4_2.5-2.2ubuntu3_amd64.deb',
-                'https://launchpad.net/ubuntu/+source/google-perftools/2.5-2.2ubuntu3/+build/14795286/+files/libgoogle-perftools4_2.5-2.2ubuntu3_amd64.deb'
-            ):
-                download(url, ignore_aria2=True)
-            execute('apt install -qq libunwind8-dev')
-            execute('dpkg -i *.deb')
-            execute('rm *.deb')
-
     # 외부 터널링 초기화
     setup_tunnels()
 
@@ -835,10 +818,6 @@ def start_webui(args: List[str] = OPTIONS['ARGS']) -> None:
         **os.environ,
         'HF_HOME': str(workspace / 'cache' / 'huggingface')
     }
-
-    # https://github.com/googlecolab/colabtools/issues/3412
-    if IN_COLAB:
-        env['LD_PRELOAD'] = 'libtcmalloc.so'
 
     try:
         execute(
